@@ -2,7 +2,17 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-First, run the development server:
+Create the local environment file and start PostgreSQL:
+
+```powershell
+Copy-Item .env.example .env
+docker compose up -d postgres
+```
+
+PostgreSQL is available only from the local machine at `localhost:5432`.
+Its data is persisted in the `postgres_data` Docker volume.
+
+Then, run the development server:
 
 ```bash
 npm run dev
