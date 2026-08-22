@@ -24,6 +24,7 @@ export async function getPlayerByName(
     return null;
   }
 
+  // JSON:API 응답을 나머지 애플리케이션에서 쓰기 쉬운 형태로 정규화한다.
   return {
     accountId: player.id,
     name: player.attributes.name,

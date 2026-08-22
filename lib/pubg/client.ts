@@ -1,8 +1,10 @@
 const PUBG_API_BASE_URL = "https://api.pubg.com";
+// PUBG API가 사용하는 JSON:API 미디어 타입이다.
 const PUBG_ACCEPT = "application/vnd.api+json";
 
 type PubgFetchOptions = {
   searchParams?: Record<string, string>;
+  authorization?: boolean;
 };
 
 export class PubgApiError extends Error {
@@ -21,8 +23,10 @@ export async function pubgFetch<T>(
   options: PubgFetchOptions = {},
 ): Promise<T> {
   const apiKey = process.env.PUBG_API_KEY;
+  const requiresAuthorization = options.authorization ?? true;
 
-  if (!apiKey) {
+  // API 키가 클라이언트 번들에 노출되지 않도록 서버 환경 변수만 읽는다.
+  if (requiresAuthorization && !apiKey) {
     throw new PubgApiError("PUBG_API_KEY is not configured.", 500);
   }
 
@@ -33,14 +37,19 @@ export async function pubgFetch<T>(
   }
 
   let response: Response;
+  const headers = new Headers({ Accept: PUBG_ACCEPT });
+
+  // Match API처럼 인증이 필요 없는 엔드포인트에는 Authorization을 보내지 않는다.
+  if (requiresAuthorization && apiKey) {
+    headers.set("Authorization", `Bearer ${apiKey}`);
+  }
 
   try {
     response = await fetch(url, {
-      headers: {
-        Accept: PUBG_ACCEPT,
-        Authorization: `Bearer ${apiKey}`,
-      },
+      headers,
+      // 동기화 시 오래된 PUBG 응답을 재사용하지 않는다.
       cache: "no-store",
+      // 외부 API 장애가 Next.js 요청을 계속 붙잡지 않도록 제한한다.
       signal: AbortSignal.timeout(10_000),
     });
   } catch (error) {
@@ -49,6 +58,7 @@ export async function pubgFetch<T>(
   }
 
   if (!response.ok) {
+    // Route Handler가 429와 Retry-After를 클라이언트에 전달할 수 있게 보존한다.
     throw new PubgApiError(
       `PUBG API returned ${response.status}.`,
       response.status,

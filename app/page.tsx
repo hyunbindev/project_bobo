@@ -11,6 +11,8 @@ import {
   Users,
 } from "lucide-react";
 
+import { ClanJoinModal } from "@/components/clan-dashboard/clan-join-modal";
+
 const clanStats = [
   { label: "클랜원", value: "28", unit: "명", icon: Users },
   { label: "이번 시즌 치킨", value: "14", unit: "회", icon: Trophy },
@@ -33,6 +35,7 @@ const mvpPlayers = [
 export default function Home() {
   return (
     <main className="min-h-screen overflow-hidden bg-background text-foreground">
+      <ClanJoinModal />
       <header className="fixed inset-x-0 top-0 z-50 border-b border-border/50 bg-background/85 backdrop-blur-xl">
         <div className="mx-auto flex h-18 max-w-360 items-center justify-between px-5 sm:px-8 lg:px-12">
           <a href="#top" className="group flex items-center gap-3" aria-label="BOBO 클랜 홈">
