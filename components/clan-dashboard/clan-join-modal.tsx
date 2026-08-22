@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { Gamepad2, LoaderCircle, ShieldCheck, UserPlus } from "lucide-react";
+import { ChevronRight, Gamepad2, LoaderCircle, ShieldCheck, UserPlus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -20,7 +20,7 @@ const fieldClassName =
   "h-12 rounded-sm border-border bg-background px-4 shadow-none focus-visible:border-primary focus-visible:ring-primary/20";
 
 export function ClanJoinModal() {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -62,6 +62,11 @@ export function ClanJoinModal() {
   }
 
   return (
+    <>
+    <button onClick={() => setOpen(true)} className="inline-flex h-12 items-center gap-3 rounded-sm bg-primary px-6 text-sm font-black text-primary-foreground transition-all hover:-translate-y-0.5 hover:bg-primary-hover cursor-pointer">
+      아이디 등록 <ChevronRight className="size-4" />
+    </button>
+
     <Dialog onOpenChange={setOpen} open={open}>
       <DialogContent
         className="gap-0 overflow-x-hidden overflow-y-auto rounded-sm border-border bg-surface-elevated p-0 shadow-[0_32px_100px_rgba(0,0,0,.65)] ring-0 sm:max-w-xl"
@@ -72,13 +77,13 @@ export function ClanJoinModal() {
 
         <DialogHeader className="relative gap-0 border-b border-border/60 px-6 py-6 sm:px-8">
           <p className="mb-3 flex items-center gap-2 text-[10px] font-black tracking-[0.24em] text-primary">
-            <ShieldCheck className="size-3.5" /> BOBO CLAN RECRUIT
+            <ShieldCheck className="size-3.5" /> BOBO CLAN REGISTRATION
           </p>
           <DialogTitle className="text-3xl font-black tracking-[-0.045em]">
-            클랜 가입 신청
+            아이디 등록
           </DialogTitle>
           <DialogDescription className="mt-3 leading-6">
-            PUBG 계정 확인을 위해 아래 정보를 입력해줘.
+            Battle Ground 계정 확인을 위해 아래 정보를 입력해 주세요.
           </DialogDescription>
         </DialogHeader>
 
@@ -93,7 +98,7 @@ export function ClanJoinModal() {
                 className="text-[11px] font-black tracking-[0.12em]"
                 htmlFor="nickname"
               >
-                PUBG 닉네임 <b className="text-primary">*</b>
+                Battle Ground 닉네임 <b className="text-primary">*</b>
               </FieldLabel>
               <div className="relative">
                 <Gamepad2 className="pointer-events-none absolute left-4 top-1/2 z-10 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -179,11 +184,13 @@ export function ClanJoinModal() {
             {submitError && <FieldError>{submitError}</FieldError>}
 
             <p className="text-center text-[10px] leading-5 text-muted-foreground/70">
-              등록 시 PUBG 닉네임과 클랜 소속 여부를 확인해.
+              등록 시 Battle Ground 닉네임과 클랜 소속 여부를 확인합니다.
             </p>
           </FieldGroup>
         </form>
       </DialogContent>
     </Dialog>
-  );
+
+    </>
+      );
 }
