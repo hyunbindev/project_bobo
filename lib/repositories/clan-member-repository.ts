@@ -1,21 +1,76 @@
+import { and, asc, eq } from "drizzle-orm";
+
 import { db } from "@/lib/db";
 import { clanMembers, clans, players } from "@/lib/db/schema";
 import type { PubgClan } from "@/lib/pubg/clan-types";
-import type { PubgPlayer } from "@/lib/pubg/types";
+import type { PubgPlatform, PubgPlayer } from "@/lib/pubg/types";
 
 type DatabaseClient = typeof db;
 
-export type SaveClanMemberRegistrationInput = {
+export type SaveClanMemberInput = {
   clan: PubgClan;
   player: PubgPlayer;
   member: {
-    displayName: string;
-    age: number;
+    displayName: string | null;
+    age: number | null;
+    profileRegistered: boolean;
   };
 };
 
-export async function saveClanMemberRegistration(
-  input: SaveClanMemberRegistrationInput,
+export async function findStoredPlayerByName(
+  nickname: string,
+  platform: PubgPlatform,
+  database: DatabaseClient = db,
+) {
+  const [player] = await database
+    .select()
+    .from(players)
+    .where(and(eq(players.name, nickname), eq(players.platform, platform)))
+    .limit(1);
+
+  return player ?? null;
+}
+
+export async function findStoredClanByPubgId(
+  pubgClanId: string,
+  platform: PubgPlatform,
+  database: DatabaseClient = db,
+) {
+  const [clan] = await database
+    .select()
+    .from(clans)
+    .where(
+      and(eq(clans.pubgClanId, pubgClanId), eq(clans.platform, platform)),
+    )
+    .limit(1);
+
+  return clan ?? null;
+}
+
+export async function findStoredClanMember(
+  limit?:number,
+  database: DatabaseClient = db,
+){
+  const query = database
+    .select()
+    .from(clanMembers)
+    .innerJoin(players, eq(clanMembers.playerId, players.id))
+    .where(eq(clanMembers.status, "active"))
+    .orderBy(
+      asc(players.lastSyncedAt),
+      asc(players.id),
+    );
+    
+    return limit === undefined
+      ? query
+      : query.limit(limit)
+}
+
+
+
+
+export async function saveClanMember(
+  input: SaveClanMemberInput,
   database: DatabaseClient = db,
 ) {
   const now = new Date();
@@ -62,6 +117,21 @@ export async function saveClanMemberRegistration(
       })
       .returning();
 
+    const memberUpdate = input.member.profileRegistered
+      ? {
+          displayName: input.member.displayName,
+          age: input.member.age,
+          profileRegistered: true,
+          status: "active" as const,
+          leftAt: null,
+          updatedAt: now,
+        }
+      : {
+          status: "active" as const,
+          leftAt: null,
+          updatedAt: now,
+        };
+
     const [savedMember] = await tx
       .insert(clanMembers)
       .values({
@@ -69,15 +139,13 @@ export async function saveClanMemberRegistration(
         playerId: savedPlayer.id,
         displayName: input.member.displayName,
         age: input.member.age,
+        profileRegistered: input.member.profileRegistered,
       })
-      .onConflictDoNothing({
+      .onConflictDoUpdate({
         target: [clanMembers.clanId, clanMembers.playerId],
+        set: memberUpdate,
       })
       .returning();
-
-    if (!savedMember) {
-      return null;
-    }
 
     return {
       clan: savedClan,

@@ -22,6 +22,7 @@ export async function findMainClanSummary(pubgClanId?: string) {
       and(
         eq(clanMembers.clanId, clans.id),
         eq(clanMembers.status, "active"),
+        eq(clanMembers.profileRegistered, true),
       ),
     )
     .where(pubgClanId ? eq(clans.pubgClanId, pubgClanId) : undefined)

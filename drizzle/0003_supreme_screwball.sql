@@ -1,0 +1,1 @@
+ALTER TABLE "clan_members" ADD CONSTRAINT "clan_members_registered_profile_fields" CHECK (NOT "clan_members"."profile_registered" OR ("clan_members"."display_name" IS NOT NULL AND "clan_members"."age" IS NOT NULL));

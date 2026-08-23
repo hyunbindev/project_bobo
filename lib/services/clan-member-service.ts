@@ -1,14 +1,18 @@
-import {
-  ApiError,
-  BadRequestError,
-  ConflictError,
-  NotFoundError,
-} from "@/lib/api/errors";
+import { ApiError, BadRequestError, NotFoundError } from "@/lib/api/errors";
+import type { PubgClan } from "@/lib/pubg/clan-types";
 import { getClanById } from "@/lib/pubg/clans";
 import { PubgApiError } from "@/lib/pubg/client";
 import { getPlayerByName } from "@/lib/pubg/players";
-import { PUBG_PLATFORMS, type PubgPlatform } from "@/lib/pubg/types";
-import { saveClanMemberRegistration } from "@/lib/repositories/clan-member-repository";
+import {
+  PUBG_PLATFORMS,
+  type PubgPlatform,
+  type PubgPlayer,
+} from "@/lib/pubg/types";
+import {
+  findStoredClanByPubgId,
+  findStoredPlayerByName,
+  saveClanMember,
+} from "@/lib/repositories/clan-member-repository";
 
 type RegisterClanMemberInput = {
   nickname: string;
@@ -19,6 +23,16 @@ type RegisterClanMemberInput = {
 
 function isPubgPlatform(value: string): value is PubgPlatform {
   return PUBG_PLATFORMS.some((platform) => platform === value);
+}
+
+function validateNickname(value: string) {
+  const nickname = value.trim();
+
+  if (!nickname || nickname.length > 64 || nickname.includes(",")) {
+    throw new BadRequestError("Enter one valid PUBG nickname.");
+  }
+
+  return nickname;
 }
 
 function parseRegisterInput(value: unknown): RegisterClanMemberInput {
@@ -39,12 +53,8 @@ function parseRegisterInput(value: unknown): RegisterClanMemberInput {
     );
   }
 
-  const nickname = input.nickname.trim();
+  const nickname = validateNickname(input.nickname);
   const displayName = input.displayName.trim();
-
-  if (!nickname || nickname.length > 64 || nickname.includes(",")) {
-    throw new BadRequestError("Enter one valid PUBG nickname.");
-  }
 
   if (!displayName || displayName.length > 30) {
     throw new BadRequestError(
@@ -91,37 +101,120 @@ function convertPubgApiError(error: PubgApiError): ApiError {
   return new ApiError(502, "PUBG_API_ERROR", error.message);
 }
 
+async function resolvePlayer(
+  nickname: string,
+  platform: PubgPlatform,
+): Promise<PubgPlayer> {
+  const storedPlayer = await findStoredPlayerByName(nickname, platform);
+
+  // DB에 클랜 정보까지 있는 플레이어면 PUBG 요청을 소비하지 않고 재사용한다.
+  if (storedPlayer?.pubgClanId) {
+    return {
+      accountId: storedPlayer.pubgAccountId,
+      name: storedPlayer.name,
+      platform: storedPlayer.platform,
+      clanId: storedPlayer.pubgClanId,
+      matchIds: [],
+    };
+  }
+
+  const player = await getPlayerByName(nickname, platform);
+
+  if (!player) {
+    throw new NotFoundError("PUBG player not found.");
+  }
+
+  return player;
+}
+
+async function resolveClan(
+  pubgClanId: string,
+  platform: PubgPlatform,
+): Promise<PubgClan> {
+  const storedClan = await findStoredClanByPubgId(pubgClanId, platform);
+
+  if (storedClan) {
+    return {
+      id: storedClan.pubgClanId,
+      platform: storedClan.platform,
+      name: storedClan.name,
+      tag: storedClan.tag,
+      level: storedClan.level,
+      memberCount: storedClan.memberCount,
+    };
+  }
+
+  return getClanById(pubgClanId, platform);
+}
+
+async function resolvePlayerAndClan(
+  nickname: string,
+  platform: PubgPlatform,
+) {
+  const player = await resolvePlayer(nickname, platform);
+  const clanId = player.clanId;
+
+  if (!clanId) {
+    throw new BadRequestError("The PUBG player does not belong to a clan.");
+  }
+
+  if (process.env.PUBG_CLAN_ID && clanId !== process.env.PUBG_CLAN_ID) {
+    throw new BadRequestError("The PUBG player does not belong to this clan.");
+  }
+
+  const clan = await resolveClan(clanId, platform);
+  return { player, clan };
+}
+
 export async function registerClanMember(input: unknown) {
   const data = parseRegisterInput(input);
 
   try {
-    const player = await getPlayerByName(data.nickname, data.platform);
+    const { player, clan } = await resolvePlayerAndClan(
+      data.nickname,
+      data.platform,
+    );
 
-    if (!player) {
-      throw new NotFoundError("PUBG player not found.");
-    }
-
-    const clanId = player.clanId;
-
-    if (!clanId) {
-      throw new BadRequestError("The PUBG player does not belong to a clan.");
-    }
-
-    const clan = await getClanById(clanId, data.platform);
-    const registration = await saveClanMemberRegistration({
+    return saveClanMember({
       clan,
       player,
       member: {
         displayName: data.displayName,
         age: data.age,
+        profileRegistered: true,
       },
     });
-
-    if (!registration) {
-      throw new ConflictError("The clan member is already registered.");
+  } catch (error) {
+    if (error instanceof PubgApiError) {
+      throw convertPubgApiError(error);
     }
 
-    return registration;
+    throw error;
+  }
+}
+
+// 매치 동기화 Worker가 발견한 닉네임을 넘기면 미등록 프로필로 자동 추가한다.
+export async function discoverClanMember(
+  nickname: string,
+  platform: PubgPlatform,
+) {
+  const validNickname = validateNickname(nickname);
+
+  try {
+    const { player, clan } = await resolvePlayerAndClan(
+      validNickname,
+      platform,
+    );
+
+    return saveClanMember({
+      clan,
+      player,
+      member: {
+        displayName: null,
+        age: null,
+        profileRegistered: false,
+      },
+    });
   } catch (error) {
     if (error instanceof PubgApiError) {
       throw convertPubgApiError(error);

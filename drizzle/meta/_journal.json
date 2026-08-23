@@ -15,6 +15,20 @@
       "when": 1787395565288,
       "tag": "0001_silly_black_widow",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1787462390931,
+      "tag": "0002_superb_the_hand",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1787462424722,
+      "tag": "0003_supreme_screwball",
+      "breakpoints": true
     }
   ]
 }

@@ -9,6 +9,7 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
+  boolean,
 } from "drizzle-orm/pg-core";
 
 import { players, pubgPlatformEnum } from "./player";
@@ -76,17 +77,21 @@ export const clanMembers = pgTable(
 
 
     // PUBG 닉네임은 players.name에 있고, 여기에는 사용자가 입력한 이름을 저장한다.
-    displayName: text("display_name").notNull(),
+    displayName: text("display_name"),
 
-    age: integer("age").notNull(),
+    age: integer("age"),
 
     status: clanMemberStatusEnum("status").default("active").notNull(),
+
 
     joinedAt: timestamp("joined_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
 
+    profileRegistered: boolean("profile_registered").default(false).notNull(),
+
     leftAt: timestamp("left_at", { withTimezone: true }),
+
 
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
@@ -108,6 +113,11 @@ export const clanMembers = pgTable(
     index("clan_members_player_id_idx").on(table.playerId),
 
     check("clan_members_age_range", sql`${table.age} BETWEEN 1 AND 120`),
+
+    check(
+      "clan_members_registered_profile_fields",
+      sql`NOT ${table.profileRegistered} OR (${table.displayName} IS NOT NULL AND ${table.age} IS NOT NULL)`,
+    ),
     
   ],
 );

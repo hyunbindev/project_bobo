@@ -23,11 +23,17 @@ export const matches = pgTable(
     pubgMatchId: text("pubg_match_id").notNull(),
 
     platform: pubgPlatformEnum("platform").notNull(),
+
     mapName: text("map_name").notNull(),
+    
     gameMode: text("game_mode").notNull(),
+    
     matchType: text("match_type").notNull(),
+    
     duration: integer("duration").notNull(),
+    
     isCustomMatch: boolean("is_custom_match").notNull(),
+    
     patchVersion: text("patch_version"),
 
     playedAt: timestamp("played_at", {
@@ -71,8 +77,11 @@ export const matchParticipants = pgTable(
 
     // Match 응답 안에서 Roster와 Participant를 연결하는 외부 ID다.
     pubgParticipantId: text("pubg_participant_id").notNull(),
+
     pubgRosterId: text("pubg_roster_id"),
+    
     teamId: integer("team_id"),
+    
     teamRank: integer("team_rank"),
 
     kills: integer("kills").notNull(),
