@@ -37,6 +37,58 @@ export type FindMatchRosterHistoriesInput = {
   offset: number;
 };
 
+export type MatchRosterDetailParticipant = {
+  id: string;
+  playerId: string;
+  name: string;
+  pubgClanId: string | null;
+  teamId: number | null;
+  teamRank: number | null;
+  kills: number;
+  assists: number;
+  dbnos: number;
+  headshotKills: number;
+  revives: number;
+  boosts: number;
+  heals: number;
+  killPlace: number;
+  killStreaks: number;
+  roadKills: number;
+  teamKills: number;
+  vehicleDestroys: number;
+  weaponsAcquired: number;
+  damageDealt: number;
+  timeSurvived: number;
+  longestKill: number;
+  rideDistance: number;
+  swimDistance: number;
+  walkDistance: number;
+  winPlace: number;
+  deathType: string;
+};
+
+export type MatchRosterDetail = {
+  match: {
+    id: string;
+    pubgMatchId: string;
+    platform: "steam" | "kakao" | "psn" | "xbox";
+    mapName: string;
+    gameMode: string;
+    matchType: string;
+    duration: number;
+    isCustomMatch: boolean;
+    patchVersion: string | null;
+    playedAt: Date;
+    totalTeams: number;
+  };
+  roster: {
+    id: string;
+    teamId: number | null;
+    rank: number;
+  };
+  participants: MatchRosterDetailParticipant[];
+};
+
 export async function countMatchRosterHistories(
   database: DatabaseClient = db,
 ): Promise<number> {
@@ -78,6 +130,120 @@ export async function findMatchRosterHistories(
     .orderBy(desc(matches.playedAt), desc(matches.id))
     .limit(input.limit)
     .offset(input.offset);
+}
+
+export async function findMatchRosterDetail(
+  matchId: string,
+  rosterId: string,
+  database: DatabaseClient = db,
+): Promise<MatchRosterDetail | null> {
+  const rows = await database
+    .select({
+      matchId: matches.id,
+      pubgMatchId: matches.pubgMatchId,
+      platform: matches.platform,
+      mapName: matches.mapName,
+      gameMode: matches.gameMode,
+      matchType: matches.matchType,
+      duration: matches.duration,
+      isCustomMatch: matches.isCustomMatch,
+      patchVersion: matches.patchVersion,
+      playedAt: matches.playedAt,
+      totalTeams: sql<number>`cast(jsonb_array_length(${matches.rawResponse}->'rosters') as integer)`,
+      participantId: matchParticipants.pubgParticipantId,
+      playerId: players.id,
+      playerName: players.name,
+      pubgClanId: players.pubgClanId,
+      teamId: matchParticipants.teamId,
+      teamRank: matchParticipants.teamRank,
+      kills: matchParticipants.kills,
+      assists: matchParticipants.assists,
+      dbnos: matchParticipants.dbnos,
+      headshotKills: matchParticipants.headshotKills,
+      revives: matchParticipants.revives,
+      boosts: matchParticipants.boosts,
+      heals: matchParticipants.heals,
+      killPlace: matchParticipants.killPlace,
+      killStreaks: matchParticipants.killStreaks,
+      roadKills: matchParticipants.roadKills,
+      teamKills: matchParticipants.teamKills,
+      vehicleDestroys: matchParticipants.vehicleDestroys,
+      weaponsAcquired: matchParticipants.weaponsAcquired,
+      damageDealt: matchParticipants.damageDealt,
+      timeSurvived: matchParticipants.timeSurvived,
+      longestKill: matchParticipants.longestKill,
+      rideDistance: matchParticipants.rideDistance,
+      swimDistance: matchParticipants.swimDistance,
+      walkDistance: matchParticipants.walkDistance,
+      winPlace: matchParticipants.winPlace,
+      deathType: matchParticipants.deathType,
+    })
+    .from(matchParticipants)
+    .innerJoin(matches, eq(matchParticipants.matchId, matches.id))
+    .innerJoin(players, eq(matchParticipants.playerId, players.id))
+    .where(
+      and(
+        eq(matches.id, matchId),
+        eq(matchParticipants.pubgRosterId, rosterId),
+      ),
+    )
+    .orderBy(desc(matchParticipants.damageDealt));
+
+  const firstRow = rows[0];
+
+  if (!firstRow) {
+    return null;
+  }
+
+  return {
+    match: {
+      id: firstRow.matchId,
+      pubgMatchId: firstRow.pubgMatchId,
+      platform: firstRow.platform,
+      mapName: firstRow.mapName,
+      gameMode: firstRow.gameMode,
+      matchType: firstRow.matchType,
+      duration: firstRow.duration,
+      isCustomMatch: firstRow.isCustomMatch,
+      patchVersion: firstRow.patchVersion,
+      playedAt: firstRow.playedAt,
+      totalTeams: firstRow.totalTeams,
+    },
+    roster: {
+      id: rosterId,
+      teamId: firstRow.teamId,
+      rank: firstRow.teamRank ?? firstRow.winPlace,
+    },
+    participants: rows.map((row) => ({
+      id: row.participantId,
+      playerId: row.playerId,
+      name: row.playerName,
+      pubgClanId: row.pubgClanId,
+      teamId: row.teamId,
+      teamRank: row.teamRank,
+      kills: row.kills,
+      assists: row.assists,
+      dbnos: row.dbnos,
+      headshotKills: row.headshotKills,
+      revives: row.revives,
+      boosts: row.boosts,
+      heals: row.heals,
+      killPlace: row.killPlace,
+      killStreaks: row.killStreaks,
+      roadKills: row.roadKills,
+      teamKills: row.teamKills,
+      vehicleDestroys: row.vehicleDestroys,
+      weaponsAcquired: row.weaponsAcquired,
+      damageDealt: row.damageDealt,
+      timeSurvived: row.timeSurvived,
+      longestKill: row.longestKill,
+      rideDistance: row.rideDistance,
+      swimDistance: row.swimDistance,
+      walkDistance: row.walkDistance,
+      winPlace: row.winPlace,
+      deathType: row.deathType,
+    })),
+  };
 }
 
 export async function findStoredMatchIds(

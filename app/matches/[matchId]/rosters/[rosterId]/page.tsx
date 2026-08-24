@@ -1,10 +1,15 @@
+import type { Metadata } from "next";
 import {
   Activity,
   ArrowLeft,
+  Car,
   Clock3,
   Crosshair,
+  Footprints,
   HeartPulse,
   Map,
+  PackageOpen,
+  Pill,
   Shield,
   Skull,
   Swords,
@@ -13,96 +18,92 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
-type RosterMember = {
-  id: string;
-  name: string;
-  initials: string;
-  clanMember: boolean;
-  kills: number;
-  assists: number;
-  damage: number;
-  dbnos: number;
-  revives: number;
-  survivalTime: string;
-  accent: "primary" | "info" | "kill" | "support";
-};
+import { getMatchRosterDetail } from "@/lib/services/match-service";
 
-const rosterMembers: RosterMember[] = [
-  {
-    id: "rush",
-    name: "BOBO_RUSH",
-    initials: "BR",
-    clanMember: true,
-    kills: 4,
-    assists: 2,
-    damage: 617,
-    dbnos: 3,
-    revives: 1,
-    survivalTime: "26:48",
-    accent: "primary",
-  },
-  {
-    id: "cloud",
-    name: "BOBO_CLOUD",
-    initials: "BC",
-    clanMember: true,
-    kills: 3,
-    assists: 3,
-    damage: 524,
-    dbnos: 2,
-    revives: 2,
-    survivalTime: "28:14",
-    accent: "info",
-  },
-  {
-    id: "178",
-    name: "178cm63kg31cm",
-    initials: "17",
-    clanMember: true,
-    kills: 2,
-    assists: 1,
-    damage: 431,
-    dbnos: 2,
-    revives: 1,
-    survivalTime: "24:07",
-    accent: "kill",
-  },
-  {
-    id: "mate",
-    name: "RandomMate_07",
-    initials: "RM",
-    clanMember: false,
-    kills: 2,
-    assists: 2,
-    damage: 364,
-    dbnos: 2,
-    revives: 0,
-    survivalTime: "21:36",
-    accent: "support",
-  },
-];
-
-const matchMetrics = [
-  { label: "TEAM KILLS", value: "11", icon: Crosshair, tone: "text-primary" },
-  { label: "TOTAL DAMAGE", value: "1,936", icon: Target, tone: "text-info" },
-  { label: "DBNO", value: "9", icon: Activity, tone: "text-kill" },
-  { label: "REVIVES", value: "4", icon: HeartPulse, tone: "text-support" },
-];
-
-const accentClasses = {
-  primary: "border-primary/40 bg-primary/10 text-primary",
-  info: "border-info/40 bg-info/10 text-info",
-  kill: "border-kill/40 bg-kill/10 text-kill",
-  support: "border-support/40 bg-support/10 text-support",
-};
-
-export default async function RosterMatchDetailPage({
-  params,
-}: {
+type PageProps = {
   params: Promise<{ matchId: string; rosterId: string }>;
-}) {
+};
+
+const mapLabels: Record<string, string> = {
+  Baltic_Main: "ERANGEL",
+  Chimera_Main: "PARAMO",
+  Desert_Main: "MIRAMAR",
+  DihorOtok_Main: "VIKENDI",
+  Heaven_Main: "HAVEN",
+  Kiki_Main: "DESTON",
+  Neon_Main: "RONDO",
+  Range_Main: "CAMP JACKAL",
+  Savage_Main: "SANHOK",
+  Summerland_Main: "KARAKIN",
+  Tiger_Main: "TAEGO",
+};
+
+const accentClasses = [
+  "border-primary/40 bg-primary/10 text-primary",
+  "border-info/40 bg-info/10 text-info",
+  "border-kill/40 bg-kill/10 text-kill",
+  "border-support/40 bg-support/10 text-support",
+];
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { matchId, rosterId } = await params;
+  const detail = await getMatchRosterDetail(matchId, rosterId);
+
+  if (!detail) {
+    return { title: "경기를 찾을 수 없음 | BOBO" };
+  }
+
+  const mapName = formatMapName(detail.match.mapName);
+  const title = `${mapName} #${detail.roster.rank} 로스터 전적 | BOBO`;
+  const description = `${formatMode(detail.match.matchType, detail.match.gameMode)} · ${detail.totals.kills}킬 · ${Math.round(detail.totals.damage).toLocaleString("ko-KR")} 대미지`;
+
+  return {
+    title,
+    description,
+    openGraph: { title, description, images: [] },
+    twitter: { card: "summary", title, description, images: [] },
+  };
+}
+
+export default async function RosterMatchDetailPage({ params }: PageProps) {
+  const { matchId, rosterId } = await params;
+  const detail = await getMatchRosterDetail(matchId, rosterId);
+
+  if (!detail) {
+    notFound();
+  }
+
+  const mapName = formatMapName(detail.match.mapName);
+  const mode = formatMode(detail.match.matchType, detail.match.gameMode);
+  const rankStatus = formatRankStatus(detail.roster.rank);
+  const matchMetrics = [
+    {
+      label: "TEAM KILLS",
+      value: detail.totals.kills.toLocaleString("ko-KR"),
+      icon: Crosshair,
+      tone: "text-primary",
+    },
+    {
+      label: "TOTAL DAMAGE",
+      value: Math.round(detail.totals.damage).toLocaleString("ko-KR"),
+      icon: Target,
+      tone: "text-info",
+    },
+    {
+      label: "DBNO",
+      value: detail.totals.dbnos.toLocaleString("ko-KR"),
+      icon: Activity,
+      tone: "text-kill",
+    },
+    {
+      label: "REVIVES",
+      value: detail.totals.revives.toLocaleString("ko-KR"),
+      icon: HeartPulse,
+      tone: "text-support",
+    },
+  ];
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -133,22 +134,22 @@ export default async function RosterMatchDetailPage({
             </p>
             <div className="flex flex-wrap items-end gap-x-5 gap-y-3">
               <h1 className="text-5xl font-black tracking-[-0.06em] sm:text-7xl">
-                ERANGEL
+                {mapName}
               </h1>
               <span className="mb-2 rounded-sm border border-primary/35 bg-primary/10 px-3 py-1 text-[10px] font-black tracking-[0.18em] text-primary">
-                경쟁전 · 스쿼드 FPP
+                {mode}
               </span>
             </div>
             <p className="mt-5 max-w-2xl text-sm leading-6 text-muted-foreground">
-              BOBO 클랜원 3명과 함께한 로스터의 경기 결과입니다. 로스터 단위로
-              팀 성적과 모든 참여자의 기록을 확인할 수 있습니다.
+              클랜원 {detail.clanMemberCount}명이 함께한 로스터의 경기 결과야. 팀
+              성적과 참여자 {detail.participants.length}명의 전체 기록을 확인할 수 있어.
             </p>
             <div className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-[10px] font-semibold text-muted-foreground">
               <span className="flex items-center gap-2">
-                <Clock3 className="size-3.5 text-primary" /> 2026.08.23 · 23:42
+                <Clock3 className="size-3.5 text-primary" /> {formatPlayedAt(detail.match.playedAt)}
               </span>
-              <span>경기 시간 28:14</span>
-              <span className="font-mono">MATCH / {matchId}</span>
+              <span>경기 시간 {formatDuration(detail.match.duration)}</span>
+              <span className="font-mono">MATCH / {detail.match.pubgMatchId}</span>
             </div>
           </div>
 
@@ -158,13 +159,15 @@ export default async function RosterMatchDetailPage({
                 FINAL RANK
               </p>
               <p className="mt-1 text-7xl font-black tracking-[-0.08em] text-primary sm:text-8xl">
-                #3
+                #{detail.roster.rank}
               </p>
             </div>
             <div className="lg:mt-3">
-              <p className="text-xs font-black tracking-[0.2em] text-primary">TOP 3</p>
+              <p className="text-xs font-black tracking-[0.2em] text-primary">
+                {rankStatus}
+              </p>
               <p className="mt-1 text-[9px] font-semibold text-muted-foreground">
-                25 TEAMS
+                {detail.match.totalTeams} TEAMS
               </p>
             </div>
           </div>
@@ -197,7 +200,7 @@ export default async function RosterMatchDetailPage({
               <h2 className="text-2xl font-black tracking-tight">참여자 기록</h2>
             </div>
             <span className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground">
-              <Users className="size-4 text-primary" /> 4 PLAYERS
+              <Users className="size-4 text-primary" /> {detail.participants.length} PLAYERS
             </span>
           </div>
 
@@ -212,16 +215,16 @@ export default async function RosterMatchDetailPage({
               <span>SURVIVED</span>
             </div>
             <div className="divide-y divide-border/50">
-              {rosterMembers.map((member) => (
+              {detail.participants.map((member, index) => (
                 <article
                   className="grid gap-5 px-5 py-5 transition-colors hover:bg-foreground/[0.025] md:grid-cols-[minmax(180px,1.5fr)_repeat(6,minmax(58px,0.6fr))] md:items-center"
                   key={member.id}
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <span
-                      className={`grid size-10 shrink-0 place-items-center rounded-sm border text-[10px] font-black ${accentClasses[member.accent]}`}
+                      className={`grid size-10 shrink-0 place-items-center rounded-sm border text-[10px] font-black ${accentClasses[index % accentClasses.length]}`}
                     >
-                      {member.initials}
+                      {getInitials(member.name)}
                     </span>
                     <div className="min-w-0">
                       <p className="truncate text-sm font-black">{member.name}</p>
@@ -232,10 +235,16 @@ export default async function RosterMatchDetailPage({
                   </div>
                   <MemberMetric label="KILLS" value={member.kills} emphasis />
                   <MemberMetric label="ASSISTS" value={member.assists} />
-                  <MemberMetric label="DAMAGE" value={member.damage.toLocaleString()} />
+                  <MemberMetric
+                    label="DAMAGE"
+                    value={Math.round(member.damageDealt).toLocaleString("ko-KR")}
+                  />
                   <MemberMetric label="DBNO" value={member.dbnos} />
                   <MemberMetric label="REVIVE" value={member.revives} />
-                  <MemberMetric label="SURVIVED" value={member.survivalTime} />
+                  <MemberMetric
+                    label="SURVIVED"
+                    value={formatDuration(member.timeSurvived)}
+                  />
                 </article>
               ))}
             </div>
@@ -249,14 +258,19 @@ export default async function RosterMatchDetailPage({
             </p>
             <h2 className="text-xl font-black">대미지 기여도</h2>
             <div className="mt-7 space-y-5">
-              {rosterMembers.map((member) => {
-                const contribution = Math.round((member.damage / 1936) * 100);
+              {detail.participants.map((member) => {
+                const contribution =
+                  detail.totals.damage > 0
+                    ? Math.round((member.damageDealt / detail.totals.damage) * 100)
+                    : 0;
 
                 return (
                   <div key={member.id}>
                     <div className="mb-2 flex items-center justify-between gap-3 text-[10px] font-bold">
                       <span className="truncate">{member.name}</span>
-                      <span className="font-mono text-muted-foreground">{contribution}%</span>
+                      <span className="font-mono text-muted-foreground">
+                        {contribution}%
+                      </span>
                     </div>
                     <div className="h-1.5 overflow-hidden rounded-full bg-foreground/6">
                       <div
@@ -275,28 +289,92 @@ export default async function RosterMatchDetailPage({
               MATCH INFO
             </p>
             <dl className="space-y-4 text-xs">
-              <InfoRow icon={Map} label="맵" value="ERANGEL" />
-              <InfoRow icon={Swords} label="모드" value="SQUAD FPP" />
-              <InfoRow icon={Trophy} label="게임 유형" value="RANKED" />
-              <InfoRow icon={Clock3} label="경기 시간" value="28:14" />
-              <InfoRow icon={Skull} label="종료 사유" value="ELIMINATED" />
+              <InfoRow icon={Map} label="맵" value={mapName} />
+              <InfoRow icon={Swords} label="모드" value={formatGameMode(detail.match.gameMode)} />
+              <InfoRow
+                icon={Trophy}
+                label="게임 유형"
+                value={formatMatchType(detail.match.matchType)}
+              />
+              <InfoRow
+                icon={Clock3}
+                label="경기 시간"
+                value={formatDuration(detail.match.duration)}
+              />
+              <InfoRow icon={Users} label="클랜원" value={`${detail.clanMemberCount}명`} />
+              <InfoRow icon={Shield} label="플랫폼" value={detail.match.platform.toUpperCase()} />
             </dl>
             <div className="mt-6 border-t border-border/50 pt-5">
               <p className="text-[8px] font-black tracking-[0.17em] text-muted-foreground">
                 ROSTER ID
               </p>
               <p className="mt-2 break-all font-mono text-[9px] leading-4 text-foreground/70">
-                {rosterId}
+                {detail.roster.id}
               </p>
             </div>
           </div>
         </aside>
       </section>
 
-      <footer className="border-t border-border/50 bg-surface">
+      <section className="border-t border-border/50 bg-surface">
+        <div className="mx-auto max-w-360 px-5 py-14 sm:px-8 lg:px-12 lg:py-20">
+          <div className="mb-7">
+            <p className="mb-2 text-[10px] font-black tracking-[0.24em] text-primary">
+              FIELD REPORT
+            </p>
+            <h2 className="text-2xl font-black tracking-tight">상세 활동 기록</h2>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {detail.participants.map((member) => (
+              <article
+                className="rounded-sm border border-border/60 bg-card p-5"
+                key={member.id}
+              >
+                <div className="flex items-start justify-between gap-3 border-b border-border/50 pb-4">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-black">{member.name}</p>
+                    <p className="mt-1 text-[8px] font-bold tracking-[0.14em] text-muted-foreground">
+                      {member.deathType.replaceAll("_", " ").toUpperCase()}
+                    </p>
+                  </div>
+                  <span className="text-xs font-black text-primary">#{member.killPlace}</span>
+                </div>
+                <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-5">
+                  <SmallStat icon={Pill} label="BOOST" value={member.boosts} />
+                  <SmallStat icon={HeartPulse} label="HEAL" value={member.heals} />
+                  <SmallStat icon={Crosshair} label="HEADSHOT" value={member.headshotKills} />
+                  <SmallStat
+                    icon={Target}
+                    label="LONGEST"
+                    value={`${Math.round(member.longestKill)}m`}
+                  />
+                  <SmallStat
+                    icon={Footprints}
+                    label="ON FOOT"
+                    value={formatDistance(member.walkDistance)}
+                  />
+                  <SmallStat
+                    icon={Car}
+                    label="VEHICLE"
+                    value={formatDistance(member.rideDistance)}
+                  />
+                  <SmallStat
+                    icon={PackageOpen}
+                    label="WEAPONS"
+                    value={member.weaponsAcquired}
+                  />
+                  <SmallStat icon={Skull} label="TEAM KILL" value={member.teamKills} />
+                </dl>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <footer className="border-t border-border/50 bg-background">
         <div className="mx-auto flex max-w-360 flex-col gap-3 px-5 py-8 text-[9px] font-semibold tracking-wide text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-12">
           <span>BOBO CLAN · MATCH ARCHIVE</span>
-          <span>정적 화면용 샘플 데이터</span>
+          <span>{detail.match.pubgMatchId}</span>
         </div>
       </footer>
     </main>
@@ -338,7 +416,83 @@ function InfoRow({
       <dt className="flex items-center gap-2 text-muted-foreground">
         <Icon className="size-3.5 text-primary" /> {label}
       </dt>
-      <dd className="font-black">{value}</dd>
+      <dd className="text-right font-black">{value}</dd>
     </div>
   );
+}
+
+function SmallStat({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof Map;
+  label: string;
+  value: string | number;
+}) {
+  return (
+    <div>
+      <dt className="flex items-center gap-1.5 text-[8px] font-black tracking-[0.12em] text-muted-foreground">
+        <Icon className="size-3 text-primary" /> {label}
+      </dt>
+      <dd className="mt-1.5 text-sm font-black">{value}</dd>
+    </div>
+  );
+}
+
+function formatMapName(mapName: string) {
+  return mapLabels[mapName] ?? mapName.replace(/_Main$/i, "").toUpperCase();
+}
+
+function formatMode(matchType: string, gameMode: string) {
+  return `${formatMatchType(matchType)} · ${formatGameMode(gameMode)}`;
+}
+
+function formatMatchType(matchType: string) {
+  if (matchType === "competitive") return "경쟁전";
+  if (matchType === "custom") return "커스텀";
+  return "일반전";
+}
+
+function formatGameMode(gameMode: string) {
+  return gameMode.replaceAll("-", " ").toUpperCase();
+}
+
+function formatRankStatus(rank: number) {
+  if (rank === 1) return "WINNER WINNER";
+  if (rank <= 3) return "TOP 3";
+  if (rank <= 10) return "TOP 10";
+  return "ELIMINATED";
+}
+
+function formatPlayedAt(playedAt: Date) {
+  return new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(playedAt);
+}
+
+function formatDuration(totalSeconds: number) {
+  const seconds = Math.max(Math.round(totalSeconds), 0);
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+
+  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+}
+
+function formatDistance(distanceInMeters: number) {
+  if (distanceInMeters >= 1_000) {
+    return `${(distanceInMeters / 1_000).toFixed(1)}km`;
+  }
+
+  return `${Math.round(distanceInMeters)}m`;
+}
+
+function getInitials(name: string) {
+  return name.replace(/[^a-zA-Z0-9]/g, "").slice(0, 2).toUpperCase() || "P";
 }
