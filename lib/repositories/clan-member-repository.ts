@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { clanMembers, clans, players } from "@/lib/db/schema";
@@ -64,6 +64,29 @@ export async function findStoredClanMember(
     return limit === undefined
       ? query
       : query.limit(limit)
+}
+
+export async function markPlayersSynced(
+  pubgAccountIds: string[],
+  platform: PubgPlatform,
+  database: DatabaseClient = db,
+) {
+  const uniqueAccountIds = [...new Set(pubgAccountIds)];
+
+  if (uniqueAccountIds.length === 0) {
+    return [];
+  }
+
+  return database
+    .update(players)
+    .set({ lastSyncedAt: new Date() })
+    .where(
+      and(
+        eq(players.platform, platform),
+        inArray(players.pubgAccountId, uniqueAccountIds),
+      ),
+    )
+    .returning({ pubgAccountId: players.pubgAccountId });
 }
 
 
