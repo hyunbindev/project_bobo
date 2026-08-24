@@ -2,15 +2,7 @@ import { ArrowLeft, Clock3 } from "lucide-react";
 import Link from "next/link";
 
 import { MatchHistoryTable } from "@/components/clan-dashboard/match-history-table";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
+import { MatchPagination } from "@/components/clan-dashboard/match-pagination";
 import { getMatchRosterHistoryPage } from "@/lib/services/match-service";
 
 const PAGE_SIZE = 20;
@@ -22,7 +14,10 @@ export default async function MatchesPage({
 }) {
   const resolvedSearchParams = await searchParams;
   const requestedPage = parsePage(resolvedSearchParams.page);
-  const matchHistory = await getMatchRosterHistoryPage(requestedPage, PAGE_SIZE);
+  const matchHistory = await getMatchRosterHistoryPage(
+    requestedPage,
+    PAGE_SIZE,
+  );
   const firstItem =
     matchHistory.totalCount === 0
       ? 0
@@ -65,7 +60,8 @@ export default async function MatchesPage({
             클랜원이 함께 출전한 최신 전적 조회
           </p>
           <div className="mt-7 flex items-center gap-2 text-[10px] font-black tracking-[0.15em] text-muted-foreground">
-            <Clock3 className="size-3.5 text-primary" /> 총 {matchHistory.totalCount.toLocaleString("ko-KR")}개 roster 경기
+            <Clock3 className="size-3.5 text-primary" /> 총{" "}
+            {matchHistory.totalCount.toLocaleString("ko-KR")}개 roster 경기
           </div>
         </div>
       </section>
@@ -91,7 +87,9 @@ export default async function MatchesPage({
           {matchHistory.totalCount > 0 && (
             <div className="mt-8 flex flex-col gap-4 border-t border-border/50 pt-6 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-[10px] font-semibold text-muted-foreground">
-                총 {matchHistory.totalCount.toLocaleString("ko-KR")}건 중 {firstItem.toLocaleString("ko-KR")}–{lastItem.toLocaleString("ko-KR")}건
+                총 {matchHistory.totalCount.toLocaleString("ko-KR")}건 중{" "}
+                {firstItem.toLocaleString("ko-KR")}–
+                {lastItem.toLocaleString("ko-KR")}건
               </p>
               <MatchPagination
                 currentPage={matchHistory.page}
@@ -105,95 +103,9 @@ export default async function MatchesPage({
   );
 }
 
-function MatchPagination({
-  currentPage,
-  totalPages,
-}: {
-  currentPage: number;
-  totalPages: number;
-}) {
-  const pages = getVisiblePages(currentPage, totalPages);
-
-  return (
-    <Pagination className="mx-0 w-auto justify-start sm:justify-end">
-      <PaginationContent>
-        <PaginationItem>
-          <PaginationPrevious
-            aria-disabled={currentPage === 1}
-            className={currentPage === 1 ? "pointer-events-none opacity-40" : ""}
-            href={`?page=${Math.max(currentPage - 1, 1)}`}
-            text="이전"
-          />
-        </PaginationItem>
-        {pages.map((page, index) =>
-          page === null ? (
-            <PaginationItem key={`ellipsis:${index}`}>
-              <PaginationEllipsis />
-            </PaginationItem>
-          ) : (
-            <PaginationItem key={page}>
-              <PaginationLink
-                className={
-                  page === currentPage
-                    ? "rounded-sm border-primary text-primary"
-                    : "rounded-sm"
-                }
-                href={`?page=${page}`}
-                isActive={page === currentPage}
-              >
-                {page}
-              </PaginationLink>
-            </PaginationItem>
-          ),
-        )}
-        <PaginationItem>
-          <PaginationNext
-            aria-disabled={currentPage === totalPages}
-            className={
-              currentPage === totalPages ? "pointer-events-none opacity-40" : ""
-            }
-            href={`?page=${Math.min(currentPage + 1, totalPages)}`}
-            text="다음"
-          />
-        </PaginationItem>
-      </PaginationContent>
-    </Pagination>
-  );
-}
-
 function parsePage(value: string | string[] | undefined) {
   const candidate = Array.isArray(value) ? value[0] : value;
   const parsed = Number.parseInt(candidate ?? "1", 10);
 
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
-}
-
-function getVisiblePages(currentPage: number, totalPages: number) {
-  if (totalPages <= 7) {
-    return Array.from({ length: totalPages }, (_, index) => index + 1);
-  }
-
-  const pageSet = new Set([
-    1,
-    totalPages,
-    currentPage - 1,
-    currentPage,
-    currentPage + 1,
-  ]);
-  const sortedPages = [...pageSet]
-    .filter((page) => page >= 1 && page <= totalPages)
-    .sort((left, right) => left - right);
-  const pages: Array<number | null> = [];
-
-  for (const page of sortedPages) {
-    const previousPage = pages.at(-1);
-
-    if (typeof previousPage === "number" && page - previousPage > 1) {
-      pages.push(null);
-    }
-
-    pages.push(page);
-  }
-
-  return pages;
 }

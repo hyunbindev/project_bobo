@@ -12,10 +12,8 @@ import {
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import {
-  PlayerMatchHistoryTable,
-  type PlayerMatchHistoryItem,
-} from "@/components/clan-dashboard/player-match-history-table";
+import { MatchHistoryTable } from "@/components/clan-dashboard/match-history-table";
+import { MatchPagination } from "@/components/clan-dashboard/match-pagination";
 import {
   PlayerPerformanceTrends,
   type PlayerTrendMetric,
@@ -27,8 +25,11 @@ import {
 import { getClanMemberDetail } from "@/lib/services/clan-member-service";
 import {
   getPlayerHighRecord,
+  getPlayerMatchHistoryPage,
   type HighRecord,
 } from "@/lib/services/player-stat-service";
+
+const MATCH_PAGE_SIZE = 10;
 import { formatDateTime } from "@/lib/utils";
 
 const trendMetrics: PlayerTrendMetric[] = [
@@ -59,89 +60,42 @@ const trendMetrics: PlayerTrendMetric[] = [
   },
 ];
 
-const recentMatches: PlayerMatchHistoryItem[] = [
-  {
-    id: "01",
-    rank: 1,
-    map: "Erangel",
-    mode: "SQUAD FPP",
-    kills: 7,
-    damage: 842,
-    dbnos: 5,
-    revives: 2,
-    playedAt: "08.24 · 22:14",
-  },
-  {
-    id: "02",
-    rank: 4,
-    map: "Rondo",
-    mode: "SQUAD FPP",
-    kills: 4,
-    damage: 618,
-    dbnos: 3,
-    revives: 1,
-    playedAt: "08.24 · 21:31",
-  },
-  {
-    id: "03",
-    rank: 2,
-    map: "Taego",
-    mode: "SQUAD FPP",
-    kills: 6,
-    damage: 731,
-    dbnos: 4,
-    revives: 0,
-    playedAt: "08.23 · 23:48",
-  },
-  {
-    id: "04",
-    rank: 9,
-    map: "Miramar",
-    mode: "SQUAD FPP",
-    kills: 2,
-    damage: 394,
-    dbnos: 2,
-    revives: 3,
-    playedAt: "08.23 · 22:56",
-  },
-  {
-    id: "05",
-    rank: 1,
-    map: "Vikendi",
-    mode: "SQUAD FPP",
-    kills: 9,
-    damage: 976,
-    dbnos: 7,
-    revives: 1,
-    playedAt: "08.22 · 21:42",
-  },
-  {
-    id: "06",
-    rank: 13,
-    map: "Erangel",
-    mode: "SQUAD FPP",
-    kills: 1,
-    damage: 221,
-    dbnos: 1,
-    revives: 0,
-    playedAt: "08.22 · 20:58",
-  },
-];
-
 export default async function MemberDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ playerId: string }>;
+  searchParams: Promise<{ page?: string | string[] }>;
 }) {
-  const { playerId } = await params;
+  const [{ playerId }, resolvedSearchParams] = await Promise.all([
+    params,
+    searchParams,
+  ]);
+  const requestedPage = parsePage(resolvedSearchParams.page);
   const member = await getClanMemberDetail(playerId);
 
   if (!member) {
     notFound();
   }
 
-  const playerHighRecord = await getPlayerHighRecord(playerId);
+  const [playerHighRecord, matchHistory] = await Promise.all([
+    getPlayerHighRecord(playerId),
+    getPlayerMatchHistoryPage(
+      playerId,
+      member.clanId,
+      requestedPage,
+      MATCH_PAGE_SIZE,
+    ),
+  ]);
   const records = createHighRecordCards(playerHighRecord);
+  const firstMatch =
+    matchHistory.totalCount === 0
+      ? 0
+      : (matchHistory.page - 1) * matchHistory.pageSize + 1;
+  const lastMatch = Math.min(
+    matchHistory.page * matchHistory.pageSize,
+    matchHistory.totalCount,
+  );
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -216,11 +170,32 @@ export default async function MemberDetailPage({
             icon={Gamepad2}
             title="최근 전적"
           />
-          <PlayerMatchHistoryTable matches={recentMatches} />
+          <MatchHistoryTable matches={matchHistory.items} />
+
+          {matchHistory.totalCount > 0 && (
+            <div className="mt-8 flex flex-col gap-4 border-t border-border/50 pt-6 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-[10px] font-semibold text-muted-foreground">
+                총 {matchHistory.totalCount.toLocaleString("ko-KR")}건 중{" "}
+                {firstMatch.toLocaleString("ko-KR")}–
+                {lastMatch.toLocaleString("ko-KR")}건
+              </p>
+              <MatchPagination
+                currentPage={matchHistory.page}
+                totalPages={matchHistory.totalPages}
+              />
+            </div>
+          )}
         </section>
       </section>
     </main>
   );
+}
+
+function parsePage(value: string | string[] | undefined) {
+  const candidate = Array.isArray(value) ? value[0] : value;
+  const parsed = Number.parseInt(candidate ?? "1", 10);
+
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
 }
 
 const mapLabels: Record<string, string> = {
@@ -280,19 +255,6 @@ function formatRecordDetail(record: HighRecord["maxDamage"] | undefined) {
   const gameMode = record.gameMode.replaceAll("-", " ").toUpperCase();
 
   return `${mapName} · ${gameMode}`;
-}
-
-function HeroStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="min-w-24 px-4 py-4 sm:min-w-32 sm:px-6">
-      <p className="text-[8px] font-black tracking-[0.15em] text-muted-foreground">
-        {label}
-      </p>
-      <p className="mt-2 text-xl font-black tracking-[-0.04em] sm:text-2xl">
-        {value}
-      </p>
-    </div>
-  );
 }
 
 function SectionHeading({

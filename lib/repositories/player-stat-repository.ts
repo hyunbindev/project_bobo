@@ -1,8 +1,7 @@
-import { eq,  sql, and } from "drizzle-orm";
+import { eq, sql, and } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { matchParticipants, matches } from "@/lib/db/schema";
-import { match } from "assert";
 
 type DatabaseClient = typeof db;
 
@@ -92,7 +91,13 @@ export async function findPlayerHighRecord(
       `,
     })
     .from(matchParticipants)
-    .innerJoin(matches, and(eq(matchParticipants.matchId, matches.id), eq(matches.matchType , "official")))
+    .innerJoin(
+      matches,
+      and(
+        eq(matchParticipants.matchId, matches.id),
+        eq(matches.matchType, "official"),
+      ),
+    )
     .where(eq(matchParticipants.playerId, playerId));
 
   if (!record || record.matchCount === 0) {

@@ -1,3 +1,4 @@
+"use client"
 import {
   Table,
   TableBody,
@@ -7,6 +8,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { MatchRosterDetailParticipant } from "@/lib/repositories/match-repository";
+import { useRouter } from "next/navigation";
+
 
 
 type RosterParticipant = MatchRosterDetailParticipant & {
@@ -18,6 +21,7 @@ export function RosterParticipantsTable({
 }: {
   participants: RosterParticipant[];
 }) {
+  const router = useRouter();
   return (
     <div className="overflow-hidden rounded-sm border border-border/60 bg-card">
       <Table className="min-w-215">
@@ -41,6 +45,7 @@ export function RosterParticipantsTable({
         <TableBody>
           {participants.map((member, index) => (
             <TableRow
+              onClick={()=>router.push(`/members/${member.playerId}`)}
               className="border-border/50 hover:bg-foreground/[0.025]"
               key={member.id}
             >
