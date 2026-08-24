@@ -20,6 +20,7 @@ import {
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { RosterParticipantsTable } from "@/components/clan-dashboard/roster-participants-table";
 import { getMatchRosterDetail } from "@/lib/services/match-service";
 
 type PageProps = {
@@ -40,19 +41,12 @@ const mapLabels: Record<string, string> = {
   Tiger_Main: "TAEGO",
 };
 
-const accentClasses = [
-  "border-primary/40 bg-primary/10 text-primary",
-  "border-info/40 bg-info/10 text-info",
-  "border-kill/40 bg-kill/10 text-kill",
-  "border-support/40 bg-support/10 text-support",
-];
-
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { matchId, rosterId } = await params;
   const detail = await getMatchRosterDetail(matchId, rosterId);
 
   if (!detail) {
-    return { title: "경기를 찾을 수 없음 | BOBO" };
+    return { title: "경기를 찾을 수 없음" };
   }
 
   const mapName = formatMapName(detail.match.mapName);
@@ -204,51 +198,7 @@ export default async function RosterMatchDetailPage({ params }: PageProps) {
             </span>
           </div>
 
-          <div className="overflow-hidden rounded-sm border border-border/60 bg-card">
-            <div className="hidden grid-cols-[minmax(180px,1.5fr)_repeat(6,minmax(58px,0.6fr))] border-b border-border/60 px-5 py-3 text-[8px] font-black tracking-[0.14em] text-muted-foreground md:grid">
-              <span>PLAYER</span>
-              <span>KILLS</span>
-              <span>ASSISTS</span>
-              <span>DAMAGE</span>
-              <span>DBNO</span>
-              <span>REVIVE</span>
-              <span>SURVIVED</span>
-            </div>
-            <div className="divide-y divide-border/50">
-              {detail.participants.map((member, index) => (
-                <article
-                  className="grid gap-5 px-5 py-5 transition-colors hover:bg-foreground/[0.025] md:grid-cols-[minmax(180px,1.5fr)_repeat(6,minmax(58px,0.6fr))] md:items-center"
-                  key={member.id}
-                >
-                  <div className="flex min-w-0 items-center gap-3">
-                    <span
-                      className={`grid size-10 shrink-0 place-items-center rounded-sm border text-[10px] font-black ${accentClasses[index % accentClasses.length]}`}
-                    >
-                      {getInitials(member.name)}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-black">{member.name}</p>
-                      <p className="mt-1 text-[8px] font-bold tracking-[0.15em] text-muted-foreground">
-                        {member.clanMember ? "BOBO CLAN" : "SQUAD MATE"}
-                      </p>
-                    </div>
-                  </div>
-                  <MemberMetric label="KILLS" value={member.kills} emphasis />
-                  <MemberMetric label="ASSISTS" value={member.assists} />
-                  <MemberMetric
-                    label="DAMAGE"
-                    value={Math.round(member.damageDealt).toLocaleString("ko-KR")}
-                  />
-                  <MemberMetric label="DBNO" value={member.dbnos} />
-                  <MemberMetric label="REVIVE" value={member.revives} />
-                  <MemberMetric
-                    label="SURVIVED"
-                    value={formatDuration(member.timeSurvived)}
-                  />
-                </article>
-              ))}
-            </div>
-          </div>
+          <RosterParticipantsTable participants={detail.participants} />
         </div>
 
         <aside className="space-y-5">
@@ -381,27 +331,6 @@ export default async function RosterMatchDetailPage({ params }: PageProps) {
   );
 }
 
-function MemberMetric({
-  label,
-  value,
-  emphasis = false,
-}: {
-  label: string;
-  value: string | number;
-  emphasis?: boolean;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-3 md:block">
-      <span className="text-[8px] font-black tracking-[0.13em] text-muted-foreground md:hidden">
-        {label}
-      </span>
-      <strong className={`text-sm font-black ${emphasis ? "text-primary" : ""}`}>
-        {value}
-      </strong>
-    </div>
-  );
-}
-
 function InfoRow({
   icon: Icon,
   label,
@@ -493,6 +422,3 @@ function formatDistance(distanceInMeters: number) {
   return `${Math.round(distanceInMeters)}m`;
 }
 
-function getInitials(name: string) {
-  return name.replace(/[^a-zA-Z0-9]/g, "").slice(0, 2).toUpperCase() || "P";
-}

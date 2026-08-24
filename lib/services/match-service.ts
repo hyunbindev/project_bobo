@@ -21,9 +21,29 @@ export type MatchRosterHistoryPage = {
   totalPages: number;
 };
 
+export type RecentWonMatch = {
+  id: string;
+  matchId: string;
+  rosterId: string;
+  mapName: string;
+  gameMode: string;
+  matchType: string;
+  playedAt: Date;
+  rank: number;
+  kills: number;
+  damage: number;
+  members: Array<{
+    id: string;
+    name: string;
+    kills: number;
+    damage: number;
+  }>;
+};
+
 export async function getMatchRosterHistoryPage(
   requestedPage = 1,
   pageSize = 20,
+  isWon = false,
 ): Promise<MatchRosterHistoryPage> {
   const normalizedPageSize = Math.min(Math.max(Math.trunc(pageSize), 1), 100);
   const totalCount = await countMatchRosterHistories();
@@ -37,6 +57,7 @@ export async function getMatchRosterHistoryPage(
     totalCount === 0
       ? []
       : await findMatchRosterHistories({
+          isWon: isWon,
           limit: normalizedPageSize,
           offset: (page - 1) * normalizedPageSize,
         });
@@ -50,10 +71,6 @@ export async function getMatchRosterHistoryPage(
   };
 }
 
-export async function getRecordedHistoryCount(){
-  const totalCount = await countMatchRosterHistories();
-  return totalCount;
-}
 
 
 export const getMatchRosterDetail = cache(
@@ -96,3 +113,50 @@ export const getMatchRosterDetail = cache(
     };
   },
 );
+
+export async function getRecentWonMatches(
+  limit = 3,
+): Promise<RecentWonMatch[]> {
+  const normalizedLimit = Math.min(Math.max(Math.trunc(limit), 1), 10);
+  const matches = await findMatchRosterHistories({
+    isWon: true,
+    limit: normalizedLimit,
+    offset: 0,
+  });
+
+  const results = await Promise.all(
+    matches.map(async (match): Promise<RecentWonMatch | null> => {
+      const detail = await getMatchRosterDetail(
+        match.matchId,
+        match.rosterId,
+      );
+
+      if (!detail) {
+        return null;
+      }
+
+      return {
+        id: `${match.matchId}:${match.rosterId}`,
+        matchId: match.matchId,
+        rosterId: match.rosterId,
+        mapName: match.mapName,
+        gameMode: match.gameMode,
+        matchType: match.matchType,
+        playedAt: match.playedAt,
+        rank: match.rank,
+        kills: match.kills,
+        damage: match.damage,
+        members: detail.participants
+          .filter((participant) => participant.clanMember)
+          .map((participant) => ({
+            id: participant.id,
+            name: participant.name,
+            kills: participant.kills,
+            damage: participant.damageDealt,
+          })),
+      };
+    }),
+  );
+
+  return results.filter((match): match is RecentWonMatch => match !== null);
+}

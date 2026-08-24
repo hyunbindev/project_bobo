@@ -1,3 +1,5 @@
+import { cache } from "react";
+
 import { ApiError, BadRequestError, NotFoundError } from "@/lib/api/errors";
 import type { PubgClan } from "@/lib/pubg/clan-types";
 import { getClanById } from "@/lib/pubg/clans";
@@ -10,6 +12,7 @@ import {
 } from "@/lib/pubg/types";
 import {
   findActiveClanMembersByClanId,
+  findClanMemberDetailByPlayerId,
   findStoredClanByPubgId,
   findStoredPlayerByName,
   saveClanMember,
@@ -22,6 +25,9 @@ type RegisterClanMemberInput = {
   age: number;
   platform: PubgPlatform;
 };
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function isPubgPlatform(value: string): value is PubgPlatform {
   return PUBG_PLATFORMS.some((platform) => platform === value);
@@ -59,9 +65,7 @@ function parseRegisterInput(value: unknown): RegisterClanMemberInput {
   const displayName = input.displayName.trim();
 
   if (!displayName || displayName.length > 30) {
-    throw new BadRequestError(
-      "displayName must contain 1 to 30 characters.",
-    );
+    throw new BadRequestError("displayName must contain 1 to 30 characters.");
   }
 
   if (!Number.isInteger(input.age) || input.age < 1 || input.age > 120) {
@@ -149,10 +153,7 @@ async function resolveClan(
   return getClanById(pubgClanId, platform);
 }
 
-async function resolvePlayerAndClan(
-  nickname: string,
-  platform: PubgPlatform,
-) {
+async function resolvePlayerAndClan(nickname: string, platform: PubgPlatform) {
   const player = await resolvePlayer(nickname, platform);
   const clanId = player.clanId;
 
@@ -206,6 +207,14 @@ export async function getClanMemberList() {
 
   return { clan, members };
 }
+
+export const getClanMemberDetail = cache(async (playerId: string) => {
+  if (!UUID_PATTERN.test(playerId)) {
+    return null;
+  }
+
+  return findClanMemberDetailByPlayerId(playerId);
+});
 
 // 매치 동기화 Worker가 발견한 닉네임을 넘기면 미등록 프로필로 자동 추가한다.
 export async function discoverClanMember(

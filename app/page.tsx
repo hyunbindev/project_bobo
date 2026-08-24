@@ -5,65 +5,13 @@ import {
   Target,
   Users,
 } from "lucide-react";
+import Link from "next/link";
 import { connection } from "next/server";
 
 import { ClanJoinModal } from "@/components/clan-dashboard/clan-join-modal";
 import { RecentClanMatches } from "@/components/clan-dashboard/recent-clan-matches";
 import { getMainClanSummary } from "@/lib/services/clan-service";
-
-const recentMatches = [
-  {
-    id: "match-erangel",
-    map: "ERANGEL",
-    mode: "경쟁전 · 스쿼드 FPP",
-    rank: "#1",
-    status: "WINNER WINNER",
-    kills: 19,
-    damage: "2,847",
-    time: "24분 전",
-    accent: "primary",
-    members: [
-      { id: "rush", name: "BOBO_RUSH", kills: 7, damage: 842 },
-      { id: "178", name: "178cm63kg31cm", kills: 5, damage: 731 },
-      { id: "cloud", name: "BOBO_CLOUD", kills: 4, damage: 682 },
-      { id: "doha", name: "BOBO_Doha", kills: 3, damage: 592 },
-    ],
-  },
-  {
-    id: "match-taego",
-    map: "TAEGO",
-    mode: "일반전 · 스쿼드 TPP",
-    rank: "#3",
-    status: "TOP 3",
-    kills: 11,
-    damage: "1,936",
-    time: "1시간 전",
-    accent: "info",
-    members: [
-      { id: "178", name: "178cm63kg31cm", kills: 4, damage: 617 },
-      { id: "cloud", name: "BOBO_CLOUD", kills: 3, damage: 524 },
-      { id: "doha", name: "BOBO_Doha", kills: 2, damage: 431 },
-      { id: "rush", name: "BOBO_RUSH", kills: 2, damage: 364 },
-    ],
-  },
-  {
-    id: "match-rondo",
-    map: "RONDO",
-    mode: "경쟁전 · 스쿼드 FPP",
-    rank: "#7",
-    status: "TOP 10",
-    kills: 8,
-    damage: "1,422",
-    time: "어제",
-    accent: "support",
-    members: [
-      { id: "cloud", name: "BOBO_CLOUD", kills: 3, damage: 448 },
-      { id: "rush", name: "BOBO_RUSH", kills: 2, damage: 367 },
-      { id: "178", name: "178cm63kg31cm", kills: 2, damage: 341 },
-      { id: "doha", name: "BOBO_Doha", kills: 1, damage: 266 },
-    ],
-  },
-];
+import { getRecentWonMatches } from "@/lib/services/match-service";
 
 const mvpPlayers = [
   { rank: "01", name: "BOBO_RUSH", role: "ENTRY", kd: "4.86", damage: "512", initials: "BR" },
@@ -75,6 +23,7 @@ export default async function Home() {
   // DB 값은 빌드 시점이 아니라 실제 페이지 요청 시점에 조회한다.
   await connection();
   const clan = await getMainClanSummary();
+  const recentWonMatches = await getRecentWonMatches(3);
   const clanName = clan?.name ?? "BOBO";
   const clanTag = clan?.tag ?? "BOBO";
   const clanMark = clanTag.slice(0, 2).toUpperCase();
@@ -109,8 +58,8 @@ export default async function Home() {
 
           <nav className="hidden items-center gap-8 text-sm font-semibold text-muted-foreground md:flex" aria-label="주요 메뉴">
             <a href="#top" className="text-foreground transition-colors hover:text-primary">홈</a>
-            <a href="/members" className="transition-colors hover:text-primary">클랜원</a>
-            <a href="#matches" className="transition-colors hover:text-primary">최근 경기</a>
+            <Link href="/members" className="transition-colors hover:text-primary">클랜원</Link>
+            <Link href="/matches" className="transition-colors hover:text-primary">클랜 전적</Link>
             <a href="#records" className="transition-colors hover:text-primary">기록실</a>
           </nav>
 
@@ -152,8 +101,12 @@ export default async function Home() {
             const Icon = stat.icon;
             return (
               <div key={stat.label} className={`group flex min-h-36 items-center gap-4 border-border/50 py-7 sm:px-6 ${index % 2 === 0 ? "border-r" : ""} lg:border-r lg:last:border-r-0`}>
-                <span className="grid size-10 shrink-0 place-items-center rounded-sm bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground"><Icon className="size-4.5" /></span>
-                <div><p className="text-2xl font-black tracking-tight sm:text-3xl">{stat.value}<span className="ml-1 text-sm text-primary">{stat.unit}</span></p><p className="mt-1 text-[11px] font-semibold tracking-[0.12em] text-muted-foreground">{stat.label}</p></div>
+                <span className="grid size-10 shrink-0 place-items-center rounded-sm bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                  <Icon className="size-4.5" />
+                </span>
+                <div>
+                  <p className="text-2xl font-black tracking-tight sm:text-3xl">{stat.value}<span className="ml-1 text-sm text-primary">{stat.unit}</span></p><p className="mt-1 text-[11px] font-semibold tracking-[0.12em] text-muted-foreground">{stat.label}</p>
+                </div>
               </div>
             );
           })}
@@ -161,9 +114,9 @@ export default async function Home() {
       </section>
 
       <section id="matches" className="mx-auto max-w-360 px-5 py-24 sm:px-8 lg:px-12 lg:py-32">
-        <SectionHeading eyebrow="RECENT OPERATIONS" title="최근 클랜 경기" description="함께 출전한 스쿼드 경기와 팀 퍼포먼스를 한눈에 확인하세요." />
-        <RecentClanMatches matches={recentMatches} />
-        <div className="mt-7 text-right"><a href="/matches" className="inline-flex items-center gap-2 text-xs font-bold text-muted-foreground transition-colors hover:text-primary">전체 경기 기록 <ArrowUpRight className="size-3.5" /></a></div>
+        <SectionHeading eyebrow="RECENT OPERATIONS" title="최근 치킨 게임" description="함께 출전한 스쿼드 경기와 팀 퍼포먼스를 한눈에 확인하세요." />
+        <RecentClanMatches matches={recentWonMatches} />
+        <div className="mt-7 text-right"><Link href="/matches" className="inline-flex items-center gap-2 text-xs font-bold text-muted-foreground transition-colors hover:text-primary">전체 경기 기록 <ArrowUpRight className="size-3.5" /></Link></div>
       </section>
 
       <section id="squad" className="border-y border-border/50 bg-surface">

@@ -39,12 +39,46 @@ export async function findActiveClanMembersByClanId(
     .innerJoin(clans, eq(clanMembers.clanId, clans.id))
     .innerJoin(players, eq(clanMembers.playerId, players.id))
     .where(
-      and(
-        eq(clans.pubgClanId, pubgClanId),
-        eq(clanMembers.status, "active"),
-      ),
+      and(eq(clans.pubgClanId, pubgClanId), eq(clanMembers.status, "active")),
     )
-    .orderBy(desc(clanMembers.profileRegistered), asc(players.name));
+    .orderBy(asc(players.name));
+}
+
+export async function findClanMemberDetailByPlayerId(
+  playerId: string,
+  database: DatabaseClient = db,
+) {
+  const [member] = await database
+    .select({
+      playerId: players.id,
+      pubgAccountId: players.pubgAccountId,
+      nickname: players.name,
+      platform: players.platform,
+      pubgClanId: players.pubgClanId,
+      lastSyncedAt: players.lastSyncedAt,
+
+      memberId: clanMembers.id,
+      displayName: clanMembers.displayName,
+      age: clanMembers.age,
+      status: clanMembers.status,
+      profileRegistered: clanMembers.profileRegistered,
+      joinedAt: clanMembers.joinedAt,
+      lastUpdateAt: clanMembers.updatedAt,
+
+      clanId: clans.id,
+      clanPubgId: clans.pubgClanId,
+      clanName: clans.name,
+      clanTag: clans.tag,
+      clanLevel: clans.level,
+    })
+    .from(players)
+    .innerJoin(clanMembers, eq(clanMembers.playerId, players.id))
+    .innerJoin(clans, eq(clanMembers.clanId, clans.id))
+    .where(and(eq(players.id, playerId), eq(clanMembers.status, "active")))
+    .orderBy(desc(clanMembers.joinedAt))
+    .limit(1);
+
+  return member ?? null;
 }
 
 export async function findStoredPlayerByName(
@@ -69,31 +103,24 @@ export async function findStoredClanByPubgId(
   const [clan] = await database
     .select()
     .from(clans)
-    .where(
-      and(eq(clans.pubgClanId, pubgClanId), eq(clans.platform, platform)),
-    )
+    .where(and(eq(clans.pubgClanId, pubgClanId), eq(clans.platform, platform)))
     .limit(1);
 
   return clan ?? null;
 }
 
 export async function findStoredClanMember(
-  limit?:number,
+  limit?: number,
   database: DatabaseClient = db,
-){
+) {
   const query = database
     .select()
     .from(clanMembers)
     .innerJoin(players, eq(clanMembers.playerId, players.id))
     .where(eq(clanMembers.status, "active"))
-    .orderBy(
-      asc(players.lastSyncedAt),
-      asc(players.id),
-    );
-    
-    return limit === undefined
-      ? query
-      : query.limit(limit)
+    .orderBy(asc(players.lastSyncedAt), asc(players.id));
+
+  return limit === undefined ? query : query.limit(limit);
 }
 
 export async function markPlayersSynced(
@@ -118,9 +145,6 @@ export async function markPlayersSynced(
     )
     .returning({ pubgAccountId: players.pubgAccountId });
 }
-
-
-
 
 export async function saveClanMember(
   input: SaveClanMemberInput,

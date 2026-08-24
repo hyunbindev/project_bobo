@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { matchParticipants, matches, players } from "@/lib/db/schema";
+import { clanMembers, matchParticipants, matches, players } from "@/lib/db/schema";
 import type { PubgMatch } from "@/lib/pubg/match-types";
 
 type DatabaseClient = typeof db;
@@ -35,6 +35,7 @@ export type MatchRosterListItem = {
 export type FindMatchRosterHistoriesInput = {
   limit: number;
   offset: number;
+  isWon:boolean,
 };
 
 export type MatchRosterDetailParticipant = {
@@ -92,12 +93,41 @@ export type MatchRosterDetail = {
 export async function countMatchRosterHistories(
   database: DatabaseClient = db,
 ): Promise<number> {
-  const [countResult] = await database
+  const eligibleRosters = database
     .select({
-      count: sql<number>`cast(count(distinct (${matchParticipants.matchId}, ${matchParticipants.pubgRosterId})) as integer)`,
+      matchId: matchParticipants.matchId,
+      rosterId: matchParticipants.pubgRosterId,
     })
     .from(matchParticipants)
-    .where(isNotNull(matchParticipants.pubgRosterId));
+    .innerJoin(
+      clanMembers,
+      and(
+        eq(
+          clanMembers.playerId,
+          matchParticipants.playerId,
+        ),
+        eq(clanMembers.status, "active"),
+      ),
+    )
+    .where(
+      isNotNull(matchParticipants.pubgRosterId),
+    )
+    .groupBy(
+      matchParticipants.matchId,
+      matchParticipants.pubgRosterId,
+    )
+    .having(sql`
+      count(distinct ${clanMembers.playerId}) >= 2
+    `)
+    .as("eligible_rosters");
+
+  const [countResult] = await database
+    .select({
+      count: sql<number>`
+        cast(count(*) as integer)
+      `,
+    })
+    .from(eligibleRosters);
 
   return countResult?.count ?? 0;
 }
@@ -106,6 +136,16 @@ export async function findMatchRosterHistories(
   input: FindMatchRosterHistoriesInput,
   database: DatabaseClient = db,
 ): Promise<MatchRosterListItem[]> {
+  const conditions = [
+    isNotNull(matchParticipants.pubgRosterId),
+  ];
+
+  if (input.isWon === true) {
+    conditions.push(
+      eq(matchParticipants.teamRank, 1),
+    );
+  }
+
   return database
     .select({
       matchId: matches.id,
@@ -115,19 +155,74 @@ export async function findMatchRosterHistories(
       gameMode: matches.gameMode,
       matchType: matches.matchType,
       playedAt: matches.playedAt,
-      rank: sql<number>`cast(coalesce(max(${matchParticipants.teamRank}), 0) as integer)`,
-      kills: sql<number>`cast(coalesce(sum(${matchParticipants.kills}), 0) as integer)`,
-      dbnos: sql<number>`cast(coalesce(sum(${matchParticipants.dbnos}), 0) as integer)`,
-      damage: sql<number>`cast(coalesce(sum(${matchParticipants.damageDealt}), 0) as double precision)`,
-      participantCount: sql<number>`cast(count(*) as integer)`,
-      memberNames: sql<string[]>`array_agg(${players.name} order by ${matchParticipants.damageDealt} desc)`,
+
+      rank: sql<number>`
+        cast(
+          coalesce(max(${matchParticipants.teamRank}), 0)
+          as integer
+        )
+      `,
+
+      kills: sql<number>`
+        cast(
+          coalesce(sum(${matchParticipants.kills}), 0)
+          as integer
+        )
+      `,
+
+      dbnos: sql<number>`
+        cast(
+          coalesce(sum(${matchParticipants.dbnos}), 0)
+          as integer
+        )
+      `,
+
+      damage: sql<number>`
+        cast(
+          coalesce(sum(${matchParticipants.damageDealt}), 0)
+          as double precision
+        )
+      `,
+
+      participantCount: sql<number>`
+        cast(count(*) as integer)
+      `,
+
+      memberNames: sql<string[]>`
+        array_agg(
+          ${players.name}
+          order by ${matchParticipants.damageDealt} desc
+        )
+      `,
     })
     .from(matchParticipants)
-    .innerJoin(matches, eq(matchParticipants.matchId, matches.id))
-    .innerJoin(players, eq(matchParticipants.playerId, players.id))
-    .where(isNotNull(matchParticipants.pubgRosterId))
-    .groupBy(matches.id, matchParticipants.pubgRosterId)
-    .orderBy(desc(matches.playedAt), desc(matches.id))
+    .innerJoin(
+      matches,
+      eq(matchParticipants.matchId, matches.id),
+    )
+    .innerJoin(
+      players,
+      eq(matchParticipants.playerId, players.id),
+    )
+    .leftJoin(
+      clanMembers,
+      and(
+        eq(clanMembers.playerId, players.id),
+        eq(clanMembers.status, "active"),
+      ),
+    )
+    .where(and(...conditions))
+    .groupBy(
+      matches.id,
+      matchParticipants.pubgRosterId,
+    )
+    .having(sql`
+      count(distinct ${clanMembers.playerId}) >= 2
+    `)
+    .orderBy(
+      desc(matches.playedAt),
+      desc(matches.id),
+    )
     .limit(input.limit)
     .offset(input.offset);
 }
