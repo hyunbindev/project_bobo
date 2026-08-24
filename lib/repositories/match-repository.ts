@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { matchParticipants, matches, players } from "@/lib/db/schema";
@@ -15,6 +15,70 @@ export type StoredMatchHistory = {
   history: PubgMatch;
   participantAccountIds: string[];
 };
+
+export type MatchRosterListItem = {
+  matchId: string;
+  pubgMatchId: string;
+  rosterId: string;
+  mapName: string;
+  gameMode: string;
+  matchType: string;
+  playedAt: Date;
+  rank: number;
+  kills: number;
+  dbnos: number;
+  damage: number;
+  participantCount: number;
+  memberNames: string[];
+};
+
+export type FindMatchRosterHistoriesInput = {
+  limit: number;
+  offset: number;
+};
+
+export async function countMatchRosterHistories(
+  database: DatabaseClient = db,
+): Promise<number> {
+  const [countResult] = await database
+    .select({
+      count: sql<number>`cast(count(distinct (${matchParticipants.matchId}, ${matchParticipants.pubgRosterId})) as integer)`,
+    })
+    .from(matchParticipants)
+    .where(isNotNull(matchParticipants.pubgRosterId));
+
+  return countResult?.count ?? 0;
+}
+
+export async function findMatchRosterHistories(
+  input: FindMatchRosterHistoriesInput,
+  database: DatabaseClient = db,
+): Promise<MatchRosterListItem[]> {
+  return database
+    .select({
+      matchId: matches.id,
+      pubgMatchId: matches.pubgMatchId,
+      rosterId: sql<string>`${matchParticipants.pubgRosterId}`,
+      mapName: matches.mapName,
+      gameMode: matches.gameMode,
+      matchType: matches.matchType,
+      playedAt: matches.playedAt,
+      rank: sql<number>`cast(coalesce(max(${matchParticipants.teamRank}), 0) as integer)`,
+      kills: sql<number>`cast(coalesce(sum(${matchParticipants.kills}), 0) as integer)`,
+      dbnos: sql<number>`cast(coalesce(sum(${matchParticipants.dbnos}), 0) as integer)`,
+      damage: sql<number>`cast(coalesce(sum(${matchParticipants.damageDealt}), 0) as double precision)`,
+      participantCount: sql<number>`cast(count(*) as integer)`,
+      memberNames: sql<string[]>`array_agg(${players.name} order by ${matchParticipants.damageDealt} desc)`,
+    })
+    .from(matchParticipants)
+    .innerJoin(matches, eq(matchParticipants.matchId, matches.id))
+    .innerJoin(players, eq(matchParticipants.playerId, players.id))
+    .where(isNotNull(matchParticipants.pubgRosterId))
+    .groupBy(matches.id, matchParticipants.pubgRosterId)
+    .orderBy(desc(matches.playedAt), desc(matches.id))
+    .limit(input.limit)
+    .offset(input.offset);
+}
 
 export async function findStoredMatchIds(
   pubgMatchIds: string[],
@@ -189,8 +253,20 @@ export async function saveMatchHistory(
           dbnos: participant.stats.DBNOs,
           headshotKills: participant.stats.headshotKills,
           revives: participant.stats.revives,
+          boosts: participant.stats.boosts,
+          heals: participant.stats.heals,
+          killPlace: participant.stats.killPlace,
+          killStreaks: participant.stats.killStreaks,
+          roadKills: participant.stats.roadKills,
+          teamKills: participant.stats.teamKills,
+          vehicleDestroys: participant.stats.vehicleDestroys,
+          weaponsAcquired: participant.stats.weaponsAcquired,
           damageDealt: participant.stats.damageDealt,
           timeSurvived: participant.stats.timeSurvived,
+          longestKill: participant.stats.longestKill,
+          rideDistance: participant.stats.rideDistance,
+          swimDistance: participant.stats.swimDistance,
+          walkDistance: participant.stats.walkDistance,
           winPlace: participant.stats.winPlace,
           deathType: participant.stats.deathType,
         },

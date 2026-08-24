@@ -2,10 +2,6 @@ import { Activity, ArrowLeft, Clock3, Crosshair, Map, Trophy, Users } from "luci
 import Link from "next/link";
 
 import {
-  RecentClanMatches,
-  type RecentClanMatch,
-} from "@/components/clan-dashboard/recent-clan-matches";
-import {
   Pagination,
   PaginationContent,
   PaginationEllipsis,
@@ -14,84 +10,41 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { getMatchRosterHistoryPage } from "@/lib/services/match-service";
 
-const chickenMatches: RecentClanMatch[] = [
-  {
-    id: "winner-erangel",
-    map: "ERANGEL",
-    mode: "경쟁전 · 스쿼드 FPP",
-    rank: "#1",
-    status: "WINNER WINNER",
-    kills: 19,
-    damage: "2,847",
-    time: "24분 전",
-    accent: "primary",
-    members: [
-      { id: "rush", name: "BOBO_RUSH", kills: 7, damage: 842 },
-      { id: "178", name: "178cm63kg31cm", kills: 5, damage: 731 },
-      { id: "cloud", name: "BOBO_CLOUD", kills: 4, damage: 682 },
-      { id: "doha", name: "BOBO_Doha", kills: 3, damage: 592 },
-    ],
-  },
-  {
-    id: "winner-taego",
-    map: "TAEGO",
-    mode: "일반전 · 스쿼드 TPP",
-    rank: "#1",
-    status: "WINNER WINNER",
-    kills: 16,
-    damage: "2,431",
-    time: "3일 전",
-    accent: "primary",
-    members: [
-      { id: "178", name: "178cm63kg31cm", kills: 6, damage: 764 },
-      { id: "cloud", name: "BOBO_CLOUD", kills: 4, damage: 621 },
-      { id: "rush", name: "BOBO_RUSH", kills: 4, damage: 593 },
-      { id: "doha", name: "BOBO_Doha", kills: 2, damage: 453 },
-    ],
-  },
-  {
-    id: "winner-rondo",
-    map: "RONDO",
-    mode: "경쟁전 · 스쿼드 FPP",
-    rank: "#1",
-    status: "WINNER WINNER",
-    kills: 14,
-    damage: "2,196",
-    time: "6일 전",
-    accent: "primary",
-    members: [
-      { id: "cloud", name: "BOBO_CLOUD", kills: 5, damage: 687 },
-      { id: "rush", name: "BOBO_RUSH", kills: 4, damage: 581 },
-      { id: "178", name: "178cm63kg31cm", kills: 3, damage: 514 },
-      { id: "doha", name: "BOBO_Doha", kills: 2, damage: 414 },
-    ],
-  },
-];
+const PAGE_SIZE = 20;
 
-const matchHistory = [
-  { id: "m1", map: "ERANGEL", mode: "경쟁전 · 스쿼드 FPP", rank: 1, kills: 19, damage: 2847, members: ["BOBO_RUSH", "178cm63kg31cm", "BOBO_CLOUD", "BOBO_Doha"], time: "24분 전" },
-  { id: "m2", map: "TAEGO", mode: "일반전 · 스쿼드 TPP", rank: 3, kills: 11, damage: 1936, members: ["178cm63kg31cm", "BOBO_CLOUD", "BOBO_Doha", "BOBO_RUSH"], time: "1시간 전" },
-  { id: "m3", map: "RONDO", mode: "경쟁전 · 스쿼드 FPP", rank: 7, kills: 8, damage: 1422, members: ["BOBO_CLOUD", "BOBO_RUSH", "178cm63kg31cm", "BOBO_Doha"], time: "어제" },
-  { id: "m4", map: "MIRAMAR", mode: "경쟁전 · 스쿼드 FPP", rank: 12, kills: 6, damage: 1184, members: ["BOBO_RUSH", "178cm63kg31cm", "BOBO_CLOUD"], time: "2일 전" },
-  { id: "m5", map: "TAEGO", mode: "일반전 · 스쿼드 TPP", rank: 1, kills: 16, damage: 2431, members: ["178cm63kg31cm", "BOBO_CLOUD", "BOBO_RUSH", "BOBO_Doha"], time: "3일 전" },
-  { id: "m6", map: "DESTON", mode: "일반전 · 스쿼드 FPP", rank: 5, kills: 9, damage: 1678, members: ["BOBO_Doha", "BOBO_RUSH", "BOBO_CLOUD", "178cm63kg31cm"], time: "4일 전" },
-  { id: "m7", map: "VIKENDI", mode: "경쟁전 · 스쿼드 FPP", rank: 9, kills: 7, damage: 1352, members: ["BOBO_CLOUD", "BOBO_Doha", "178cm63kg31cm", "BOBO_RUSH"], time: "5일 전" },
-  { id: "m8", map: "RONDO", mode: "경쟁전 · 스쿼드 FPP", rank: 1, kills: 14, damage: 2196, members: ["BOBO_CLOUD", "BOBO_RUSH", "178cm63kg31cm", "BOBO_Doha"], time: "6일 전" },
-];
-
-const dbnosByMatch: Record<string, number> = {
-  m1: 12,
-  m2: 8,
-  m3: 6,
-  m4: 4,
-  m5: 10,
-  m6: 7,
-  m7: 5,
-  m8: 9,
+const mapLabels: Record<string, string> = {
+  Baltic_Main: "ERANGEL",
+  Chimera_Main: "PARAMO",
+  Desert_Main: "MIRAMAR",
+  DihorOtok_Main: "VIKENDI",
+  Heaven_Main: "HAVEN",
+  Kiki_Main: "DESTON",
+  Neon_Main: "RONDO",
+  Range_Main: "CAMP JACKAL",
+  Savage_Main: "SANHOK",
+  Summerland_Main: "KARAKIN",
+  Tiger_Main: "TAEGO",
 };
 
-export default function MatchesPage() {
+export default async function MatchesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string | string[] }>;
+}) {
+  const resolvedSearchParams = await searchParams;
+  const requestedPage = parsePage(resolvedSearchParams.page);
+  const matchHistory = await getMatchRosterHistoryPage(requestedPage, PAGE_SIZE);
+  const firstItem =
+    matchHistory.totalCount === 0
+      ? 0
+      : (matchHistory.page - 1) * matchHistory.pageSize + 1;
+  const lastItem = Math.min(
+    matchHistory.page * matchHistory.pageSize,
+    matchHistory.totalCount,
+  );
+
   return (
     <main className="min-h-screen bg-background text-foreground">
       <header className="border-b border-border/50 bg-background/90 backdrop-blur-xl">
@@ -102,12 +55,12 @@ export default function MatchesPage() {
           >
             <ArrowLeft className="size-4" /> 대시보드
           </Link>
-          <div className="flex items-center gap-3">
+          <Link className="flex items-center gap-3" href="/">
             <span className="grid size-9 place-items-center rounded-sm bg-primary text-xs font-black text-primary-foreground">
               BB
             </span>
             <span className="text-sm font-black tracking-[0.18em]">BOBO</span>
-          </div>
+          </Link>
         </div>
       </header>
 
@@ -119,45 +72,35 @@ export default function MatchesPage() {
             MATCH ARCHIVE
           </p>
           <h1 className="text-4xl font-black tracking-[-0.055em] sm:text-6xl">
-            최근 클랜 경기
+            클랜 전적 기록
           </h1>
           <p className="mt-5 max-w-xl text-sm leading-6 text-muted-foreground">
-            BOBO 클랜원이 함께 출전한 경기 결과와 팀 퍼포먼스를 확인해.
+            BOBO 클랜원이 함께 출전한 로스터를 최신 경기부터 확인해.
           </p>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-360 px-5 py-16 sm:px-8 lg:px-12 lg:py-20">
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <p className="mb-2 text-[10px] font-black tracking-[0.24em] text-primary">
-              CHICKEN DINNERS
-            </p>
-            <h2 className="text-2xl font-black tracking-tight sm:text-3xl">
-              최근 치킨 경기
-            </h2>
+          <div className="mt-7 flex items-center gap-2 text-[10px] font-black tracking-[0.15em] text-muted-foreground">
+            <Clock3 className="size-3.5 text-primary" /> 총 {matchHistory.totalCount.toLocaleString("ko-KR")}개 로스터 경기
           </div>
-          <span className="hidden items-center gap-2 text-[10px] font-bold text-muted-foreground sm:flex">
-            <Trophy className="size-4 text-primary" /> 최근 3경기
-          </span>
         </div>
-
-        <RecentClanMatches matches={chickenMatches} />
       </section>
 
-      <section className="border-t border-border/50 bg-surface">
-        <div className="mx-auto max-w-360 px-5 py-16 sm:px-8 lg:px-12 lg:py-20">
-          <div className="mb-8">
-            <p className="mb-2 text-[10px] font-black tracking-[0.24em] text-primary">
-              ALL OPERATIONS
-            </p>
-            <h2 className="text-2xl font-black tracking-tight sm:text-3xl">
-              전체 경기 기록
-            </h2>
+      <section className="bg-surface">
+        <div className="mx-auto max-w-360 px-5 py-14 sm:px-8 lg:px-12 lg:py-20">
+          <div className="mb-8 flex items-end justify-between gap-4">
+            <div>
+              <p className="mb-2 text-[10px] font-black tracking-[0.24em] text-primary">
+                ALL OPERATIONS
+              </p>
+              <h2 className="text-2xl font-black tracking-tight sm:text-3xl">
+                시간순 경기 기록
+              </h2>
+            </div>
+            <span className="hidden text-[10px] font-semibold text-muted-foreground sm:block">
+              최신 경기순
+            </span>
           </div>
 
           <div className="overflow-hidden rounded-sm border border-border/60 bg-card">
-            <div className="hidden grid-cols-[70px_minmax(160px,1fr)_90px_80px_100px_220px_80px] border-b border-border/60 px-6 py-3 text-[9px] font-black tracking-[0.16em] text-muted-foreground lg:grid">
+            <div className="hidden grid-cols-[70px_minmax(160px,1fr)_90px_80px_100px_220px_130px] border-b border-border/60 px-6 py-3 text-[9px] font-black tracking-[0.16em] text-muted-foreground lg:grid">
               <span>RANK</span>
               <span>MAP / MODE</span>
               <span>TEAM KILLS</span>
@@ -167,104 +110,146 @@ export default function MatchesPage() {
               <span className="text-right">PLAYED</span>
             </div>
 
-            <div className="divide-y divide-border/50">
-              {matchHistory.map((match) => (
-                <article
-                  className="grid gap-4 px-5 py-5 transition-colors hover:bg-foreground/[0.025] lg:grid-cols-[70px_minmax(160px,1fr)_90px_80px_100px_220px_80px] lg:items-center lg:px-6"
-                  key={match.id}
-                >
-                  <div>
-                    <span
-                      className={`text-2xl font-black tracking-[-0.05em] ${
-                        match.rank === 1 ? "text-primary" : "text-foreground"
-                      }`}
-                    >
-                      #{match.rank}
-                    </span>
-                  </div>
-
-                  <div className="min-w-0">
-                    <p className="flex items-center gap-2 text-sm font-black">
-                      <Map className="size-3.5 text-primary" /> {match.map}
-                    </p>
-                    <p className="mt-1 text-[10px] font-semibold text-muted-foreground">
-                      {match.mode}
-                    </p>
-                  </div>
-
-                  <MatchMetric icon={Crosshair} label="KILLS" value={match.kills} />
-                  <MatchMetric icon={Activity} label="DBNO" value={dbnosByMatch[match.id]} />
-                  <MatchMetric icon={Trophy} label="DMG" value={match.damage.toLocaleString()} />
-                  <div>
-                    <p className="mb-2 flex items-center gap-1 text-[9px] font-bold tracking-wider text-muted-foreground lg:hidden">
-                      <Users className="size-3" /> PLAYERS
-                    </p>
-                    <div className="flex flex-wrap gap-1">
-                      {match.members.map((member) => (
-                        <span
-                          className="max-w-28 truncate rounded-sm bg-foreground/[0.055] px-2 py-1 text-[9px] font-bold text-muted-foreground"
-                          key={member}
-                          title={member}
-                        >
-                          {member}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <span className="flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground lg:justify-end">
-                    <Clock3 className="size-3" /> {match.time}
-                  </span>
-                </article>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-8 flex flex-col gap-4 border-t border-border/50 pt-6 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-[10px] font-semibold text-muted-foreground">
-              총 42경기 중 1–8경기
-            </p>
-            <Pagination className="mx-0 w-auto justify-start sm:justify-end">
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious href="?page=1" text="이전" />
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationLink
-                    className="rounded-sm border-primary text-primary"
-                    href="?page=1"
-                    isActive
+            {matchHistory.items.length === 0 ? (
+              <div className="grid min-h-64 place-items-center px-6 py-16 text-center">
+                <div>
+                  <Trophy className="mx-auto size-8 text-primary/70" />
+                  <p className="mt-4 text-sm font-black">저장된 경기가 아직 없어</p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    동기화가 완료되면 최신 경기부터 여기에 표시돼.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="divide-y divide-border/50">
+                {matchHistory.items.map((match) => (
+                  <Link
+                    className="grid gap-4 px-5 py-5 transition-colors hover:bg-foreground/[0.025] lg:grid-cols-[70px_minmax(160px,1fr)_90px_80px_100px_220px_130px] lg:items-center lg:px-6"
+                    href={`/matches/${encodeURIComponent(match.matchId)}/rosters/${encodeURIComponent(match.rosterId)}`}
+                    key={`${match.matchId}:${match.rosterId}`}
                   >
-                    1
-                  </PaginationLink>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationLink className="rounded-sm" href="?page=2">
-                    2
-                  </PaginationLink>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationLink className="rounded-sm" href="?page=3">
-                    3
-                  </PaginationLink>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationEllipsis />
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationLink className="rounded-sm" href="?page=6">
-                    6
-                  </PaginationLink>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationNext href="?page=2" text="다음" />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
+                    <div>
+                      <span
+                        className={`text-2xl font-black tracking-[-0.05em] ${
+                          match.rank === 1 ? "text-primary" : "text-foreground"
+                        }`}
+                      >
+                        #{match.rank}
+                      </span>
+                    </div>
+
+                    <div className="min-w-0">
+                      <p className="flex items-center gap-2 text-sm font-black">
+                        <Map className="size-3.5 text-primary" /> {formatMapName(match.mapName)}
+                      </p>
+                      <p className="mt-1 truncate text-[10px] font-semibold text-muted-foreground">
+                        {formatMode(match.matchType, match.gameMode)}
+                      </p>
+                    </div>
+
+                    <MatchMetric icon={Crosshair} label="KILLS" value={match.kills} />
+                    <MatchMetric icon={Activity} label="DBNO" value={match.dbnos} />
+                    <MatchMetric
+                      icon={Trophy}
+                      label="DMG"
+                      value={Math.round(match.damage).toLocaleString("ko-KR")}
+                    />
+                    <div>
+                      <p className="mb-2 flex items-center gap-1 text-[9px] font-bold tracking-wider text-muted-foreground lg:hidden">
+                        <Users className="size-3" /> PLAYERS
+                      </p>
+                      <div className="flex flex-wrap gap-1">
+                        {match.memberNames.map((member, index) => (
+                          <span
+                            className="max-w-28 truncate rounded-sm bg-foreground/[0.055] px-2 py-1 text-[9px] font-bold text-muted-foreground"
+                            key={`${member}:${index}`}
+                            title={member}
+                          >
+                            {member}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <span className="flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground lg:justify-end">
+                      <Clock3 className="size-3" /> {formatPlayedAt(match.playedAt)}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
+
+          {matchHistory.totalCount > 0 && (
+            <div className="mt-8 flex flex-col gap-4 border-t border-border/50 pt-6 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-[10px] font-semibold text-muted-foreground">
+                총 {matchHistory.totalCount.toLocaleString("ko-KR")}건 중 {firstItem.toLocaleString("ko-KR")}–{lastItem.toLocaleString("ko-KR")}건
+              </p>
+              <MatchPagination
+                currentPage={matchHistory.page}
+                totalPages={matchHistory.totalPages}
+              />
+            </div>
+          )}
         </div>
       </section>
     </main>
+  );
+}
+
+function MatchPagination({
+  currentPage,
+  totalPages,
+}: {
+  currentPage: number;
+  totalPages: number;
+}) {
+  const pages = getVisiblePages(currentPage, totalPages);
+
+  return (
+    <Pagination className="mx-0 w-auto justify-start sm:justify-end">
+      <PaginationContent>
+        <PaginationItem>
+          <PaginationPrevious
+            aria-disabled={currentPage === 1}
+            className={currentPage === 1 ? "pointer-events-none opacity-40" : ""}
+            href={`?page=${Math.max(currentPage - 1, 1)}`}
+            text="이전"
+          />
+        </PaginationItem>
+        {pages.map((page, index) =>
+          page === null ? (
+            <PaginationItem key={`ellipsis:${index}`}>
+              <PaginationEllipsis />
+            </PaginationItem>
+          ) : (
+            <PaginationItem key={page}>
+              <PaginationLink
+                className={
+                  page === currentPage
+                    ? "rounded-sm border-primary text-primary"
+                    : "rounded-sm"
+                }
+                href={`?page=${page}`}
+                isActive={page === currentPage}
+              >
+                {page}
+              </PaginationLink>
+            </PaginationItem>
+          ),
+        )}
+        <PaginationItem>
+          <PaginationNext
+            aria-disabled={currentPage === totalPages}
+            className={
+              currentPage === totalPages ? "pointer-events-none opacity-40" : ""
+            }
+            href={`?page=${Math.min(currentPage + 1, totalPages)}`}
+            text="다음"
+          />
+        </PaginationItem>
+      </PaginationContent>
+    </Pagination>
   );
 }
 
@@ -285,4 +270,63 @@ function MatchMetric({
       <strong className="text-sm font-black">{value}</strong>
     </div>
   );
+}
+
+function parsePage(value: string | string[] | undefined) {
+  const candidate = Array.isArray(value) ? value[0] : value;
+  const parsed = Number.parseInt(candidate ?? "1", 10);
+
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+}
+
+function formatMapName(mapName: string) {
+  return mapLabels[mapName] ?? mapName.replace(/_Main$/i, "").toUpperCase();
+}
+
+function formatMode(matchType: string, gameMode: string) {
+  const typeLabel = matchType === "competitive" ? "경쟁전" : "일반전";
+  const modeLabel = gameMode.replaceAll("-", " ").toUpperCase();
+
+  return `${typeLabel} · ${modeLabel}`;
+}
+
+function formatPlayedAt(playedAt: Date) {
+  return new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(playedAt);
+}
+
+function getVisiblePages(currentPage: number, totalPages: number) {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  const pageSet = new Set([
+    1,
+    totalPages,
+    currentPage - 1,
+    currentPage,
+    currentPage + 1,
+  ]);
+  const sortedPages = [...pageSet]
+    .filter((page) => page >= 1 && page <= totalPages)
+    .sort((left, right) => left - right);
+  const pages: Array<number | null> = [];
+
+  for (const page of sortedPages) {
+    const previousPage = pages.at(-1);
+
+    if (typeof previousPage === "number" && page - previousPage > 1) {
+      pages.push(null);
+    }
+
+    pages.push(page);
+  }
+
+  return pages;
 }

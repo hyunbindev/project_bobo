@@ -89,10 +89,22 @@ export const matchParticipants = pgTable(
     dbnos: integer("dbnos").notNull(),
     headshotKills: integer("headshot_kills").notNull(),
     revives: integer("revives").notNull(),
+    boosts: integer("boosts").default(0).notNull(),
+    heals: integer("heals").default(0).notNull(),
+    killPlace: integer("kill_place").default(0).notNull(),
+    killStreaks: integer("kill_streaks").default(0).notNull(),
+    roadKills: integer("road_kills").default(0).notNull(),
+    teamKills: integer("team_kills").default(0).notNull(),
+    vehicleDestroys: integer("vehicle_destroys").default(0).notNull(),
+    weaponsAcquired: integer("weapons_acquired").default(0).notNull(),
 
     // PUBG가 소수 값을 내려주므로 integer가 아닌 double precision으로 저장한다.
     damageDealt: doublePrecision("damage_dealt").notNull(),
     timeSurvived: doublePrecision("time_survived").notNull(),
+    longestKill: doublePrecision("longest_kill").default(0).notNull(),
+    rideDistance: doublePrecision("ride_distance").default(0).notNull(),
+    swimDistance: doublePrecision("swim_distance").default(0).notNull(),
+    walkDistance: doublePrecision("walk_distance").default(0).notNull(),
 
     winPlace: integer("win_place").notNull(),
     deathType: text("death_type").notNull(),
