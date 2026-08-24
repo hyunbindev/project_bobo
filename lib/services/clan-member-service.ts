@@ -9,10 +9,12 @@ import {
   type PubgPlayer,
 } from "@/lib/pubg/types";
 import {
+  findActiveClanMembersByClanId,
   findStoredClanByPubgId,
   findStoredPlayerByName,
   saveClanMember,
 } from "@/lib/repositories/clan-member-repository";
+import { getMainClanSummary } from "@/lib/services/clan-service";
 
 type RegisterClanMemberInput = {
   nickname: string;
@@ -191,6 +193,18 @@ export async function registerClanMember(input: unknown) {
 
     throw error;
   }
+}
+
+export async function getClanMemberList() {
+  const clan = await getMainClanSummary();
+
+  if (!clan) {
+    return { clan: null, members: [] };
+  }
+
+  const members = await findActiveClanMembersByClanId(clan.pubgClanId);
+
+  return { clan, members };
 }
 
 // 매치 동기화 Worker가 발견한 닉네임을 넘기면 미등록 프로필로 자동 추가한다.

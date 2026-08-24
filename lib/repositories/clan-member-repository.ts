@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { clanMembers, clans, players } from "@/lib/db/schema";
@@ -16,6 +16,36 @@ export type SaveClanMemberInput = {
     profileRegistered: boolean;
   };
 };
+
+export async function findActiveClanMembersByClanId(
+  pubgClanId: string,
+  database: DatabaseClient = db,
+) {
+  return database
+    .select({
+      memberId: clanMembers.id,
+      playerId: players.id,
+      pubgAccountId: players.pubgAccountId,
+      nickname: players.name,
+      platform: players.platform,
+      displayName: clanMembers.displayName,
+      age: clanMembers.age,
+      profileRegistered: clanMembers.profileRegistered,
+      status: clanMembers.status,
+      joinedAt: clanMembers.joinedAt,
+      lastSyncedAt: players.lastSyncedAt,
+    })
+    .from(clanMembers)
+    .innerJoin(clans, eq(clanMembers.clanId, clans.id))
+    .innerJoin(players, eq(clanMembers.playerId, players.id))
+    .where(
+      and(
+        eq(clans.pubgClanId, pubgClanId),
+        eq(clanMembers.status, "active"),
+      ),
+    )
+    .orderBy(desc(clanMembers.profileRegistered), asc(players.name));
+}
 
 export async function findStoredPlayerByName(
   nickname: string,

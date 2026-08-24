@@ -8,6 +8,11 @@ import {
 } from "@/lib/repositories/match-repository";
 import { getMainClanSummary } from "@/lib/services/clan-service";
 
+
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export type MatchRosterHistoryPage = {
   items: MatchRosterListItem[];
   page: number;
@@ -50,8 +55,6 @@ export async function getRecordedHistoryCount(){
   return totalCount;
 }
 
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export const getMatchRosterDetail = cache(
   async (matchId: string, rosterId: string) => {
