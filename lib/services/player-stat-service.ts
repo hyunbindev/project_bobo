@@ -32,7 +32,7 @@ export const getPlayerHighRecord = cache(
 );
 
 const TREND_DAYS = 14;
-const TREND_MATCH_LIMIT = 20;
+const TREND_MATCH_LIMIT = 50;
 const MOVING_AVERAGE_SIZE = 5;
 
 type TrendMetricDefinition = {

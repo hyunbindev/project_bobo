@@ -9,6 +9,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 
 import { ClanJoinModal } from "@/components/clan-dashboard/clan-join-modal";
+import { HomeHeader } from "@/components/clan-dashboard/home-header";
 import { RecentClanMatches } from "@/components/clan-dashboard/recent-clan-matches";
 import { getMainClanSummary } from "@/lib/services/clan-service";
 import { getRecentWonMatches } from "@/lib/services/match-service";
@@ -46,28 +47,7 @@ export default async function Home() {
   return (
     <main className="min-h-screen overflow-hidden bg-background text-foreground">
       
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-border/50 bg-background/85 backdrop-blur-xl">
-        <div className="mx-auto flex h-18 max-w-360 items-center justify-between px-5 sm:px-8 lg:px-12">
-          <a href="#top" className="group flex items-center gap-3" aria-label={`${clanName} 클랜 `}>
-            <span className="grid size-9 place-items-center rounded-sm bg-primary text-xs font-black tracking-[-0.08em] text-primary-foreground transition-transform group-hover:-rotate-3">{clanMark}</span>
-            <span>
-              <span className="block text-sm font-black tracking-[0.2em]">{clanName}</span>
-              <span className="block text-[9px] font-semibold tracking-[0.28em] text-muted-foreground">BATTLEGROUNDS</span>
-            </span>
-          </a>
-
-          <nav className="hidden items-center gap-8 text-sm font-semibold text-muted-foreground md:flex" aria-label="주요 메뉴">
-            <a href="#top" className="text-foreground transition-colors hover:text-primary">홈</a>
-            <Link href="/members" className="transition-colors hover:text-primary">클랜원</Link>
-            <Link href="/matches" className="transition-colors hover:text-primary">클랜 전적</Link>
-            <Link href="/statistics" className="transition-colors hover:text-primary">통계·칭호</Link>
-          </nav>
-
-          <a href="#notice" className="inline-flex h-9 items-center gap-2 rounded-sm border border-primary/50 px-4 text-xs font-bold text-primary transition-colors hover:bg-primary hover:text-primary-foreground">
-            클랜 안내 <ArrowUpRight className="size-3.5" />
-          </a>
-        </div>
-      </header>
+      <HomeHeader clanMark={clanMark} clanName={clanName} />
 
       <section id="top" className="relative border-b border-border/50 pt-18">
         <div className="hero-grid absolute inset-0 opacity-30" aria-hidden="true" />
@@ -87,8 +67,11 @@ export default async function Home() {
               {clanTag}<br /><span className="text-primary">{clanName}</span>
             </h1>
 
-            <div className="mt-10 flex flex-wrap items-center gap-3">
-            <ClanJoinModal />
+            <div
+              className="mt-10 flex scroll-mt-24 flex-wrap items-center gap-3"
+              id="notice"
+            >
+              <ClanJoinModal />
             </div>
           </div>
 
