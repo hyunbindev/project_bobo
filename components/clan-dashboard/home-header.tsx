@@ -8,7 +8,7 @@ const navigation = [
   { href: "/#top", label: "홈" },
   { href: "/members", label: "클랜원" },
   { href: "/matches", label: "클랜 전적" },
-  { href: "/statistics", label: "통계·칭호" },
+  { href: "/award", label: "칭호" },
 ];
 
 export function HomeHeader({
