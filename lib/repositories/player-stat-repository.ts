@@ -1,4 +1,4 @@
-import { eq, sql, and } from "drizzle-orm";
+import { and, desc, eq, gte, isNotNull, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { matchParticipants, matches } from "@/lib/db/schema";
@@ -17,6 +17,56 @@ export type HighRecord = {
   longestKillRange: HighRecordDetail;
   maxRevives: HighRecordDetail;
 };
+
+export type PlayerTrendMatch = {
+  matchId: string;
+  playedAt: Date;
+  mapName: string;
+  gameMode: string;
+  damage: number;
+  kills: number;
+  rank: number;
+};
+
+export async function findPlayerTrendMatches(
+  playerId: string,
+  clanId: string,
+  since: Date,
+  limit = 20,
+  database: DatabaseClient = db,
+): Promise<PlayerTrendMatch[]> {
+  return database
+    .select({
+      matchId: matches.id,
+      playedAt: matches.playedAt,
+      mapName: matches.mapName,
+      gameMode: matches.gameMode,
+      damage: matchParticipants.damageDealt,
+      kills: matchParticipants.kills,
+      rank: sql<number>`coalesce(${matchParticipants.teamRank}, ${matchParticipants.winPlace})`,
+    })
+    .from(matchParticipants)
+    .innerJoin(matches, eq(matches.id, matchParticipants.matchId))
+    .where(
+      and(
+        eq(matchParticipants.playerId, playerId),
+        gte(matches.playedAt, since),
+        isNotNull(matchParticipants.pubgRosterId),
+        sql`(
+          select count(distinct teammate.player_id)
+          from match_participants teammate
+          inner join clan_members member
+            on member.player_id = teammate.player_id
+          where teammate.match_id = ${matchParticipants.matchId}
+            and teammate.pubg_roster_id = ${matchParticipants.pubgRosterId}
+            and member.clan_id = ${clanId}
+            and member.status = 'active'
+        ) >= 2`,
+      ),
+    )
+    .orderBy(desc(matches.playedAt), desc(matches.id))
+    .limit(limit);
+}
 
 export async function findPlayerHighRecord(
   playerId: string,

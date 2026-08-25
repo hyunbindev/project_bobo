@@ -14,10 +14,7 @@ import { notFound } from "next/navigation";
 
 import { MatchHistoryTable } from "@/components/clan-dashboard/match-history-table";
 import { MatchPagination } from "@/components/clan-dashboard/match-pagination";
-import {
-  PlayerPerformanceTrends,
-  type PlayerTrendMetric,
-} from "@/components/clan-dashboard/player-performance-trends";
+import { PlayerPerformanceTrends } from "@/components/clan-dashboard/player-performance-trends";
 import {
   PlayerRecords,
   type PlayerRecord,
@@ -26,39 +23,13 @@ import { getClanMemberDetail } from "@/lib/services/clan-member-service";
 import {
   getPlayerHighRecord,
   getPlayerMatchHistoryPage,
+  getPlayerPerformanceTrends,
   type HighRecord,
 } from "@/lib/services/player-stat-service";
 
-const MATCH_PAGE_SIZE = 10;
 import { formatDateTime } from "@/lib/utils";
 
-const trendMetrics: PlayerTrendMetric[] = [
-  {
-    label: "AVERAGE DAMAGE",
-    currentValue: "648",
-    change: "+15.1%",
-    description: "AVG 492",
-    values: [312, 445, 287, 520, 391, 610, 478, 534, 702, 648],
-    tone: "primary",
-  },
-  {
-    label: "AVERAGE KILLS",
-    currentValue: "4.2",
-    change: "+0.6",
-    description: "AVG 3.3",
-    values: [2.1, 2.8, 1.9, 3.4, 2.6, 4.1, 3.2, 3.8, 4.6, 4.2],
-    tone: "info",
-  },
-  {
-    label: "AVERAGE RANK",
-    currentValue: "#4.8",
-    change: "▲ 2.4",
-    description: "AVG #8.3",
-    values: [12.4, 10.8, 13.2, 8.6, 9.4, 6.8, 7.2, 5.9, 4.1, 4.8],
-    tone: "support",
-    lowerIsBetter: true,
-  },
-];
+const MATCH_PAGE_SIZE = 10;
 
 export default async function MemberDetailPage({
   params,
@@ -78,7 +49,8 @@ export default async function MemberDetailPage({
     notFound();
   }
 
-  const [playerHighRecord, matchHistory] = await Promise.all([
+  const [trendMetrics, playerHighRecord, matchHistory] = await Promise.all([
+    getPlayerPerformanceTrends(playerId, member.clanId),
     getPlayerHighRecord(playerId),
     getPlayerMatchHistoryPage(
       playerId,
@@ -145,7 +117,7 @@ export default async function MemberDetailPage({
       <section className="mx-auto max-w-360 space-y-16 px-5 py-14 sm:px-8 lg:px-12 lg:py-20">
         <section>
           <SectionHeading
-            description="최근 10경기 기준으로 경기별 흐름을 비교해."
+            description="최근 14일 클랜 파티 경기 중 최대 20경기의 흐름이야."
             eyebrow="RECENT FORM"
             icon={Radio}
             title="경기력 추이"

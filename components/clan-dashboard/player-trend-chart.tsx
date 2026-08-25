@@ -1,6 +1,13 @@
 "use client";
 
-import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
+import {
+  CartesianGrid,
+  Line,
+  LineChart,
+  ReferenceLine,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 import {
   ChartContainer,
@@ -8,16 +15,10 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-
-export type PlayerTrendMetric = {
-  label: string;
-  currentValue: string;
-  change: string;
-  description: string;
-  values: number[];
-  tone: "primary" | "info" | "support";
-  lowerIsBetter?: boolean;
-};
+import type {
+  PlayerTrendMetric,
+  PlayerTrendPoint,
+} from "@/lib/player-stat-types";
 
 const toneClasses = {
   primary: "text-primary",
@@ -32,13 +33,13 @@ const toneColors = {
 };
 
 export function PlayerTrendChart({ metric }: { metric: PlayerTrendMetric }) {
-  const chartData = metric.values.map((value, index) => ({
-    match: index + 1,
-    value,
-  }));
   const chartConfig = {
     value: {
-      label: metric.label,
+      label: "MATCH",
+      color: toneColors[metric.tone],
+    },
+    movingAverage: {
+      label: "5G AVG",
       color: toneColors[metric.tone],
     },
   } satisfies ChartConfig;
@@ -61,48 +62,107 @@ export function PlayerTrendChart({ metric }: { metric: PlayerTrendMetric }) {
         </span>
       </div>
 
-      <ChartContainer
-        className="mt-6 h-36 w-full aspect-auto"
-        config={chartConfig}
-      >
-        <LineChart
-          accessibilityLayer
-          data={chartData}
-          margin={{ left: 8, right: 8, top: 8, bottom: 0 }}
+      {metric.points.length === 0 ? (
+        <div className="mt-6 grid h-36 place-items-center border-y border-dashed border-border/50 text-[9px] font-black tracking-[0.15em] text-muted-foreground">
+          NO ELIGIBLE MATCHES
+        </div>
+      ) : (
+        <ChartContainer
+          className="mt-6 h-36 w-full aspect-auto"
+          config={chartConfig}
         >
-          <CartesianGrid strokeDasharray="4 8" vertical={false} />
-          <XAxis axisLine={false} dataKey="match" hide tickLine={false} />
-          <YAxis
-            axisLine={false}
-            domain={["dataMin", "dataMax"]}
-            hide
-            reversed={metric.lowerIsBetter}
-            tickLine={false}
-          />
-          <ChartTooltip
-            content={
-              <ChartTooltipContent hideLabel indicator="line" nameKey="value" />
-            }
-            cursor={{ stroke: "var(--border)", strokeDasharray: "4 4" }}
-          />
-          <Line
-            activeDot={{ r: 5 }}
-            dataKey="value"
-            dot={{ fill: "var(--card)", r: 3, strokeWidth: 2 }}
-            stroke="var(--color-value)"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2.5}
-            type="monotone"
-          />
-        </LineChart>
-      </ChartContainer>
+          <LineChart
+            accessibilityLayer
+            data={metric.points}
+            margin={{ left: 8, right: 8, top: 8, bottom: 0 }}
+          >
+            <CartesianGrid strokeDasharray="4 8" vertical={false} />
+            <XAxis axisLine={false} dataKey="match" tickLine={false} />
+            <YAxis
+              axisLine={false}
+              domain={["dataMin", "dataMax"]}
+              hide
+              reversed={metric.lowerIsBetter}
+              tickLine={false}
+            />
+            <ChartTooltip
+              content={
+                <ChartTooltipContent
+                  indicator="line"
+                  labelFormatter={(_, payload) =>
+                    formatTooltipLabel(payload[0]?.payload as PlayerTrendPoint)
+                  }
+                />
+              }
+              cursor={{ stroke: "var(--border)", strokeDasharray: "4 4" }}
+            />
+            {metric.baseline !== null && (
+              <ReferenceLine
+                stroke="var(--muted-foreground)"
+                strokeDasharray="3 5"
+                strokeOpacity={0.55}
+                y={metric.baseline}
+              />
+            )}
+            <Line
+              activeDot={{ r: 4 }}
+              dataKey="value"
+              dot={{ fill: "var(--card)", r: 2, strokeWidth: 1.5 }}
+              stroke="var(--color-value)"
+              strokeOpacity={0.35}
+              strokeWidth={1.5}
+              type="linear"
+            />
+            <Line
+              activeDot={{ r: 5 }}
+              connectNulls={false}
+              dataKey="movingAverage"
+              dot={false}
+              stroke="var(--color-movingAverage)"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={3}
+              type="monotone"
+            />
+          </LineChart>
+        </ChartContainer>
+      )}
 
       <div className="flex items-center justify-between border-t border-border/50 pt-3 text-[8px] font-bold tracking-[0.13em] text-muted-foreground">
-        <span>10 MATCHES AGO</span>
+        <span>{metric.points.length} MATCHES AGO</span>
         <span>{metric.description}</span>
         <span>LATEST</span>
       </div>
     </article>
   );
+}
+
+const mapLabels: Record<string, string> = {
+  Baltic_Main: "ERANGEL",
+  Chimera_Main: "PARAMO",
+  Desert_Main: "MIRAMAR",
+  DihorOtok_Main: "VIKENDI",
+  Heaven_Main: "HAVEN",
+  Kiki_Main: "DESTON",
+  Range_Main: "CAMP JACKAL",
+  Savage_Main: "SANHOK",
+  Summerland_Main: "KARAKIN",
+  Tiger_Main: "TAEGO",
+};
+
+function formatTooltipLabel(point: PlayerTrendPoint | undefined) {
+  if (!point) {
+    return "";
+  }
+
+  const date = new Intl.DateTimeFormat("ko-KR", {
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(point.playedAt));
+  const mapName =
+    mapLabels[point.mapName] ??
+    point.mapName.replace(/_Main$/i, "").toUpperCase();
+  const gameMode = point.gameMode.replaceAll("-", " ").toUpperCase();
+
+  return `${date} · ${mapName} · ${gameMode}`;
 }

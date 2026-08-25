@@ -60,7 +60,7 @@ export default async function Home() {
             <a href="#top" className="text-foreground transition-colors hover:text-primary">홈</a>
             <Link href="/members" className="transition-colors hover:text-primary">클랜원</Link>
             <Link href="/matches" className="transition-colors hover:text-primary">클랜 전적</Link>
-            <a href="#records" className="transition-colors hover:text-primary">기록실</a>
+            <Link href="/statistics" className="transition-colors hover:text-primary">통계·칭호</Link>
           </nav>
 
           <a href="#notice" className="inline-flex h-9 items-center gap-2 rounded-sm border border-primary/50 px-4 text-xs font-bold text-primary transition-colors hover:bg-primary hover:text-primary-foreground">
@@ -71,8 +71,8 @@ export default async function Home() {
 
       <section id="top" className="relative border-b border-border/50 pt-18">
         <div className="hero-grid absolute inset-0 opacity-30" aria-hidden="true" />
-        <div className="hero-glow absolute -left-48 top-20 size-[520px] rounded-full" aria-hidden="true" />
-        <div className="relative mx-auto grid min-h-[690px] max-w-360 items-center gap-16 px-5 py-16 sm:px-8 lg:grid-cols-[1.06fr_.94fr] lg:px-12 lg:py-20">
+        <div className="hero-glow absolute -left-48 top-20 size-130 rounded-full" aria-hidden="true" />
+        <div className="relative mx-auto grid min-h-172.5 max-w-360 items-center gap-16 px-5 py-16 sm:px-8 lg:grid-cols-[1.06fr_.94fr] lg:px-12 lg:py-20">
           <div className="relative z-10 max-w-3xl">
             <div className="mb-8 flex items-center gap-3 text-[11px] font-bold tracking-[0.2em] text-primary">
               <span className="relative flex size-2">
@@ -83,7 +83,7 @@ export default async function Home() {
             </div>
 
             <p className="mb-3 font-mono text-xs font-semibold tracking-[0.34em] text-muted-foreground">EST. 2024 / KR</p>
-            <h1 className="max-w-[780px] text-[clamp(3.5rem,8vw,7.4rem)] font-black leading-[0.84] tracking-[-0.075em]">
+            <h1 className="max-w-195 text-[clamp(3.5rem,8vw,7.4rem)] font-black leading-[0.84] tracking-[-0.075em]">
               {clanTag}<br /><span className="text-primary">{clanName}</span>
             </h1>
 

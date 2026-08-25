@@ -8,8 +8,14 @@ import {
 } from "@/lib/repositories/match-repository";
 import {
   findPlayerHighRecord,
+  findPlayerTrendMatches,
   type HighRecord,
+  type PlayerTrendMatch,
 } from "@/lib/repositories/player-stat-repository";
+import type {
+  PlayerTrendMetric,
+  PlayerTrendTone,
+} from "@/lib/player-stat-types";
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -24,6 +30,150 @@ export const getPlayerHighRecord = cache(
     return findPlayerHighRecord(playerId);
   },
 );
+
+const TREND_DAYS = 14;
+const TREND_MATCH_LIMIT = 20;
+const MOVING_AVERAGE_SIZE = 5;
+
+type TrendMetricDefinition = {
+  label: string;
+  tone: PlayerTrendTone;
+  lowerIsBetter?: boolean;
+  selectValue: (match: PlayerTrendMatch) => number;
+  formatValue: (value: number) => string;
+  formatChange: (current: number, previous: number) => string;
+};
+
+const trendMetricDefinitions: TrendMetricDefinition[] = [
+  {
+    label: "AVERAGE DAMAGE",
+    tone: "primary",
+    selectValue: (match) => match.damage,
+    formatValue: (value) => Math.round(value).toLocaleString("ko-KR"),
+    formatChange: formatPercentChange,
+  },
+  {
+    label: "AVERAGE KILLS",
+    tone: "info",
+    selectValue: (match) => match.kills,
+    formatValue: (value) => value.toFixed(1),
+    formatChange: formatAbsoluteChange,
+  },
+  {
+    label: "AVERAGE RANK",
+    tone: "support",
+    lowerIsBetter: true,
+    selectValue: (match) => match.rank,
+    formatValue: (value) => `#${value.toFixed(1)}`,
+    formatChange: formatRankChange,
+  },
+];
+
+export const getPlayerPerformanceTrends = cache(
+  async (playerId: string, clanId: string): Promise<PlayerTrendMetric[]> => {
+    if (!UUID_PATTERN.test(playerId)) {
+      throw new BadRequestError("playerId must be a valid UUID.");
+    }
+
+    if (!UUID_PATTERN.test(clanId)) {
+      throw new BadRequestError("clanId must be a valid UUID.");
+    }
+
+    const since = new Date(
+      Date.now() - TREND_DAYS * 24 * 60 * 60 * 1_000,
+    );
+    const matches = await findPlayerTrendMatches(
+      playerId,
+      clanId,
+      since,
+      TREND_MATCH_LIMIT,
+    );
+    const chronologicalMatches = matches.toReversed();
+
+    return trendMetricDefinitions.map((definition) =>
+      createTrendMetric(chronologicalMatches, definition),
+    );
+  },
+);
+
+function createTrendMetric(
+  matches: PlayerTrendMatch[],
+  definition: TrendMetricDefinition,
+): PlayerTrendMetric {
+  const values = matches.map(definition.selectValue);
+  const hasMovingAverage = values.length >= MOVING_AVERAGE_SIZE;
+  const latestWindow = values.slice(-MOVING_AVERAGE_SIZE);
+  const current = hasMovingAverage
+    ? average(latestWindow)
+    : (values.at(-1) ?? 0);
+  const previousWindow = values.slice(
+    -(MOVING_AVERAGE_SIZE * 2),
+    -MOVING_AVERAGE_SIZE,
+  );
+  const previous =
+    previousWindow.length === MOVING_AVERAGE_SIZE
+      ? average(previousWindow)
+      : null;
+  const baseline =
+    values.length === TREND_MATCH_LIMIT ? average(values) : null;
+
+  return {
+    label: definition.label,
+    currentValue: values.length === 0 ? "-" : definition.formatValue(current),
+    change:
+      previous === null ? "—" : definition.formatChange(current, previous),
+    description:
+      baseline === null
+        ? `${values.length} MATCHES`
+        : `20G AVG ${definition.formatValue(baseline)}`,
+    points: matches.map((match, index) => ({
+      match: index + 1,
+      playedAt: match.playedAt.toISOString(),
+      mapName: match.mapName,
+      gameMode: match.gameMode,
+      value: definition.selectValue(match),
+      movingAverage:
+        index < MOVING_AVERAGE_SIZE - 1
+          ? null
+          : average(
+              matches
+                .slice(index - MOVING_AVERAGE_SIZE + 1, index + 1)
+                .map(definition.selectValue),
+            ),
+    })),
+    baseline,
+    tone: definition.tone,
+    lowerIsBetter: definition.lowerIsBetter,
+  };
+}
+
+function average(values: number[]) {
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function formatPercentChange(current: number, previous: number) {
+  if (previous === 0) {
+    return current === 0 ? "0.0%" : "NEW";
+  }
+
+  const change = ((current - previous) / previous) * 100;
+  return `${change >= 0 ? "+" : ""}${change.toFixed(1)}%`;
+}
+
+function formatAbsoluteChange(current: number, previous: number) {
+  const change = current - previous;
+  return `${change >= 0 ? "+" : ""}${change.toFixed(1)}`;
+}
+
+function formatRankChange(current: number, previous: number) {
+  const improvement = previous - current;
+
+  if (improvement === 0) {
+    return "—";
+  }
+
+  return `${improvement > 0 ? "▲" : "▼"} ${Math.abs(improvement).toFixed(1)}`;
+}
 
 export type PlayerMatchHistoryPage = {
   items: MatchRosterListItem[];
