@@ -90,9 +90,7 @@ export const getPlayerPerformanceTrends = cache(
     );
     const chronologicalMatches = matches.toReversed();
 
-    return trendMetricDefinitions.map((definition) =>
-      createTrendMetric(chronologicalMatches, definition),
-    );
+    return trendMetricDefinitions.map((definition) => createTrendMetric(chronologicalMatches, definition),);
   },
 );
 
@@ -106,6 +104,7 @@ function createTrendMetric(
   const current = hasMovingAverage
     ? average(latestWindow)
     : (values.at(-1) ?? 0);
+    
   const previousWindow = values.slice(
     -(MOVING_AVERAGE_SIZE * 2),
     -MOVING_AVERAGE_SIZE,
@@ -120,12 +119,15 @@ function createTrendMetric(
   return {
     label: definition.label,
     currentValue: values.length === 0 ? "-" : definition.formatValue(current),
+    
     change:
       previous === null ? "—" : definition.formatChange(current, previous),
-    description:
+    
+      description:
       baseline === null
         ? `${values.length} MATCHES`
         : `20G AVG ${definition.formatValue(baseline)}`,
+
     points: matches.map((match, index) => ({
       match: index + 1,
       playedAt: match.playedAt.toISOString(),
@@ -136,10 +138,10 @@ function createTrendMetric(
         index < MOVING_AVERAGE_SIZE - 1
           ? null
           : average(
-              matches
-                .slice(index - MOVING_AVERAGE_SIZE + 1, index + 1)
-                .map(definition.selectValue),
-            ),
+            matches
+              .slice(index - MOVING_AVERAGE_SIZE + 1, index + 1)
+              .map(definition.selectValue),
+          ),
     })),
     baseline,
     tone: definition.tone,
@@ -152,9 +154,7 @@ function average(values: number[]) {
 }
 
 function formatPercentChange(current: number, previous: number) {
-  if (previous === 0) {
-    return current === 0 ? "0.0%" : "NEW";
-  }
+  if (previous === 0) { return current === 0 ? "0.0%" : "NEW"; }
 
   const change = ((current - previous) / previous) * 100;
   return `${change >= 0 ? "+" : ""}${change.toFixed(1)}%`;
@@ -204,12 +204,12 @@ export async function getPlayerMatchHistoryPage(
     totalCount === 0
       ? []
       : await findMatchRosterHistories({
-          playerId,
-          clanId,
-          isWon: false,
-          limit: normalizedPageSize,
-          offset: (page - 1) * normalizedPageSize,
-        });
+        playerId,
+        clanId,
+        isWon: false,
+        limit: normalizedPageSize,
+        offset: (page - 1) * normalizedPageSize,
+      });
 
   return {
     items,
