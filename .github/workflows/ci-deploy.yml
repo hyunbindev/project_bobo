@@ -1,9 +1,9 @@
 name: Deploy
 
 on:
-  # main 브랜치에 코드가 반영되면 홈 서버에 배포한다.
+  # master 브랜치에 코드가 반영되면 홈 서버에 배포한다.
   push:
-    branches: [main]
+    branches: [master]
   # GitHub Actions 화면에서도 필요할 때 직접 실행할 수 있다.
   workflow_dispatch:
 
@@ -19,9 +19,9 @@ permissions:
 jobs:
   deploy:
     name: Deploy production
-    # main push 또는 main 브랜치에서의 수동 실행만 허용한다.
+    # master push 또는 master 브랜치에서의 수동 실행만 허용한다.
     if: >-
-      github.ref == 'refs/heads/main' &&
+      github.ref == 'refs/heads/master' &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -60,8 +60,8 @@ jobs:
 
           cd "$1"
 
-          # 서버의 main 브랜치는 fast-forward만 허용해 예기치 않은 덮어쓰기를 막는다.
-          git pull --ff-only origin main
+          # 서버의 master 브랜치는 fast-forward만 허용해 예기치 않은 덮어쓰기를 막는다.
+          git pull --ff-only origin master
 
           # 비밀값은 서버에 저장된 파일을 사용하며 Actions 로그로 출력하지 않는다.
           test -f .env.production
