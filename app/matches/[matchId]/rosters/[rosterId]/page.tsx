@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import {
   Activity,
-  ArrowLeft,
   Car,
   Clock3,
   Crosshair,
@@ -17,10 +16,11 @@ import {
   Trophy,
   Users,
 } from "lucide-react";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { RosterParticipantsTable } from "@/components/clan-dashboard/roster-participants-table";
+import { SiteHeader } from "@/components/clan-dashboard/site-header";
+import { getMainClanSummary } from "@/lib/services/clan-service";
 import { getMatchRosterDetail } from "@/lib/services/match-service";
 
 type PageProps = {
@@ -41,7 +41,9 @@ const mapLabels: Record<string, string> = {
   Tiger_Main: "TAEGO",
 };
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
   const { matchId, rosterId } = await params;
   const detail = await getMatchRosterDetail(matchId, rosterId);
 
@@ -63,7 +65,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function RosterMatchDetailPage({ params }: PageProps) {
   const { matchId, rosterId } = await params;
-  const detail = await getMatchRosterDetail(matchId, rosterId);
+  const [detail, clan] = await Promise.all([
+    getMatchRosterDetail(matchId, rosterId),
+    getMainClanSummary(),
+  ]);
 
   if (!detail) {
     notFound();
@@ -100,23 +105,11 @@ export default async function RosterMatchDetailPage({ params }: PageProps) {
   ];
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/85 backdrop-blur-xl">
-        <div className="mx-auto flex h-18 max-w-360 items-center justify-between px-5 sm:px-8 lg:px-12">
-          <Link
-            className="inline-flex items-center gap-2 text-xs font-bold text-muted-foreground transition-colors hover:text-primary"
-            href="/matches"
-          >
-            <ArrowLeft className="size-4" /> 경기 목록
-          </Link>
-          <Link className="flex items-center gap-3" href="/">
-            <span className="grid size-9 place-items-center rounded-sm bg-primary text-xs font-black text-primary-foreground">
-              BB
-            </span>
-            <span className="text-sm font-black tracking-[0.18em]">BOBO</span>
-          </Link>
-        </div>
-      </header>
+    <main className="min-h-screen bg-background pt-18 text-foreground">
+      <SiteHeader
+        clanName={clan?.name ?? "BOBO"}
+        clanTag={clan?.tag ?? "BOBO"}
+      />
 
       <section className="relative overflow-hidden border-b border-border/50">
         <div className="hero-grid absolute inset-0 opacity-25" />
@@ -135,15 +128,19 @@ export default async function RosterMatchDetailPage({ params }: PageProps) {
               </span>
             </div>
             <p className="mt-5 max-w-2xl text-sm leading-6 text-muted-foreground">
-              클랜원 {detail.clanMemberCount}명이 함께한 로스터의 경기 결과야. 팀
-              성적과 참여자 {detail.participants.length}명의 전체 기록을 확인할 수 있어.
+              클랜원 {detail.clanMemberCount}명이 함께한 로스터의 경기 결과야.
+              팀 성적과 참여자 {detail.participants.length}명의 전체 기록을
+              확인할 수 있어.
             </p>
             <div className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-[10px] font-semibold text-muted-foreground">
               <span className="flex items-center gap-2">
-                <Clock3 className="size-3.5 text-primary" /> {formatPlayedAt(detail.match.playedAt)}
+                <Clock3 className="size-3.5 text-primary" />{" "}
+                {formatPlayedAt(detail.match.playedAt)}
               </span>
               <span>경기 시간 {formatDuration(detail.match.duration)}</span>
-              <span className="font-mono">MATCH / {detail.match.pubgMatchId}</span>
+              <span className="font-mono">
+                MATCH / {detail.match.pubgMatchId}
+              </span>
             </div>
           </div>
 
@@ -178,7 +175,9 @@ export default async function RosterMatchDetailPage({ params }: PageProps) {
               <p className="flex items-center gap-2 text-[9px] font-black tracking-[0.17em] text-muted-foreground">
                 <Icon className={`size-3.5 ${tone}`} /> {label}
               </p>
-              <p className="mt-2 text-3xl font-black tracking-[-0.045em]">{value}</p>
+              <p className="mt-2 text-3xl font-black tracking-[-0.045em]">
+                {value}
+              </p>
             </div>
           ))}
         </div>
@@ -191,10 +190,13 @@ export default async function RosterMatchDetailPage({ params }: PageProps) {
               <p className="mb-2 text-[10px] font-black tracking-[0.24em] text-primary">
                 ROSTER MEMBERS
               </p>
-              <h2 className="text-2xl font-black tracking-tight">참여자 기록</h2>
+              <h2 className="text-2xl font-black tracking-tight">
+                참여자 기록
+              </h2>
             </div>
             <span className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground">
-              <Users className="size-4 text-primary" /> {detail.participants.length} PLAYERS
+              <Users className="size-4 text-primary" />{" "}
+              {detail.participants.length} PLAYERS
             </span>
           </div>
 
@@ -211,7 +213,9 @@ export default async function RosterMatchDetailPage({ params }: PageProps) {
               {detail.participants.map((member) => {
                 const contribution =
                   detail.totals.damage > 0
-                    ? Math.round((member.damageDealt / detail.totals.damage) * 100)
+                    ? Math.round(
+                        (member.damageDealt / detail.totals.damage) * 100,
+                      )
                     : 0;
 
                 return (
@@ -240,7 +244,11 @@ export default async function RosterMatchDetailPage({ params }: PageProps) {
             </p>
             <dl className="space-y-4 text-xs">
               <InfoRow icon={Map} label="맵" value={mapName} />
-              <InfoRow icon={Swords} label="모드" value={formatGameMode(detail.match.gameMode)} />
+              <InfoRow
+                icon={Swords}
+                label="모드"
+                value={formatGameMode(detail.match.gameMode)}
+              />
               <InfoRow
                 icon={Trophy}
                 label="게임 유형"
@@ -251,8 +259,16 @@ export default async function RosterMatchDetailPage({ params }: PageProps) {
                 label="경기 시간"
                 value={formatDuration(detail.match.duration)}
               />
-              <InfoRow icon={Users} label="클랜원" value={`${detail.clanMemberCount}명`} />
-              <InfoRow icon={Shield} label="플랫폼" value={detail.match.platform.toUpperCase()} />
+              <InfoRow
+                icon={Users}
+                label="클랜원"
+                value={`${detail.clanMemberCount}명`}
+              />
+              <InfoRow
+                icon={Shield}
+                label="플랫폼"
+                value={detail.match.platform.toUpperCase()}
+              />
             </dl>
             <div className="mt-6 border-t border-border/50 pt-5">
               <p className="text-[8px] font-black tracking-[0.17em] text-muted-foreground">
@@ -272,7 +288,9 @@ export default async function RosterMatchDetailPage({ params }: PageProps) {
             <p className="mb-2 text-[10px] font-black tracking-[0.24em] text-primary">
               FIELD REPORT
             </p>
-            <h2 className="text-2xl font-black tracking-tight">상세 활동 기록</h2>
+            <h2 className="text-2xl font-black tracking-tight">
+              상세 활동 기록
+            </h2>
           </div>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {detail.participants.map((member) => (
@@ -287,12 +305,22 @@ export default async function RosterMatchDetailPage({ params }: PageProps) {
                       {member.deathType.replaceAll("_", " ").toUpperCase()}
                     </p>
                   </div>
-                  <span className="text-xs font-black text-primary">#{member.killPlace}</span>
+                  <span className="text-xs font-black text-primary">
+                    #{member.killPlace}
+                  </span>
                 </div>
                 <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-5">
                   <SmallStat icon={Pill} label="BOOST" value={member.boosts} />
-                  <SmallStat icon={HeartPulse} label="HEAL" value={member.heals} />
-                  <SmallStat icon={Crosshair} label="HEADSHOT" value={member.headshotKills} />
+                  <SmallStat
+                    icon={HeartPulse}
+                    label="HEAL"
+                    value={member.heals}
+                  />
+                  <SmallStat
+                    icon={Crosshair}
+                    label="HEADSHOT"
+                    value={member.headshotKills}
+                  />
                   <SmallStat
                     icon={Target}
                     label="LONGEST"
@@ -313,7 +341,11 @@ export default async function RosterMatchDetailPage({ params }: PageProps) {
                     label="WEAPONS"
                     value={member.weaponsAcquired}
                   />
-                  <SmallStat icon={Skull} label="TEAM KILL" value={member.teamKills} />
+                  <SmallStat
+                    icon={Skull}
+                    label="TEAM KILL"
+                    value={member.teamKills}
+                  />
                 </dl>
               </article>
             ))}
@@ -421,4 +453,3 @@ function formatDistance(distanceInMeters: number) {
 
   return `${Math.round(distanceInMeters)}m`;
 }
-

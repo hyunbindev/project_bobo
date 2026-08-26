@@ -1,5 +1,4 @@
 import {
-  ArrowLeft,
   Crosshair,
   Gamepad2,
   HeartHandshake,
@@ -9,7 +8,6 @@ import {
   Target,
   Trophy,
 } from "lucide-react";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { MatchHistoryTable } from "@/components/clan-dashboard/match-history-table";
@@ -19,7 +17,9 @@ import {
   PlayerRecords,
   type PlayerRecord,
 } from "@/components/clan-dashboard/player-records";
+import { SiteHeader } from "@/components/clan-dashboard/site-header";
 import { getClanMemberDetail } from "@/lib/services/clan-member-service";
+import { getMainClanSummary } from "@/lib/services/clan-service";
 import {
   getPlayerHighRecord,
   getPlayerMatchHistoryPage,
@@ -49,16 +49,18 @@ export default async function MemberDetailPage({
     notFound();
   }
 
-  const [trendMetrics, playerHighRecord, matchHistory] = await Promise.all([
-    getPlayerPerformanceTrends(playerId, member.clanId),
-    getPlayerHighRecord(playerId),
-    getPlayerMatchHistoryPage(
-      playerId,
-      member.clanId,
-      requestedPage,
-      MATCH_PAGE_SIZE,
-    ),
-  ]);
+  const [trendMetrics, playerHighRecord, matchHistory, clan] =
+    await Promise.all([
+      getPlayerPerformanceTrends(playerId, member.clanId),
+      getPlayerHighRecord(playerId),
+      getPlayerMatchHistoryPage(
+        playerId,
+        member.clanId,
+        requestedPage,
+        MATCH_PAGE_SIZE,
+      ),
+      getMainClanSummary(),
+    ]);
   const records = createHighRecordCards(playerHighRecord);
   const firstMatch =
     matchHistory.totalCount === 0
@@ -70,23 +72,11 @@ export default async function MemberDetailPage({
   );
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <header className="border-b border-border/50 bg-background/90 backdrop-blur-xl">
-        <div className="mx-auto flex h-18 max-w-360 items-center justify-between px-5 sm:px-8 lg:px-12">
-          <Link
-            className="inline-flex items-center gap-2 text-xs font-bold text-muted-foreground transition-colors hover:text-primary"
-            href="/members"
-          >
-            <ArrowLeft className="size-4" /> 클랜원 목록
-          </Link>
-          <Link className="flex items-center gap-3" href="/">
-            <span className="grid size-9 place-items-center rounded-sm bg-primary text-xs font-black text-primary-foreground">
-              BB
-            </span>
-            <span className="text-sm font-black tracking-[0.18em]">BOBO</span>
-          </Link>
-        </div>
-      </header>
+    <main className="min-h-screen bg-background pt-18 text-foreground">
+      <SiteHeader
+        clanName={clan?.name ?? "BOBO"}
+        clanTag={clan?.tag ?? member.clanTag}
+      />
 
       <section className="relative overflow-hidden border-b border-border/50">
         <div className="hero-grid absolute inset-0 opacity-25" />

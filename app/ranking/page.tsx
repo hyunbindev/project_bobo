@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import type { LucideIcon } from "lucide-react";
 import {
   Activity,
-  ArrowLeft,
   Car,
+  CircleOff,
   Crosshair,
   Dumbbell,
   Eye,
@@ -18,9 +18,9 @@ import {
   Trophy,
   Users,
 } from "lucide-react";
-import Link from "next/link";
 import { connection } from "next/server";
 
+import { SiteHeader } from "@/components/clan-dashboard/site-header";
 import {
   RankingCard,
   type RankingTheme,
@@ -85,6 +85,12 @@ const rankingThemes: Record<RegularRankingCode, RankingTheme> = {
     glow: "bg-primary/8",
     hoverBorder: "hover:border-primary/35",
   },
+  zero_damage: {
+    icon: CircleOff,
+    accent: "text-support",
+    glow: "bg-support/8",
+    hoverBorder: "hover:border-support/35",
+  },
   spectator: {
     icon: Eye,
     accent: "text-info",
@@ -116,23 +122,11 @@ export default async function RankingPage() {
   )}`;
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/85 backdrop-blur-xl">
-        <div className="mx-auto flex h-18 max-w-360 items-center justify-between px-5 sm:px-8 lg:px-12">
-          <Link
-            className="inline-flex items-center gap-2 text-xs font-bold text-muted-foreground transition-colors hover:text-primary"
-            href="/"
-          >
-            <ArrowLeft className="size-4" /> 대시보드
-          </Link>
-          <Link className="flex items-center gap-3" href="/">
-            <span className="grid size-9 place-items-center rounded-sm bg-primary text-xs font-black text-primary-foreground">
-              BB
-            </span>
-            <span className="text-sm font-black tracking-[0.18em]">BOBO</span>
-          </Link>
-        </div>
-      </header>
+    <main className="min-h-screen bg-background pt-18 text-foreground">
+      <SiteHeader
+        clanName={mainClan?.name ?? "BOBO"}
+        clanTag={mainClan?.tag ?? "BOBO"}
+      />
 
       <section className="relative overflow-hidden border-b border-border/50">
         <div className="hero-grid absolute inset-0 opacity-25" />
@@ -143,26 +137,22 @@ export default async function RankingPage() {
               <Sparkles className="size-3.5" /> WEEKLY RANKING
             </p>
             <h1 className="text-5xl font-black leading-[0.92] tracking-[-0.065em] sm:text-7xl">
-              BOBO
+              <span className="military-glitch" data-text="BOBO">
+                BOBO
+              </span>
               <br />
-              WEEKLY RANKING
+              <span
+                className="military-glitch military-glitch-primary text-primary"
+                data-text="WEEKLY RANKING"
+              >
+                WEEKLY RANKING
+              </span>
             </h1>
             <p className="mt-6 max-w-2xl text-sm leading-6 text-muted-foreground">
               {periodLabel}
               <br />
-              BOBO RANKING <br />
               매주 월요일 초기화
             </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-px self-end overflow-hidden rounded-sm border border-border/60 bg-border/60">
-            <HeroMetric
-              label="RANKINGS"
-              value={String(data.rankings.length).padStart(2, "0")}
-            />
-            <HeroMetric label="RANKED" value="04" />
-            <HeroMetric label="WINDOW" value="7D" />
-            <HeroMetric label="MIN MATCH" value="05" />
           </div>
         </div>
       </section>
@@ -226,19 +216,6 @@ function formatKstDate(date: Date) {
   );
 
   return `${values.year}.${values.month}.${values.day}`;
-}
-
-function HeroMetric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="bg-card px-5 py-4">
-      <p className="text-2xl font-black tracking-[-0.045em] text-primary">
-        {value}
-      </p>
-      <p className="mt-1 text-[8px] font-black tracking-[0.15em] text-muted-foreground">
-        {label}
-      </p>
-    </div>
-  );
 }
 
 function RuleBadge({ icon: Icon, text }: { icon: LucideIcon; text: string }) {

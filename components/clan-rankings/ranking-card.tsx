@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 
-import type { RankingResult, RankingUnit } from "@/lib/rankings/types";
+import { AnimatedRankingValue } from "@/components/clan-rankings/animated-ranking-value";
+import type { RankingResult } from "@/lib/rankings/types";
 import { cn } from "@/lib/utils";
 
 export type RankingTheme = {
@@ -57,7 +58,7 @@ export function RankingCard({
       <ol className="relative divide-y divide-border/45 px-5 sm:px-6">
         {ranking.rankings.length === 0 && (
           <li className="py-8 text-center text-[10px] font-bold text-muted-foreground">
-            집계 조건을 충족한 기록이 없어
+            아직 경기 결과가 없습니다.
           </li>
         )}
         {ranking.rankings.map((ranker, index) => (
@@ -90,7 +91,7 @@ export function RankingCard({
             <strong
               className={cn("text-sm font-black", index === 0 && theme.accent)}
             >
-              {formatRankingValue(ranker.value, ranking.unit)}
+              <AnimatedRankingValue unit={ranking.unit} value={ranker.value} />
               <span className="ml-0.5 text-[10px]">{ranking.unit}</span>
             </strong>
           </li>
@@ -98,15 +99,4 @@ export function RankingCard({
       </ol>
     </article>
   );
-}
-
-function formatRankingValue(value: number, unit: RankingUnit) {
-  if (unit === "회" || unit === "킬" || unit === "P") {
-    return Math.round(value).toLocaleString("ko-KR");
-  }
-
-  return value.toLocaleString("ko-KR", {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 2,
-  });
 }

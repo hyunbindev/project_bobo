@@ -2,24 +2,27 @@
 
 import { ArrowUpRight, Menu, X } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 const navigation = [
-  { href: "/#top", label: "홈" },
-  { href: "/members", label: "클랜원" },
-  { href: "/matches", label: "클랜 전적" },
-  { href: "/ranking", label: "랭킹" },
+  { href: "/#top", path: "/", label: "홈" },
+  { href: "/members", path: "/members", label: "클랜원" },
+  { href: "/matches", path: "/matches", label: "클랜 전적" },
+  { href: "/ranking", path: "/ranking", label: "랭킹" },
 ];
 
-export function HomeHeader({
-  clanMark,
+export function SiteHeader({
+  clanTag,
   clanName,
 }: {
-  clanMark: string;
+  clanTag: string;
   clanName: string;
 }) {
+  const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const closeMenu = () => setIsMenuOpen(false);
+  const clanMark = clanTag.slice(0, 2).toUpperCase();
 
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-border/50 bg-background/90 backdrop-blur-xl">
@@ -47,15 +50,23 @@ export function HomeHeader({
           aria-label="주요 메뉴"
           className="hidden items-center gap-8 text-sm font-semibold text-muted-foreground md:flex"
         >
-          {navigation.map((item, index) => (
-            <Link
-              className={`transition-colors hover:text-primary ${index === 0 ? "text-foreground" : ""}`}
-              href={item.href}
-              key={item.href}
-            >
-              {item.label}
-            </Link>
-          ))}
+          {navigation.map((item) => {
+            const isActive =
+              item.path === "/"
+                ? pathname === item.path
+                : pathname.startsWith(item.path);
+
+            return (
+              <Link
+                aria-current={isActive ? "page" : undefined}
+                className={`transition-colors hover:text-primary ${isActive ? "text-foreground" : ""}`}
+                href={item.href}
+                key={item.href}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
         </nav>
 
         <Link
@@ -73,7 +84,11 @@ export function HomeHeader({
           onClick={() => setIsMenuOpen((isOpen) => !isOpen)}
           type="button"
         >
-          {isMenuOpen ? <X className="size-4.5" /> : <Menu className="size-4.5" />}
+          {isMenuOpen ? (
+            <X className="size-4.5" />
+          ) : (
+            <Menu className="size-4.5" />
+          )}
         </button>
       </div>
 
@@ -84,17 +99,25 @@ export function HomeHeader({
           id="mobile-navigation"
         >
           <div className="mx-auto grid max-w-360 gap-1">
-            {navigation.map((item) => (
-              <Link
-                className="flex min-h-11 items-center justify-between rounded-sm px-3 text-sm font-bold text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
-                href={item.href}
-                key={item.href}
-                onClick={closeMenu}
-              >
-                {item.label}
-                <ArrowUpRight className="size-3.5 opacity-45" />
-              </Link>
-            ))}
+            {navigation.map((item) => {
+              const isActive =
+                item.path === "/"
+                  ? pathname === item.path
+                  : pathname.startsWith(item.path);
+
+              return (
+                <Link
+                  aria-current={isActive ? "page" : undefined}
+                  className={`flex min-h-11 items-center justify-between rounded-sm px-3 text-sm font-bold transition-colors hover:bg-primary/10 hover:text-primary ${isActive ? "bg-primary/10 text-primary" : "text-muted-foreground"}`}
+                  href={item.href}
+                  key={item.href}
+                  onClick={closeMenu}
+                >
+                  {item.label}
+                  <ArrowUpRight className="size-3.5 opacity-45" />
+                </Link>
+              );
+            })}
             <Link
               className="mt-2 inline-flex min-h-11 items-center justify-center gap-2 rounded-sm bg-primary px-4 text-xs font-black text-primary-foreground"
               href="/#notice"

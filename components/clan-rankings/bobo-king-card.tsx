@@ -1,10 +1,8 @@
-"use client";
-
 import { Crown } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
 
+import { AnimatedRankingValue } from "@/components/clan-rankings/animated-ranking-value";
 import type { RankingResult } from "@/lib/rankings/types";
-import { animateNumber, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 export function BoboKingCard({ ranking }: { ranking: RankingResult }) {
   return (
@@ -27,7 +25,7 @@ export function BoboKingCard({ ranking }: { ranking: RankingResult }) {
       <ol className="relative divide-y divide-border/45 px-5 sm:px-8">
         {ranking.rankings.length === 0 && (
           <li className="py-10 text-center text-[10px] font-bold text-muted-foreground">
-            집계 조건을 충족한 기록이 없어
+            아직 경기 결과가 없습니다.
           </li>
         )}
         {ranking.rankings.map((ranker, index) => (
@@ -65,7 +63,7 @@ export function BoboKingCard({ ranking }: { ranking: RankingResult }) {
                 index === 0 && "text-lg text-primary",
               )}
             >
-              <AnimatedNumber value={ranker.value} />
+              <AnimatedRankingValue unit={ranking.unit} value={ranker.value} />
               <span className="ml-1 text-[10px]">{ranking.unit}</span>
             </strong>
           </li>
@@ -73,58 +71,4 @@ export function BoboKingCard({ ranking }: { ranking: RankingResult }) {
       </ol>
     </article>
   );
-}
-
-function AnimatedNumber({ value }: { value: number }) {
-  return <CountUpNumber key={value} targetValue={value} />;
-}
-
-function CountUpNumber({ targetValue }: { targetValue: number }) {
-  const [displayValue, setDisplayValue] = useState("0");
-  const numberRef = useRef<HTMLSpanElement>(null);
-
-  useEffect(() => {
-    const element = numberRef.current;
-
-    if (!element) {
-      return;
-    }
-
-    let cancelAnimation: (() => void) | undefined;
-    const startAnimation = () => {
-      cancelAnimation = animateNumber({
-        to: targetValue,
-        duration: 900,
-        onUpdate: (currentValue) => {
-          setDisplayValue(Math.round(currentValue).toLocaleString("ko-KR"));
-        },
-      });
-    };
-
-    if (!("IntersectionObserver" in window)) {
-      startAnimation();
-      return () => cancelAnimation?.();
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry?.isIntersecting) {
-          return;
-        }
-
-        observer.disconnect();
-        startAnimation();
-      },
-      { threshold: 0.35 },
-    );
-
-    observer.observe(element);
-
-    return () => {
-      observer.disconnect();
-      cancelAnimation?.();
-    };
-  }, [targetValue]);
-
-  return <span ref={numberRef}>{displayValue}</span>;
 }

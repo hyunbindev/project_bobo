@@ -1,13 +1,7 @@
-import {
-  ArrowLeft,
-  Radio,
-  ShieldCheck,
-  UserRoundCheck,
-  Users,
-} from "lucide-react";
-import Link from "next/link";
+import { Radio, ShieldCheck, UserRoundCheck, Users } from "lucide-react";
 
 import { ClanMembersTable } from "@/components/clan-dashboard/clan-members-table";
+import { SiteHeader } from "@/components/clan-dashboard/site-header";
 import { getClanMemberList } from "@/lib/services/clan-member-service";
 
 export default async function MembersPage() {
@@ -18,23 +12,11 @@ export default async function MembersPage() {
   const discoveredMemberCount = members.length - registeredMemberCount;
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <header className="border-b border-border/50 bg-background/90 backdrop-blur-xl">
-        <div className="mx-auto flex h-18 max-w-360 items-center justify-between px-5 sm:px-8 lg:px-12">
-          <Link
-            className="inline-flex items-center gap-2 text-xs font-bold text-muted-foreground transition-colors hover:text-primary"
-            href="/"
-          >
-            <ArrowLeft className="size-4" /> 대시보드
-          </Link>
-          <Link className="flex items-center gap-3" href="/">
-            <span className="grid size-9 place-items-center rounded-sm bg-primary text-xs font-black text-primary-foreground">
-              BB
-            </span>
-            <span className="text-sm font-black tracking-[0.18em]">BOBO</span>
-          </Link>
-        </div>
-      </header>
+    <main className="min-h-screen bg-background pt-18 text-foreground">
+      <SiteHeader
+        clanName={clan?.name ?? "BOBO"}
+        clanTag={clan?.tag ?? "BOBO"}
+      />
 
       <section className="relative overflow-hidden border-b border-border/50">
         <div className="hero-grid absolute inset-0 opacity-25" />
@@ -44,7 +26,19 @@ export default async function MembersPage() {
             CLAN ROSTER
           </p>
           <h1 className="text-4xl font-black tracking-[-0.055em] sm:text-6xl">
-            {clan?.name ?? "클랜원 목록"}
+            <span
+              className="military-glitch"
+              data-text={"BOBO"}
+            >
+              BOBO
+            </span>
+            <br/>
+            <span
+              className="military-glitch text-primary"
+              data-text={"MEMBERS"}
+            >
+              MEMBERS
+            </span>
           </h1>
           <p className="mt-5 max-w-xl text-sm leading-6 text-muted-foreground">
             매치 기록을 통해 확인된 현재 클랜원을 한눈에
@@ -91,16 +85,17 @@ export default async function MembersPage() {
             </h2>
           </div>
           <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground">
-            <Users className="size-4 text-primary" /> 탐색된 클랜원 {members.length}명
+            <Users className="size-4 text-primary" /> 탐색된 클랜원{" "}
+            {members.length}명
           </div>
         </div>
 
         <ClanMembersTable members={members} />
 
         <p className="mt-5 flex items-center gap-2 text-[9px] leading-5 text-muted-foreground">
-          <ShieldCheck className="size-3.5 shrink-0 text-primary" /> 현재 활성 상태의
-          클랜원만 표시하며, 자동 탐색 멤버는 프로필 등록 전까지 PUBG 닉네임으로
-          표시
+          <ShieldCheck className="size-3.5 shrink-0 text-primary" /> 현재 활성
+          상태의 클랜원만 표시하며, 자동 탐색 멤버는 프로필 등록 전까지 PUBG
+          닉네임으로 표시
         </p>
       </section>
     </main>

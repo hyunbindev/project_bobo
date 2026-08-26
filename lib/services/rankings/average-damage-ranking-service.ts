@@ -11,7 +11,7 @@ import {
 export const averageDamageRankingDefinition: RankingDefinition = {
   code: "average_damage",
   label: "DAMAGE DEALER",
-  title: "화력 담당",
+  title: "무호흡 딜링",
   description: "판당 평균 대미지가 가장 높은 클랜원",
   metric: "판당 평균 대미지",
   unit: "딜",

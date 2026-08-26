@@ -7,42 +7,60 @@ import type {
   WeeklyRankingPeriod,
 } from "@/lib/rankings/types";
 
-import { averageDamageRankingDefinition, getAverageDamageRanking,} from
- "@/lib/services/rankings/average-damage-ranking-service";
+import {
+  averageDamageRankingDefinition,
+  getAverageDamageRanking,
+} from "@/lib/services/rankings/average-damage-ranking-service";
 
-import { boboKingRankingDefinition, getBoboKingRanking, } 
-from "@/lib/services/rankings/bobo-king-ranking-service";
+import {
+  boboKingRankingDefinition,
+  getBoboKingRanking,
+} from "@/lib/services/rankings/bobo-king-ranking-service";
 
-import { boostRankingDefinition, getBoostRanking,} from
- "@/lib/services/rankings/boost-ranking-service";
+import {
+  boostRankingDefinition,
+  getBoostRanking,
+} from "@/lib/services/rankings/boost-ranking-service";
 
-import { dbnoRankingDefinition, getDbnoRanking,} from
- "@/lib/services/rankings/dbno-ranking-service";
+import {
+  dbnoRankingDefinition,
+  getDbnoRanking,
+} from "@/lib/services/rankings/dbno-ranking-service";
 
-import { damageCarryRankingDefinition, getDamageCarryRanking,} from
- "@/lib/services/rankings/damage-carry-ranking-service";
+import {
+  damageCarryRankingDefinition,
+  getDamageCarryRanking,
+} from "@/lib/services/rankings/damage-carry-ranking-service";
 
-import { driverRankingDefinition, getDriverRanking,} from
- "@/lib/services/rankings/driver-ranking-service";
+import {
+  getHeadshotRanking,
+  headshotRankingDefinition,
+} from "@/lib/services/rankings/headshot-ranking-service";
 
-import { getHeadshotRanking, headshotRankingDefinition,} from
- "@/lib/services/rankings/headshot-ranking-service";
+import {
+  getHealRanking,
+  healRankingDefinition,
+} from "@/lib/services/rankings/heal-ranking-service";
 
-import { getHealRanking, healRankingDefinition,} from
- "@/lib/services/rankings/heal-ranking-service";
+import {
+  getMaxKillsRanking,
+  maxKillsRankingDefinition,
+} from "@/lib/services/rankings/max-kills-ranking-service";
 
-import { getMaxKillsRanking, maxKillsRankingDefinition,} from
- "@/lib/services/rankings/max-kills-ranking-service";
+import {
+  getReviveRanking,
+  reviveRankingDefinition,
+} from "@/lib/services/rankings/revive-ranking-service";
 
-import { getReviveRanking, reviveRankingDefinition,} from
- "@/lib/services/rankings/revive-ranking-service";
+import {
+  getSpectatorRanking,
+  spectatorRankingDefinition,
+} from "@/lib/services/rankings/spectator-ranking-service";
 
-import { getSpectatorRanking, spectatorRankingDefinition,} from
- "@/lib/services/rankings/spectator-ranking-service";
-
-import { getWalkerRanking, walkerRankingDefinition,} from
- "@/lib/services/rankings/walker-ranking-service";
-
+import {
+  getZeroDamageRanking,
+  zeroDamageRankingDefinition,
+} from "@/lib/services/rankings/zero-damage-ranking-service";
 
 export type {
   RankingEntry,
@@ -67,9 +85,8 @@ const weeklyRankingDefinitions: readonly RankingDefinition[] = [
   dbnoRankingDefinition,
   headshotRankingDefinition,
   maxKillsRankingDefinition,
+  zeroDamageRankingDefinition,
   spectatorRankingDefinition,
-  //driverRankingDefinition,
-  //walkerRankingDefinition,
 ];
 
 export type AggregateWeeklyRankingsInput = {
@@ -88,6 +105,33 @@ export type AggregateWeeklyRankingsResult = {
 export type WeeklyRankingServiceDependencies = {
   saveResults: (result: AggregateWeeklyRankingsResult) => Promise<void>;
 };
+
+export type CurrentBoboKingRankingResult = {
+  period: WeeklyRankingPeriod;
+  ranking: RankingResult;
+};
+
+/** 메인 페이지에서 사용할 이번 주 BOBOKING 순위만 집계한다. */
+export async function getCurrentBoboKingRanking(
+  clanId: string | null,
+  referenceAt = new Date(),
+  limit = 4,
+): Promise<CurrentBoboKingRankingResult> {
+  const period = getCurrentWeeklyRankingPeriod(referenceAt);
+  const ranking = clanId
+    ? await getBoboKingRanking({
+        clanId,
+        period,
+        minMatchCount: 5,
+        limit: Math.min(Math.max(Math.trunc(limit), 1), 100),
+      })
+    : {
+        ...boboKingRankingDefinition,
+        rankings: [],
+      };
+
+  return { period, ranking };
+}
 
 /** 페이지가 바로 렌더링할 수 있는 이번 주 어워드 데이터를 조립한다. */
 export async function getWeeklyRankingPageData(
@@ -135,9 +179,8 @@ export async function runRankingServices(
     getDbnoRanking(input),
     getHeadshotRanking(input),
     getMaxKillsRanking(input),
+    getZeroDamageRanking(input),
     getSpectatorRanking(input),
-    //getDriverRanking(input),
-    //getWalkerRanking(input),
   ]);
 }
 
@@ -201,7 +244,9 @@ function validateInput(input: RankingServiceInput) {
   }
 }
 
-function isRegularRankingResult(ranking: RankingResult): ranking is RegularRankingResult {
+function isRegularRankingResult(
+  ranking: RankingResult,
+): ranking is RegularRankingResult {
   return ranking.code !== "bobo_king";
 }
 

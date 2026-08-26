@@ -1,8 +1,9 @@
-import { ArrowLeft, Clock3 } from "lucide-react";
-import Link from "next/link";
+import { Clock3 } from "lucide-react";
 
 import { MatchHistoryTable } from "@/components/clan-dashboard/match-history-table";
 import { MatchPagination } from "@/components/clan-dashboard/match-pagination";
+import { SiteHeader } from "@/components/clan-dashboard/site-header";
+import { getMainClanSummary } from "@/lib/services/clan-service";
 import { getMatchRosterHistoryPage } from "@/lib/services/match-service";
 
 const PAGE_SIZE = 20;
@@ -14,10 +15,10 @@ export default async function MatchesPage({
 }) {
   const resolvedSearchParams = await searchParams;
   const requestedPage = parsePage(resolvedSearchParams.page);
-  const matchHistory = await getMatchRosterHistoryPage(
-    requestedPage,
-    PAGE_SIZE,
-  );
+  const [matchHistory, clan] = await Promise.all([
+    getMatchRosterHistoryPage(requestedPage, PAGE_SIZE),
+    getMainClanSummary(),
+  ]);
   const firstItem =
     matchHistory.totalCount === 0
       ? 0
@@ -28,23 +29,11 @@ export default async function MatchesPage({
   );
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <header className="border-b border-border/50 bg-background/90 backdrop-blur-xl">
-        <div className="mx-auto flex h-18 max-w-360 items-center justify-between px-5 sm:px-8 lg:px-12">
-          <Link
-            className="inline-flex items-center gap-2 text-xs font-bold text-muted-foreground transition-colors hover:text-primary"
-            href="/"
-          >
-            <ArrowLeft className="size-4" /> 대시보드
-          </Link>
-          <Link className="flex items-center gap-3" href="/">
-            <span className="grid size-9 place-items-center rounded-sm bg-primary text-xs font-black text-primary-foreground">
-              BB
-            </span>
-            <span className="text-sm font-black tracking-[0.18em]">BOBO</span>
-          </Link>
-        </div>
-      </header>
+    <main className="min-h-screen bg-background pt-18 text-foreground">
+      <SiteHeader
+        clanName={clan?.name ?? "BOBO"}
+        clanTag={clan?.tag ?? "BOBO"}
+      />
 
       <section className="relative overflow-hidden border-b border-border/50">
         <div className="hero-grid absolute inset-0 opacity-25" />
@@ -54,7 +43,19 @@ export default async function MatchesPage({
             MATCH ARCHIVE
           </p>
           <h1 className="text-4xl font-black tracking-[-0.055em] sm:text-6xl">
-            클랜 전적 기록
+            <span
+              className="military-glitch"
+              data-text={"BOBO"}
+            >
+              BOBO
+            </span>
+            <br/>
+            <span
+              className="military-glitch text-primary"
+              data-text={"MATCH HISTORY"}
+            >
+              MATCH HISTORY
+            </span>
           </h1>
           <p className="mt-5 max-w-xl text-sm leading-6 text-muted-foreground">
             클랜원이 함께 출전한 최신 전적 조회

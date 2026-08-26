@@ -11,7 +11,7 @@ import {
 export const reviveRankingDefinition: RankingDefinition = {
   code: "revive",
   label: "FIELD MEDIC",
-  title: "이타적인 삶",
+  title: "누구예요? 어디예요? 여기예요?",
   description: "기절한 팀원을 평균 많이 부활시킨 클랜원",
   metric: "판당 부활",
   unit: "평균 회",

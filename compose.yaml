@@ -1,12 +1,15 @@
+name: project-bobo
+
 services:
   postgres:
     image: postgres:17-alpine
+    restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-project_bobo}
-      POSTGRES_USER: ${POSTGRES_USER:-project_bobo}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-project_bobo_local}
+      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in .env.production}
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in .env.production}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.production}
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -18,6 +21,88 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+      start_period: 10s
+    networks:
+      - bobo_backend
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: migrator
+    restart: "no"
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env.production}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - bobo_backend
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    restart: unless-stopped
+    init: true
+    environment:
+      NODE_ENV: production
+      HOSTNAME: 0.0.0.0
+      PORT: 3000
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env.production}
+      PUBG_API_KEY: ${PUBG_API_KEY:?Set PUBG_API_KEY in .env.production}
+      PUBG_CLAN_ID: ${PUBG_CLAN_ID:?Set PUBG_CLAN_ID in .env.production}
+    ports:
+      - "127.0.0.1:${APP_PORT:-3000}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    stop_grace_period: 30s
+    networks:
+      - bobo_frontend
+      - bobo_backend
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    init: true
+    command:
+      - tunnel
+      - --no-autoupdate
+      - run
+      - --token-file
+      - /run/secrets/cloudflare_tunnel_token
+    secrets:
+      - cloudflare_tunnel_token
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - bobo_frontend
 
 volumes:
   postgres_data:
+
+networks:
+  bobo_frontend:
+  bobo_backend:
+    internal: true
+
+secrets:
+  cloudflare_tunnel_token:
+    file: ${CLOUDFLARE_TUNNEL_TOKEN_FILE:-./secrets/cloudflare-tunnel-token}
