@@ -17,6 +17,8 @@ export const metadata: Metadata = {
   description: "같이 내리고 끝까지 살아남는 BOBO PUBG 클랜의 전적과 기록.",
 };
 
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
