@@ -33,27 +33,27 @@ jobs:
       DEPLOY_PORT: ${{ secrets.DEPLOY_PORT || '22' }}
 
     steps:
-      - name: Configure SSH
-        env:
-          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+      - name: Install SSH password helper
         run: |
-          install -m 700 -d "$HOME/.ssh"
-          printf '%s\n' "$DEPLOY_SSH_KEY" > "$HOME/.ssh/deploy_key"
-          chmod 600 "$HOME/.ssh/deploy_key"
-          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
-          chmod 600 "$HOME/.ssh/known_hosts"
+          sudo apt-get update
+          sudo apt-get install --yes sshpass
 
       - name: Deploy over SSH
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          SSHPASS: ${{ secrets.DEPLOY_PASSWORD }}
         run: |
-          ssh \
-            -i "$HOME/.ssh/deploy_key" \
+          : "${DEPLOY_HOST:?Set the DEPLOY_HOST secret}"
+          : "${DEPLOY_USER:?Set the DEPLOY_USER secret}"
+          : "${SSHPASS:?Set the DEPLOY_PASSWORD secret}"
+          : "${DEPLOY_PORT:?Set the DEPLOY_PORT secret or use its default}"
+
+          sshpass -e ssh \
             -p "$DEPLOY_PORT" \
-            -o BatchMode=yes \
-            -o StrictHostKeyChecking=yes \
+            -o PubkeyAuthentication=no \
+            -o PreferredAuthentications=password,keyboard-interactive \
+            -o StrictHostKeyChecking=accept-new \
             "$DEPLOY_USER@$DEPLOY_HOST" \
             bash -se -- "$DEPLOY_PATH" <<'REMOTE_SCRIPT'
           set -euo pipefail
