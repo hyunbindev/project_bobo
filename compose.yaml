@@ -1,5 +1,11 @@
 name: project-bobo
 
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
 services:
   postgres:
     image: postgres:17-alpine
@@ -24,6 +30,7 @@ services:
       start_period: 10s
     networks:
       - bobo_backend
+    logging: *default-logging
 
   migrate:
     build:
@@ -38,6 +45,7 @@ services:
         condition: service_healthy
     networks:
       - bobo_backend
+    logging: *default-logging
 
   app:
     build:
@@ -53,6 +61,7 @@ services:
       DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env.production}
       PUBG_API_KEY: ${PUBG_API_KEY:?Set PUBG_API_KEY in .env.production}
       PUBG_CLAN_ID: ${PUBG_CLAN_ID:?Set PUBG_CLAN_ID in .env.production}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
     ports:
       - "127.0.0.1:${APP_PORT:-3000}:3000"
     depends_on:
@@ -76,6 +85,7 @@ services:
     networks:
       - bobo_frontend
       - bobo_backend
+    logging: *default-logging
 
   cloudflared:
     image: cloudflare/cloudflared:latest
@@ -94,6 +104,7 @@ services:
         condition: service_healthy
     networks:
       - bobo_frontend
+    logging: *default-logging
 
 volumes:
   postgres_data:

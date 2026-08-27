@@ -1,3 +1,6 @@
+import type { Logger } from "pino";
+
+import { logger } from "@/lib/logger";
 import type { PubgClan } from "@/lib/pubg/clan-types";
 import { PubgApiError } from "@/lib/pubg/client";
 import { getMatchById } from "@/lib/pubg/matches";
@@ -12,6 +15,11 @@ const PLAYER_BATCH_SIZE = 10;
 const MATCH_FETCH_BATCH_SIZE = 5;
 const PLAYER_REQUEST_INTERVAL_MS = 8_000;
 const MAX_RATE_LIMIT_RETRIES = 3;
+
+type PlayerApiMetrics = {
+    requestCount: number;
+    rateLimitCount: number;
+};
 
 function delay(milliseconds: number) {
     return new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -37,10 +45,16 @@ function getRetryDelay(retryAfter: string | null) {
     return Math.max(retryAt - Date.now(), PLAYER_REQUEST_INTERVAL_MS);
 }
 
-async function getPlayersWithRateLimitRetry(accountIds: string[]) {
+async function getPlayersWithRateLimitRetry(
+    accountIds: string[],
+    log: Logger,
+    metrics: PlayerApiMetrics,
+) {
     let rateLimitRetryCount = 0;
 
     while (true) {
+        metrics.requestCount += 1;
+
         try {
             return await getPlayersByAccountIds(accountIds, "kakao");
         } catch (error) {
@@ -53,10 +67,17 @@ async function getPlayersWithRateLimitRetry(accountIds: string[]) {
             }
 
             rateLimitRetryCount += 1;
+            metrics.rateLimitCount += 1;
             const retryDelay = getRetryDelay(error.retryAfter);
 
-            console.warn(
-                `PUBG player API rate limited. Retrying in ${retryDelay}ms.`,
+            log.warn(
+                {
+                    event: "match_sync.player_api_rate_limited",
+                    retryCount: rateLimitRetryCount,
+                    retryDelayMs: retryDelay,
+                    batchSize: accountIds.length,
+                },
+                "PUBG player API rate limited",
             );
             await delay(retryDelay);
         }
@@ -85,8 +106,30 @@ function findClanRosterParticipants(
 }
 
 export default async function clanMatchSyncJob() {
-    if (isRunning) return;
+    if (isRunning) {
+        logger.debug(
+            {
+                event: "match_sync.skipped",
+                reason: "already_running",
+            },
+            "Match sync skipped",
+        );
+        return;
+    }
+
     isRunning = true;
+    const runId = crypto.randomUUID();
+    const startedAt = Date.now();
+    const log = logger.child({ component: "match-sync", runId });
+    const playerApiMetrics: PlayerApiMetrics = {
+        requestCount: 0,
+        rateLimitCount: 0,
+    };
+
+    log.info(
+        { event: "match_sync.started" },
+        "Match sync started",
+    );
 
     try {
         const clanSummary = await getMainClanSummary();
@@ -127,6 +170,8 @@ export default async function clanMatchSyncJob() {
 
         const playerResponse = await getPlayersWithRateLimitRetry(
             pubgAccountIds,
+            log,
+            playerApiMetrics,
         );
 
         await markPlayersSynced(
@@ -158,6 +203,7 @@ export default async function clanMatchSyncJob() {
         let verifiedClanMemberCount = 0;
         let failedCandidateBatchCount = 0;
         let failedClanMemberSaveCount = 0;
+        let candidateBatchCount = 0;
 
         for (const storedMatch of storedMatchHistories) {
             const clanRosterParticipants = findClanRosterParticipants(
@@ -183,9 +229,13 @@ export default async function clanMatchSyncJob() {
                     backfilledMatchCount += 1;
                 } catch (error) {
                     failedMatchCount += 1;
-                    console.error(
-                        `Failed to backfill PUBG match ${storedMatch.history.id}:`,
-                        error,
+                    log.error(
+                        {
+                            err: error,
+                            event: "match_sync.match_backfill_failed",
+                            pubgMatchId: storedMatch.history.id,
+                        },
+                        "Failed to backfill PUBG match",
                     );
                     continue;
                 }
@@ -216,9 +266,13 @@ export default async function clanMatchSyncJob() {
             for (const [resultIndex, result] of matchResults.entries()) {
                 if (result.status === "rejected") {
                     failedMatchCount += 1;
-                    console.error(
-                        `Failed to fetch PUBG match ${matchIdBatch[resultIndex]}:`,
-                        result.reason,
+                    log.error(
+                        {
+                            err: result.reason,
+                            event: "match_sync.match_fetch_failed",
+                            pubgMatchId: matchIdBatch[resultIndex],
+                        },
+                        "Failed to fetch PUBG match",
                     );
                     continue;
                 }
@@ -239,7 +293,14 @@ export default async function clanMatchSyncJob() {
                     syncedMatchCount += 1;
                 } catch (error) {
                     failedMatchCount += 1;
-                    console.error(`Failed to save PUBG match ${history.id}:`, error);
+                    log.error(
+                        {
+                            err: error,
+                            event: "match_sync.match_save_failed",
+                            pubgMatchId: history.id,
+                        },
+                        "Failed to save PUBG match",
+                    );
                     continue;
                 }
 
@@ -266,16 +327,26 @@ export default async function clanMatchSyncJob() {
             );
 
             await delay(PLAYER_REQUEST_INTERVAL_MS);
+            candidateBatchCount += 1;
 
             let candidatePlayers;
 
             try {
                 candidatePlayers = await getPlayersWithRateLimitRetry(
                     candidateBatch,
+                    log,
+                    playerApiMetrics,
                 );
             } catch (error) {
                 failedCandidateBatchCount += 1;
-                console.error("Failed to verify clan member candidates:", error);
+                log.error(
+                    {
+                        err: error,
+                        event: "match_sync.candidate_batch_failed",
+                        batchSize: candidateBatch.length,
+                    },
+                    "Failed to verify clan member candidates",
+                );
                 continue;
             }
 
@@ -294,9 +365,12 @@ export default async function clanMatchSyncJob() {
                     });
                 } catch (error) {
                     failedClanMemberSaveCount += 1;
-                    console.error(
-                        `Failed to save discovered clan member ${player.accountId}:`,
-                        error,
+                    log.error(
+                        {
+                            err: error,
+                            event: "match_sync.clan_member_save_failed",
+                        },
+                        "Failed to save discovered clan member",
                     );
                     continue;
                 }
@@ -306,20 +380,38 @@ export default async function clanMatchSyncJob() {
             }
         }
 
-        console.log({
-            discoveredMatchCount: matchIds.size,
-            storedMatchCount: storedMatchIds.size,
-            newMatchCount: newMatchIds.length,
-            syncedMatchCount,
-            backfilledMatchCount,
-            failedMatchCount,
-            candidatePlayerCount: candidatePlayerIds.size,
-            verifiedClanMemberCount,
-            failedCandidateBatchCount,
-            failedClanMemberSaveCount,
-        });
+        log.info(
+            {
+                event: "match_sync.completed",
+                durationMs: Date.now() - startedAt,
+                memberCount: members.length,
+                discoveredMatchCount: matchIds.size,
+                storedMatchCount: storedMatchIds.size,
+                newMatchCount: newMatchIds.length,
+                syncedMatchCount,
+                backfilledMatchCount,
+                failedMatchCount,
+                candidatePlayerCount: candidatePlayerIds.size,
+                candidateBatchCount,
+                playerApiRequestCount: playerApiMetrics.requestCount,
+                rateLimitCount: playerApiMetrics.rateLimitCount,
+                verifiedClanMemberCount,
+                failedCandidateBatchCount,
+                failedClanMemberSaveCount,
+            },
+            "Match sync completed",
+        );
     } catch (error) {
-        console.error("Error in clanMatchSyncJob:", error);
+        log.error(
+            {
+                err: error,
+                event: "match_sync.failed",
+                durationMs: Date.now() - startedAt,
+                playerApiRequestCount: playerApiMetrics.requestCount,
+                rateLimitCount: playerApiMetrics.rateLimitCount,
+            },
+            "Match sync failed",
+        );
     } finally {
         isRunning = false;
     }

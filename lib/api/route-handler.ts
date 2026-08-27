@@ -1,4 +1,5 @@
 import { ApiError, BadRequestError } from "@/lib/api/errors";
+import { logger } from "@/lib/logger";
 
 type RouteContext = Record<string, unknown>;
 
@@ -35,7 +36,15 @@ export function withApiErrorHandler<TContext extends RouteContext = RouteContext
         );
       }
 
-      console.error("Unhandled API error.", error);
+      logger.error(
+        {
+          err: error,
+          event: "api.unhandled_error",
+          method: request.method,
+          pathname: new URL(request.url).pathname,
+        },
+        "Unhandled API error",
+      );
 
       return Response.json(
         {
