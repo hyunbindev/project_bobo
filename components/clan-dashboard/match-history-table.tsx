@@ -1,5 +1,6 @@
 import { Activity, Clock3, Crosshair, Map, Trophy } from "lucide-react";
 import Link from "next/link";
+import { Fragment } from "react";
 
 import {
   Table,
@@ -32,8 +33,8 @@ export function MatchHistoryTable({
 }) {
   return (
     <div className="overflow-hidden rounded-sm border border-border/60 bg-card">
-      <Table className="min-w-250">
-        <TableHeader className="bg-muted/20">
+      <Table className="min-w-0 lg:min-w-250">
+        <TableHeader className="hidden bg-muted/20 lg:table-header-group">
           <TableRow className="border-border/60 hover:bg-transparent">
             <TableHead className="w-20 px-6 text-[9px] font-black tracking-[0.16em] text-muted-foreground">
               RANK
@@ -75,70 +76,116 @@ export function MatchHistoryTable({
               const href = `/matches/${encodeURIComponent(match.matchId)}/rosters/${encodeURIComponent(match.rosterId)}`;
 
               return (
-                <TableRow
-                  className="border-border/50 hover:bg-foreground/[0.025]"
+                <Fragment
                   key={`${match.matchId}:${match.rosterId}`}
                 >
-                  <TableCell className="p-0">
-                    <Link className="block px-6 py-5" href={href}>
-                      <span
-                        className={`text-2xl font-black tracking-[-0.05em] ${
-                          match.rank === 1 ? "text-primary" : "text-foreground"
-                        }`}
+                  <TableRow className="border-border/50 hover:bg-foreground/[0.025] lg:hidden">
+                    <TableCell className="whitespace-normal p-0" colSpan={7}>
+                      <Link
+                        aria-label={`${formatMapName(match.mapName)} 경기 상세 보기`}
+                        className="block px-4 py-4 sm:px-5"
+                        href={href}
                       >
-                        #{match.rank}
-                      </span>
-                    </Link>
-                  </TableCell>
+                        <div className="flex min-w-0 items-center justify-between gap-3">
+                          <div className="flex min-w-0 items-center gap-2.5">
+                            <span
+                              className={`shrink-0 text-xl font-black tracking-[-0.05em] ${
+                                match.rank === 1
+                                  ? "text-primary"
+                                  : "text-foreground"
+                              }`}
+                            >
+                              #{match.rank}
+                            </span>
+                            <strong className="flex min-w-0 items-center gap-1.5 truncate text-sm">
+                              <Map className="size-3.5 shrink-0 text-primary" />
+                              <span className="truncate">
+                                {formatMapName(match.mapName)}
+                              </span>
+                            </strong>
+                          </div>
+                          <span className="flex shrink-0 items-center gap-1 text-[9px] font-semibold text-muted-foreground">
+                            <Clock3 className="size-3" />
+                            {formatPlayedAt(match.playedAt)}
+                          </span>
+                        </div>
 
-                  <TableCell className="p-0">
-                    <Link className="block py-5" href={href}>
-                      <p className="flex items-center gap-2 text-sm font-black">
-                        <Map className="size-3.5 text-primary" />
-                        {formatMapName(match.mapName)}
-                      </p>
-                      <p className="mt-1 truncate text-[10px] font-semibold text-muted-foreground">
-                        {formatMode(match.matchType, match.gameMode)}
-                      </p>
-                    </Link>
-                  </TableCell>
+                        <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 text-[10px] font-semibold text-muted-foreground">
+                          <span className="truncate">
+                            {formatMode(match.matchType, match.gameMode)}
+                          </span>
+                          <span className="whitespace-nowrap">
+                            {match.kills}킬 · {match.dbnos}기절 · {Math.round(match.damage).toLocaleString("ko-KR")}딜
+                          </span>
+                        </div>
+                      </Link>
+                    </TableCell>
+                  </TableRow>
 
-                  <MetricCell
-                    href={href}
-                    icon={Crosshair}
-                    value={match.kills}
-                  />
-                  <MetricCell href={href} icon={Activity} value={match.dbnos} />
-                  <MetricCell
-                    href={href}
-                    icon={Trophy}
-                    value={Math.round(match.damage).toLocaleString("ko-KR")}
-                  />
-
-                  <TableCell className="p-0">
-                    <Link className="flex flex-wrap gap-1 py-5" href={href}>
-                      {match.memberNames.map((member, index) => (
+                  <TableRow className="hidden border-border/50 hover:bg-foreground/[0.025] lg:table-row">
+                    <TableCell className="p-0">
+                      <Link className="block px-6 py-5" href={href}>
                         <span
-                          className="max-w-28 truncate rounded-sm bg-foreground/[0.055] px-2 py-1 text-[9px] font-bold text-muted-foreground"
-                          key={`${member}:${index}`}
-                          title={member}
+                          className={`text-2xl font-black tracking-[-0.05em] ${
+                            match.rank === 1
+                              ? "text-primary"
+                              : "text-foreground"
+                          }`}
                         >
-                          {member}
+                          #{match.rank}
                         </span>
-                      ))}
-                    </Link>
-                  </TableCell>
+                      </Link>
+                    </TableCell>
 
-                  <TableCell className="p-0 text-right">
-                    <Link
-                      className="flex items-center justify-end gap-1.5 px-6 py-5 text-[10px] font-semibold text-muted-foreground"
+                    <TableCell className="p-0">
+                      <Link className="block py-5" href={href}>
+                        <p className="flex items-center gap-2 text-sm font-black">
+                          <Map className="size-3.5 text-primary" />
+                          {formatMapName(match.mapName)}
+                        </p>
+                        <p className="mt-1 truncate text-[10px] font-semibold text-muted-foreground">
+                          {formatMode(match.matchType, match.gameMode)}
+                        </p>
+                      </Link>
+                    </TableCell>
+
+                    <MetricCell
                       href={href}
-                    >
-                      <Clock3 className="size-3" />
-                      {formatPlayedAt(match.playedAt)}
-                    </Link>
-                  </TableCell>
-                </TableRow>
+                      icon={Crosshair}
+                      value={match.kills}
+                    />
+                    <MetricCell href={href} icon={Activity} value={match.dbnos} />
+                    <MetricCell
+                      href={href}
+                      icon={Trophy}
+                      value={Math.round(match.damage).toLocaleString("ko-KR")}
+                    />
+
+                    <TableCell className="p-0">
+                      <Link className="flex flex-wrap gap-1 py-5" href={href}>
+                        {match.memberNames.map((member, index) => (
+                          <span
+                            className="max-w-28 truncate rounded-sm bg-foreground/[0.055] px-2 py-1 text-[9px] font-bold text-muted-foreground"
+                            key={`${member}:${index}`}
+                            title={member}
+                          >
+                            {member}
+                          </span>
+                        ))}
+                      </Link>
+                    </TableCell>
+
+                    <TableCell className="p-0 text-right">
+                      <Link
+                        className="flex items-center justify-end gap-1.5 px-6 py-5 text-[10px] font-semibold text-muted-foreground"
+                        href={href}
+                      >
+                        <Clock3 className="size-3" />
+                        {formatPlayedAt(match.playedAt)}
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                </Fragment>
               );
             })
           )}
