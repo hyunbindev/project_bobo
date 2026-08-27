@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import Link from "next/link";
 
 import { AnimatedRankingValue } from "@/components/clan-rankings/animated-ranking-value";
 import type { RankingResult } from "@/lib/rankings/types";
@@ -62,10 +63,11 @@ export function RankingCard({
           </li>
         )}
         {ranking.rankings.map((ranker, index) => (
-          <li
-            className="grid grid-cols-[28px_minmax(0,1fr)_auto] items-center gap-3 py-3.5"
-            key={ranker.playerId}
-          >
+          <li key={ranker.playerId}>
+            <Link
+              className="grid grid-cols-[28px_minmax(0,1fr)_auto] items-center gap-3 py-3.5 transition-colors hover:bg-foreground/[0.025] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+              href={`/members/${ranker.playerId}`}
+            >
             <span
               className={cn(
                 "font-mono font-black text-foreground/30",
@@ -94,6 +96,7 @@ export function RankingCard({
               <AnimatedRankingValue unit={ranking.unit} value={ranker.value} />
               <span className="ml-0.5 text-[10px]">{ranking.unit}</span>
             </strong>
+            </Link>
           </li>
         ))}
       </ol>

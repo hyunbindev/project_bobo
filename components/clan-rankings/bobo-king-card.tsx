@@ -1,4 +1,5 @@
 import { Crown } from "lucide-react";
+import Link from "next/link";
 
 import { AnimatedRankingValue } from "@/components/clan-rankings/animated-ranking-value";
 import type { RankingResult } from "@/lib/rankings/types";
@@ -29,10 +30,11 @@ export function BoboKingCard({ ranking }: { ranking: RankingResult }) {
           </li>
         )}
         {ranking.rankings.map((ranker, index) => (
-          <li
-            className="grid grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-4 py-4 sm:grid-cols-[48px_minmax(0,1fr)_auto] sm:px-4"
-            key={ranker.playerId}
-          >
+          <li key={ranker.playerId}>
+            <Link
+              className="grid grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-4 py-4 transition-colors hover:bg-foreground/[0.025] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 sm:grid-cols-[48px_minmax(0,1fr)_auto] sm:px-4"
+              href={`/members/${ranker.playerId}`}
+            >
             <span
               className={cn(
                 "font-mono font-black text-foreground/30",
@@ -66,6 +68,7 @@ export function BoboKingCard({ ranking }: { ranking: RankingResult }) {
               <AnimatedRankingValue unit={ranking.unit} value={ranker.value} />
               <span className="ml-1 text-[10px]">{ranking.unit}</span>
             </strong>
+            </Link>
           </li>
         ))}
       </ol>
