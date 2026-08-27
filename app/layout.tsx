@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "BOBO CLAN | PUBG 클랜 공식 홈페이지",
-  description: "같이 내리고 끝까지 살아남는 BOBO PUBG 클랜의 전적과 기록.",
+  title: "BOBO CLAN",
+  description: "BATTLE GROUND BOBO CLAN.",
 };
 
 export const dynamic = "force-dynamic";
