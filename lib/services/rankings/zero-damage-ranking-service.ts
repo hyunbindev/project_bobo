@@ -8,8 +8,8 @@ import {
 export const zeroDamageRankingDefinition: RankingDefinition = {
   code: "zero_damage",
   label: "ZERO DAMAGE",
-  title: "아 총이 안나와!!",
-  description: "대미지를 주지 못하고 끝난 경기가 가장 많은 클랜원",
+  title: "물총",
+  description: "대미지를 한 번도 주지 못하고 끝난 경기가 가장 많은 클랜원",
   metric: "0딜 경기",
   unit: "회",
 };

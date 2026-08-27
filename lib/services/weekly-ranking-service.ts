@@ -48,6 +48,11 @@ import {
 } from "@/lib/services/rankings/max-kills-ranking-service";
 
 import {
+  getNoWeaponRanking,
+  noWeaponRankingDefinition,
+} from "@/lib/services/rankings/no-weapon-ranking-service";
+
+import {
   getReviveRanking,
   reviveRankingDefinition,
 } from "@/lib/services/rankings/revive-ranking-service";
@@ -85,6 +90,7 @@ const weeklyRankingDefinitions: readonly RankingDefinition[] = [
   dbnoRankingDefinition,
   headshotRankingDefinition,
   maxKillsRankingDefinition,
+  noWeaponRankingDefinition,
   zeroDamageRankingDefinition,
   spectatorRankingDefinition,
 ];
@@ -179,6 +185,7 @@ export async function runRankingServices(
     getDbnoRanking(input),
     getHeadshotRanking(input),
     getMaxKillsRanking(input),
+    getNoWeaponRanking(input),
     getZeroDamageRanking(input),
     getSpectatorRanking(input),
   ]);

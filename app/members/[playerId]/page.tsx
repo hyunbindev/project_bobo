@@ -107,7 +107,7 @@ export default async function MemberDetailPage({
       <section className="mx-auto max-w-360 space-y-16 px-5 py-14 sm:px-8 lg:px-12 lg:py-20">
         <section>
           <SectionHeading
-            description="최근 14일 클랜 파티 경기 중 최대 20경기의 흐름이야."
+            description="최근 14일 클랜 파티 경기 중 최대 50경기를 기준으로 산출한 경기력 추이입니다."
             eyebrow="RECENT FORM"
             icon={Radio}
             title="경기력 추이"
@@ -117,7 +117,7 @@ export default async function MemberDetailPage({
 
         <section>
           <SectionHeading
-            description="현재 저장된 경기 중 가장 높은 개인 기록이야."
+            description="현재 저장된 경기에서 확인된 개인 최고 기록입니다."
             eyebrow="PERSONAL BEST"
             icon={Trophy}
             title="최고 기록"
@@ -127,7 +127,7 @@ export default async function MemberDetailPage({
 
         <section>
           <SectionHeading
-            description="맵과 모드별 세부 성적을 시간순으로 확인할 수 있어."
+            description="클랜원과 함께한 경기의 세부 기록을 최신순으로 제공합니다."
             eyebrow="MATCH HISTORY"
             icon={Gamepad2}
             title="최근 전적"

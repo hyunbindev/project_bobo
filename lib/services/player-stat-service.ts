@@ -125,8 +125,8 @@ function createTrendMetric(
     
       description:
       baseline === null
-        ? `${values.length} MATCHES`
-        : `20G AVG ${definition.formatValue(baseline)}`,
+        ? `최근 ${values.length}경기`
+        : `최근 ${TREND_MATCH_LIMIT}경기 평균 ${definition.formatValue(baseline)}`,
 
     points: matches.map((match, index) => ({
       match: index + 1,

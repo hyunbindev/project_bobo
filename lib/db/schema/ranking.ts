@@ -20,6 +20,7 @@ export const RANKING_CODES = [
   "dbno",
   "headshot",
   "max_kills",
+  "no_weapon",
   "zero_damage",
   "spectator",
   "driver",

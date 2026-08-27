@@ -85,6 +85,12 @@ const rankingThemes: Record<RegularRankingCode, RankingTheme> = {
     glow: "bg-primary/8",
     hoverBorder: "hover:border-primary/35",
   },
+  no_weapon: {
+    icon: CircleOff,
+    accent: "text-support",
+    glow: "bg-support/8",
+    hoverBorder: "hover:border-support/35",
+  },
   zero_damage: {
     icon: CircleOff,
     accent: "text-support",
