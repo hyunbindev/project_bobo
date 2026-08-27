@@ -14,6 +14,7 @@ import {
   findActiveClanMembersByClanId,
   findClanMemberDetailByPlayerId,
   findStoredClanByPubgId,
+  findStoredPlayerById,
   findStoredPlayerByName,
   saveClanMember,
 } from "@/lib/repositories/clan-member-repository";
@@ -214,6 +215,14 @@ export const getClanMemberDetail = cache(async (playerId: string) => {
   }
 
   return findClanMemberDetailByPlayerId(playerId);
+});
+
+export const getStoredPlayerSummary = cache(async (playerId: string) => {
+  if (!UUID_PATTERN.test(playerId)) {
+    return null;
+  }
+
+  return findStoredPlayerById(playerId);
 });
 
 // 매치 동기화 Worker가 발견한 닉네임을 넘기면 미등록 프로필로 자동 추가한다.

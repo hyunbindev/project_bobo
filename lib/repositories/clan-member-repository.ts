@@ -95,6 +95,24 @@ export async function findStoredPlayerByName(
   return player ?? null;
 }
 
+export async function findStoredPlayerById(
+  playerId: string,
+  database: DatabaseClient = db,
+) {
+  const [player] = await database
+    .select({
+      id: players.id,
+      nickname: players.name,
+      platform: players.platform,
+      pubgClanId: players.pubgClanId,
+    })
+    .from(players)
+    .where(eq(players.id, playerId))
+    .limit(1);
+
+  return player ?? null;
+}
+
 export async function findStoredClanByPubgId(
   pubgClanId: string,
   platform: PubgPlatform,

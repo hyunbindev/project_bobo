@@ -1,4 +1,5 @@
 import {
+  ArrowLeft,
   Crosshair,
   Gamepad2,
   HeartHandshake,
@@ -7,7 +8,9 @@ import {
   Ruler,
   Target,
   Trophy,
+  UserX,
 } from "lucide-react";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { MatchHistoryTable } from "@/components/clan-dashboard/match-history-table";
@@ -18,7 +21,10 @@ import {
   type PlayerRecord,
 } from "@/components/clan-dashboard/player-records";
 import { SiteHeader } from "@/components/clan-dashboard/site-header";
-import { getClanMemberDetail } from "@/lib/services/clan-member-service";
+import {
+  getClanMemberDetail,
+  getStoredPlayerSummary,
+} from "@/lib/services/clan-member-service";
 import { getMainClanSummary } from "@/lib/services/clan-service";
 import {
   getPlayerHighRecord,
@@ -43,13 +49,29 @@ export default async function MemberDetailPage({
     searchParams,
   ]);
   const requestedPage = parsePage(resolvedSearchParams.page);
-  const member = await getClanMemberDetail(playerId);
+  const [member, clan] = await Promise.all([
+    getClanMemberDetail(playerId),
+    getMainClanSummary(),
+  ]);
 
   if (!member) {
-    notFound();
+    const player = await getStoredPlayerSummary(playerId);
+
+    if (!player) {
+      notFound();
+    }
+
+    return (
+      <NonClanMemberView
+        clanName={clan?.name ?? "BOBO"}
+        clanTag={clan?.tag ?? "BOBO"}
+        nickname={player.nickname}
+        platform={player.platform}
+      />
+    );
   }
 
-  const [trendMetrics, playerHighRecord, matchHistory, clan] =
+  const [trendMetrics, playerHighRecord, matchHistory] =
     await Promise.all([
       getPlayerPerformanceTrends(playerId, member.clanId),
       getPlayerHighRecord(playerId),
@@ -59,7 +81,6 @@ export default async function MemberDetailPage({
         requestedPage,
         MATCH_PAGE_SIZE,
       ),
-      getMainClanSummary(),
     ]);
   const records = createHighRecordCards(playerHighRecord);
   const firstMatch =
@@ -148,6 +169,53 @@ export default async function MemberDetailPage({
             </div>
           )}
         </section>
+      </section>
+    </main>
+  );
+}
+
+function NonClanMemberView({
+  clanName,
+  clanTag,
+  nickname,
+  platform,
+}: {
+  clanName: string;
+  clanTag: string;
+  nickname: string;
+  platform: string;
+}) {
+  return (
+    <main className="min-h-screen bg-background pt-18 text-foreground">
+      <SiteHeader clanName={clanName} clanTag={clanTag} />
+
+      <section className="relative grid min-h-[calc(100vh-4.5rem)] place-items-center overflow-hidden px-5 py-16">
+        <div className="hero-grid absolute inset-0 opacity-20" />
+        <div className="hero-glow absolute left-1/2 top-1/2 size-96 -translate-x-1/2 -translate-y-1/2 rounded-full" />
+
+        <div className="relative w-full max-w-xl rounded-sm border border-border/60 bg-card p-8 text-center sm:p-12">
+          <span className="mx-auto grid size-16 place-items-center rounded-full border border-primary/35 bg-primary/10 text-primary">
+            <UserX className="size-8" />
+          </span>
+          <p className="mt-6 text-[10px] font-black tracking-[0.25em] text-primary">
+            NON-CLAN PLAYER
+          </p>
+          <h1 className="mt-3 text-3xl font-black tracking-[-0.04em] sm:text-4xl">
+            클랜원이 아닙니다
+          </h1>
+          <p className="mt-5 text-sm leading-6 text-muted-foreground">
+            <strong className="text-foreground">{nickname}</strong>
+            <span> · {platform.toUpperCase()}</span>
+            <br />
+            현재 {clanName} 클랜원으로 등록되어 있지 않아 상세 전적을 제공하지 않습니다.
+          </p>
+          <Link
+            className="mx-auto mt-8 inline-flex h-10 items-center gap-2 rounded-sm border border-primary/50 px-5 text-xs font-black text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
+            href="/members"
+          >
+            <ArrowLeft className="size-4" /> 클랜원 목록으로
+          </Link>
+        </div>
       </section>
     </main>
   );
