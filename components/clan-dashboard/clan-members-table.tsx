@@ -69,7 +69,7 @@ export function ClanMembersTable({
             members.map((member) => (
               <TableRow
                 onClick={()=>router.push(`/members/${member.playerId}`)}
-                className="border-border/50 hover:bg-foreground/[0.025] cusor-pointer"
+                className="border-border/50 hover:bg-foreground/2.5 cusor-pointer"
                 key={member.memberId}
               >
                 <TableCell className="px-6 py-5">
