@@ -65,9 +65,9 @@ export function MatchHistoryTable({
             <TableRow className="hover:bg-transparent">
               <TableCell className="h-64 text-center" colSpan={7}>
                 <Trophy className="mx-auto size-8 text-primary/70" />
-                <p className="mt-4 text-sm font-black">저장된 경기가 아직 없어</p>
+                <p className="mt-4 text-sm font-black">저장된 경기가 없습니다.</p>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  동기화가 완료되면 최신 경기부터 여기에 표시돼
+                  동기화가 완료되면 최신 경기부터 표시됩니다.
                 </p>
               </TableCell>
             </TableRow>

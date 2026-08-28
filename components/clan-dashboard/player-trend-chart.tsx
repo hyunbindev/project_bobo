@@ -35,11 +35,11 @@ const toneColors = {
 export function PlayerTrendChart({ metric }: { metric: PlayerTrendMetric }) {
   const chartConfig = {
     value: {
-      label: "MATCH",
+      label: "경기 기록",
       color: toneColors[metric.tone],
     },
     movingAverage: {
-      label: "5G AVG",
+      label: `${metric.movingAverageSize}경기 이동평균`,
       color: toneColors[metric.tone],
     },
   } satisfies ChartConfig;
@@ -64,7 +64,7 @@ export function PlayerTrendChart({ metric }: { metric: PlayerTrendMetric }) {
 
       {metric.points.length === 0 ? (
         <div className="mt-6 grid h-36 place-items-center border-y border-dashed border-border/50 text-[9px] font-black tracking-[0.15em] text-muted-foreground">
-          NO ELIGIBLE MATCHES
+          집계 가능한 경기가 없습니다
         </div>
       ) : (
         <ChartContainer
@@ -129,9 +129,9 @@ export function PlayerTrendChart({ metric }: { metric: PlayerTrendMetric }) {
       )}
 
       <div className="flex items-center justify-between border-t border-border/50 pt-3 text-[8px] font-bold tracking-[0.13em] text-muted-foreground">
-        <span>{metric.points.length} MATCHES AGO</span>
+        <span>조회 범위 시작</span>
         <span>{metric.description}</span>
-        <span>LATEST</span>
+        <span>최신 경기</span>
       </div>
     </article>
   );

@@ -31,9 +31,9 @@ export const getPlayerHighRecord = cache(
   },
 );
 
-const TREND_DAYS = 14;
-const TREND_MATCH_LIMIT = 50;
-const MOVING_AVERAGE_SIZE = 5;
+export const PLAYER_TREND_DAYS = 14;
+export const PLAYER_TREND_MATCH_LIMIT = 50;
+export const PLAYER_TREND_MOVING_AVERAGE_SIZE = 5;
 
 type TrendMetricDefinition = {
   label: string;
@@ -80,13 +80,13 @@ export const getPlayerPerformanceTrends = cache(
     }
 
     const since = new Date(
-      Date.now() - TREND_DAYS * 24 * 60 * 60 * 1_000,
+      Date.now() - PLAYER_TREND_DAYS * 24 * 60 * 60 * 1_000,
     );
     const matches = await findPlayerTrendMatches(
       playerId,
       clanId,
       since,
-      TREND_MATCH_LIMIT,
+      PLAYER_TREND_MATCH_LIMIT,
     );
     const chronologicalMatches = matches.toReversed();
 
@@ -99,22 +99,23 @@ function createTrendMetric(
   definition: TrendMetricDefinition,
 ): PlayerTrendMetric {
   const values = matches.map(definition.selectValue);
-  const hasMovingAverage = values.length >= MOVING_AVERAGE_SIZE;
-  const latestWindow = values.slice(-MOVING_AVERAGE_SIZE);
+  const hasMovingAverage =
+    values.length >= PLAYER_TREND_MOVING_AVERAGE_SIZE;
+  const latestWindow = values.slice(-PLAYER_TREND_MOVING_AVERAGE_SIZE);
   const current = hasMovingAverage
     ? average(latestWindow)
     : (values.at(-1) ?? 0);
     
   const previousWindow = values.slice(
-    -(MOVING_AVERAGE_SIZE * 2),
-    -MOVING_AVERAGE_SIZE,
+    -(PLAYER_TREND_MOVING_AVERAGE_SIZE * 2),
+    -PLAYER_TREND_MOVING_AVERAGE_SIZE,
   );
   const previous =
-    previousWindow.length === MOVING_AVERAGE_SIZE
+    previousWindow.length === PLAYER_TREND_MOVING_AVERAGE_SIZE
       ? average(previousWindow)
       : null;
   const baseline =
-    values.length === TREND_MATCH_LIMIT ? average(values) : null;
+    values.length === PLAYER_TREND_MATCH_LIMIT ? average(values) : null;
 
   return {
     label: definition.label,
@@ -126,7 +127,9 @@ function createTrendMetric(
       description:
       baseline === null
         ? `최근 ${values.length}경기`
-        : `최근 ${TREND_MATCH_LIMIT}경기 평균 ${definition.formatValue(baseline)}`,
+        : `최근 ${PLAYER_TREND_MATCH_LIMIT}경기 평균 ${definition.formatValue(baseline)}`,
+
+    movingAverageSize: PLAYER_TREND_MOVING_AVERAGE_SIZE,
 
     points: matches.map((match, index) => ({
       match: index + 1,
@@ -135,11 +138,14 @@ function createTrendMetric(
       gameMode: match.gameMode,
       value: definition.selectValue(match),
       movingAverage:
-        index < MOVING_AVERAGE_SIZE - 1
+        index < PLAYER_TREND_MOVING_AVERAGE_SIZE - 1
           ? null
           : average(
             matches
-              .slice(index - MOVING_AVERAGE_SIZE + 1, index + 1)
+              .slice(
+                index - PLAYER_TREND_MOVING_AVERAGE_SIZE + 1,
+                index + 1,
+              )
               .map(definition.selectValue),
           ),
     })),

@@ -139,7 +139,7 @@ export default async function Home() {
           <div className="divide-y divide-border/50 border-y border-border/50">
             {currentBoboKing.ranking.rankings.length === 0 && (
               <p className="py-14 text-center text-xs font-bold text-muted-foreground">
-                아직 집계 조건을 충족한 기록이 없어
+                집계 조건을 충족한 기록이 없습니다.
               </p>
             )}
             {currentBoboKing.ranking.rankings.map((player) => (

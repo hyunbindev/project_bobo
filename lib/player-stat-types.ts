@@ -14,6 +14,7 @@ export type PlayerTrendMetric = {
   currentValue: string;
   change: string;
   description: string;
+  movingAverageSize: number;
   points: PlayerTrendPoint[];
   baseline: number | null;
   tone: PlayerTrendTone;

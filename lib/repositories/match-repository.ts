@@ -17,11 +17,6 @@ export type SaveMatchHistoryInput = {
   participantAccountIds: Iterable<string>;
 };
 
-export type StoredMatchHistory = {
-  history: PubgMatch;
-  participantAccountIds: string[];
-};
-
 export type MatchRosterListItem = {
   matchId: string;
   pubgMatchId: string;
@@ -423,10 +418,14 @@ export async function findStoredMatchIds(
   return storedMatches.map(({ pubgMatchId }) => pubgMatchId);
 }
 
-export async function findStoredMatchHistories(
+/**
+ * bootstrap 후보 탐색에서만 사용한다.
+ * 이미 저장한 매치는 외부 API를 다시 호출하지 않고 원본 응답을 DB에서 읽는다.
+ */
+export async function findStoredMatchResponses(
   pubgMatchIds: string[],
   database: DatabaseClient = db,
-): Promise<StoredMatchHistory[]> {
+): Promise<PubgMatch[]> {
   const uniqueMatchIds = [...new Set(pubgMatchIds)];
 
   if (uniqueMatchIds.length === 0) {
@@ -434,43 +433,11 @@ export async function findStoredMatchHistories(
   }
 
   const storedMatches = await database
-    .select({
-      id: matches.id,
-      rawResponse: matches.rawResponse,
-    })
+    .select({ rawResponse: matches.rawResponse })
     .from(matches)
     .where(inArray(matches.pubgMatchId, uniqueMatchIds));
 
-  if (storedMatches.length === 0) {
-    return [];
-  }
-
-  const storedParticipants = await database
-    .select({
-      matchId: matchParticipants.matchId,
-      pubgAccountId: players.pubgAccountId,
-    })
-    .from(matchParticipants)
-    .innerJoin(players, eq(matchParticipants.playerId, players.id))
-    .where(
-      inArray(
-        matchParticipants.matchId,
-        storedMatches.map((match) => match.id),
-      ),
-    );
-
-  const accountIdsByMatchId = new Map<string, string[]>();
-
-  for (const participant of storedParticipants) {
-    const accountIds = accountIdsByMatchId.get(participant.matchId) ?? [];
-    accountIds.push(participant.pubgAccountId);
-    accountIdsByMatchId.set(participant.matchId, accountIds);
-  }
-
-  return storedMatches.map((match) => ({
-    history: match.rawResponse as PubgMatch,
-    participantAccountIds: accountIdsByMatchId.get(match.id) ?? [],
-  }));
+  return storedMatches.map(({ rawResponse }) => rawResponse as PubgMatch);
 }
 
 export async function saveMatchHistory(

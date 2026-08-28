@@ -128,9 +128,9 @@ export default async function RosterMatchDetailPage({ params }: PageProps) {
               </span>
             </div>
             <p className="mt-5 max-w-2xl text-sm leading-6 text-muted-foreground">
-              클랜원 {detail.clanMemberCount}명이 함께한 로스터의 경기 결과야.
+              클랜원 {detail.clanMemberCount}명이 함께한 로스터의 경기 결과입니다.
               팀 성적과 참여자 {detail.participants.length}명의 전체 기록을
-              확인할 수 있어.
+              확인할 수 있습니다.
             </p>
             <div className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-[10px] font-semibold text-muted-foreground">
               <span className="flex items-center gap-2">

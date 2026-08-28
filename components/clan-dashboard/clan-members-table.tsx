@@ -58,10 +58,10 @@ export function ClanMembersTable({
               <TableCell className="h-64 text-center" colSpan={5}>
                 <Users className="mx-auto size-8 text-primary/70" />
                 <p className="mt-4 text-sm font-black">
-                  확인된 클랜원이 아직 없어
+                  확인된 클랜원이 없습니다.
                 </p>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  매치 동기화가 진행되면 발견된 클랜원이 여기에 표시돼
+                  매치 동기화에서 발견된 클랜원이 여기에 표시됩니다.
                 </p>
               </TableCell>
             </TableRow>

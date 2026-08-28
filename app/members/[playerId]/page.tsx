@@ -1,5 +1,4 @@
 import {
-  ArrowLeft,
   Crosshair,
   Gamepad2,
   HeartHandshake,
@@ -10,9 +9,9 @@ import {
   Trophy,
   UserX,
 } from "lucide-react";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { HistoryBackButton } from "@/components/clan-dashboard/history-back-button";
 import { MatchHistoryTable } from "@/components/clan-dashboard/match-history-table";
 import { MatchPagination } from "@/components/clan-dashboard/match-pagination";
 import { PlayerPerformanceTrends } from "@/components/clan-dashboard/player-performance-trends";
@@ -30,6 +29,8 @@ import {
   getPlayerHighRecord,
   getPlayerMatchHistoryPage,
   getPlayerPerformanceTrends,
+  PLAYER_TREND_DAYS,
+  PLAYER_TREND_MATCH_LIMIT,
   type HighRecord,
 } from "@/lib/services/player-stat-service";
 
@@ -128,7 +129,7 @@ export default async function MemberDetailPage({
       <section className="mx-auto max-w-360 space-y-16 px-5 py-14 sm:px-8 lg:px-12 lg:py-20">
         <section>
           <SectionHeading
-            description="최근 14일 클랜 파티 경기 중 최대 50경기를 기준으로 산출한 경기력 추이입니다."
+            description={`최근 ${PLAYER_TREND_DAYS}일 클랜 파티 경기 중 최대 ${PLAYER_TREND_MATCH_LIMIT}경기를 기준으로 산출한 경기력 추이입니다.`}
             eyebrow="RECENT FORM"
             icon={Radio}
             title="경기력 추이"
@@ -209,12 +210,7 @@ function NonClanMemberView({
             <br />
             현재 {clanName} 클랜원으로 등록되어 있지 않아 상세 전적을 제공하지 않습니다.
           </p>
-          <Link
-            className="mx-auto mt-8 inline-flex h-10 items-center gap-2 rounded-sm border border-primary/50 px-5 text-xs font-black text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
-            href="/members"
-          >
-            <ArrowLeft className="size-4" /> 클랜원 목록으로
-          </Link>
+          <HistoryBackButton className="mx-auto mt-8" />
         </div>
       </section>
     </main>

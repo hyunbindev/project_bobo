@@ -48,13 +48,15 @@ export function ClanJoinModal() {
       };
 
       if (!response.ok) {
-        throw new Error(result.error?.message ?? "클랜 가입에 실패했어.");
+        throw new Error(result.error?.message ?? "클랜 가입 처리에 실패했습니다.");
       }
 
       setOpen(false);
     } catch (error) {
       setSubmitError(
-        error instanceof Error ? error.message : "클랜 가입에 실패했어.",
+        error instanceof Error
+          ? error.message
+          : "클랜 가입 처리에 실패했습니다.",
       );
     } finally {
       setIsSubmitting(false);
