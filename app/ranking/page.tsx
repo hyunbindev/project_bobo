@@ -5,6 +5,7 @@ import {
   Car,
   CircleOff,
   Crosshair,
+  Dices,
   Dumbbell,
   Eye,
   Flame,
@@ -84,6 +85,12 @@ const rankingThemes: Record<RegularRankingCode, RankingTheme> = {
     accent: "text-primary",
     glow: "bg-primary/8",
     hoverBorder: "hover:border-primary/35",
+  },
+  kill_deviation: {
+    icon: Dices,
+    accent: "text-kill",
+    glow: "bg-kill/8",
+    hoverBorder: "hover:border-kill/35",
   },
   no_weapon: {
     icon: CircleOff,

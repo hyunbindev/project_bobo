@@ -25,6 +25,7 @@ export type RankingUnit =
   | "평균 회"
   | "회"
   | "킬"
+  | "킬 σ"
   | "딜"
   | "%"
   | "m"
