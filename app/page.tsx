@@ -1,4 +1,4 @@
-import { ArrowUpRight, Crosshair, Crown, Target, Users } from "lucide-react";
+import { ArrowUpRight, Crosshair, Crown, Users } from "lucide-react";
 import Link from "next/link";
 import { connection } from "next/server";
 
