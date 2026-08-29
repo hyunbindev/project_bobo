@@ -30,6 +30,7 @@ const loggerOptions: pino.LoggerOptions = {
       "*.apiKey",
       "env.DATABASE_URL",
       "env.PUBG_API_KEY",
+      "env.DISCORD_BOT_TOKEN",
     ],
     censor: "[REDACTED]",
   },
