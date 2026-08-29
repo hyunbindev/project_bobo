@@ -201,12 +201,18 @@ export async function getClanMemberList() {
   const clan = await getMainClanSummary();
 
   if (!clan) {
-    return { clan: null, members: [] };
+    return { clan: null, members: [], clanMaster: null };
   }
 
   const members = await findActiveClanMembersByClanId(clan.pubgClanId);
+  const clanMasterAccountId = process.env.PUBG_CLAN_MASTER_ID?.trim();
+  const clanMaster = clanMasterAccountId
+    ? (members.find(
+        (member) => member.pubgAccountId === clanMasterAccountId,
+      ) ?? null)
+    : null;
 
-  return { clan, members };
+  return { clan, members, clanMaster };
 }
 
 export const getClanMemberDetail = cache(async (playerId: string) => {

@@ -61,6 +61,7 @@ services:
       DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env.production}
       PUBG_API_KEY: ${PUBG_API_KEY:?Set PUBG_API_KEY in .env.production}
       PUBG_CLAN_ID: ${PUBG_CLAN_ID:?Set PUBG_CLAN_ID in .env.production}
+      PUBG_CLAN_MASTER_ID: ${PUBG_CLAN_MASTER_ID:-}
       LOG_LEVEL: ${LOG_LEVEL:-info}
       LOG_PRETTY: ${LOG_PRETTY:-false}
     ports:
