@@ -1,5 +1,5 @@
 import { ApiError, BadRequestError } from "@/lib/api/errors";
-import { logger } from "@/lib/logger";
+import { webLogger } from "@/lib/logger";
 
 type RouteContext = Record<string, unknown>;
 
@@ -36,7 +36,7 @@ export function withApiErrorHandler<TContext extends RouteContext = RouteContext
         );
       }
 
-      logger.error(
+      webLogger.error(
         {
           err: error,
           event: "api.unhandled_error",

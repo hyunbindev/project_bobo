@@ -79,7 +79,8 @@ export default async function Home() {
               className="mt-10 flex scroll-mt-24 flex-wrap items-center gap-3"
               id="notice"
             >
-              <ClanJoinModal />
+              {/* discord 등록으로 인한 deprecated */}
+              {false && <ClanJoinModal />}
             </div>
           </div>
         </div>
