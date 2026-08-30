@@ -6,19 +6,16 @@ import {
   type Interaction,
 } from "discord.js";
 
-import { executeBoboKingCommand } from "@/lib/discord/commands/bobo-king-command";
-import { executePingCommand } from "@/lib/discord/commands/ping-command";
-import { logger } from "@/lib/logger";
+import type { DiscordCommandHandler } from "@/lib/discord/discord-command";
+import { discordCommands } from "@/lib/discord/discord-commands";
+import { discordLogger } from "@/lib/logger";
 
-type DiscordCommandHandler = (
-  interaction: ChatInputCommandInteraction,
-) => Promise<void>;
-
-// 명령 이름과 구현을 한곳에서 연결한다. 새 명령은 handler를 만든 뒤 여기에 추가한다.
-const commandHandlers = new Map<string, DiscordCommandHandler>([
-  ["ping", executePingCommand],
-  ["boboking", executeBoboKingCommand],
-]);
+const commandHandlers = new Map<string, DiscordCommandHandler>(
+  discordCommands.map((command) => [
+    command.definition.name,
+    command.execute,
+  ]),
+);
 
 /** Discord 이벤트를 명령별 handler로 전달하는 transport 계층이다. */
 export async function handleDiscordInteraction(interaction: Interaction) {
@@ -39,7 +36,7 @@ export async function handleDiscordInteraction(interaction: Interaction) {
   try {
     await handler(interaction);
   } catch (error) {
-    logger.error(
+    discordLogger.error(
       {
         err: error,
         event: "discord.command_failed",

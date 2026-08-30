@@ -30,6 +30,7 @@ import { BoboKingCard } from "@/components/clan-rankings/bobo-king-card";
 import type { RegularRankingCode } from "@/lib/rankings/types";
 import { getMainClanSummary } from "@/lib/services/clan-service";
 import { getWeeklyRankingPageData } from "@/lib/services/weekly-ranking-service";
+import { formatKstDate } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "최근 일주일 랭킹 | BOBO",
@@ -215,20 +216,6 @@ export default async function RankingPage() {
       </footer>
     </main>
   );
-}
-
-function formatKstDate(date: Date) {
-  const parts = new Intl.DateTimeFormat("ko-KR", {
-    timeZone: "Asia/Seoul",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(date);
-  const values = Object.fromEntries(
-    parts.map((part) => [part.type, part.value]),
-  );
-
-  return `${values.year}.${values.month}.${values.day}`;
 }
 
 function RuleBadge({ icon: Icon, text }: { icon: LucideIcon; text: string }) {

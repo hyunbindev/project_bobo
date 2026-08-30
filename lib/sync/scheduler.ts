@@ -1,6 +1,6 @@
 import cron from "node-cron";
 
-import { logger } from "@/lib/logger";
+import { schedulerLogger } from "@/lib/logger";
 import clanMatchSyncJob from "./match/match-sync-job";
 
 const MATCH_SYNC_SCHEDULE = "* * * * *";
@@ -10,7 +10,7 @@ export default function schedulerCronJob() {
     void clanMatchSyncJob();
   });
 
-  logger.info(
+  schedulerLogger.info(
     {
       event: "match_sync.scheduler_registered",
       schedule: MATCH_SYNC_SCHEDULE,

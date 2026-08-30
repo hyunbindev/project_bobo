@@ -7,6 +7,8 @@ const globalForLogger = globalThis as unknown as {
   logger?: pino.Logger;
 };
 
+const DISABLED_VALUES = new Set(["false", "0", "off", "no"]);
+
 const loggerOptions: pino.LoggerOptions = {
   name: "project-bobo",
   level: process.env.LOG_LEVEL ?? "info",
@@ -55,6 +57,33 @@ function createLogger() {
 export const logger =
   globalForLogger.logger ??
   createLogger();
+
+function createCategoryLogger(category: string, enabledValue?: string) {
+  const enabled = !DISABLED_VALUES.has(enabledValue?.trim().toLowerCase() ?? "");
+
+  return logger.child(
+    { logCategory: category },
+    { level: enabled ? logger.level : "silent" },
+  );
+}
+
+/** Next.js 애플리케이션 시작 및 API 요청 처리 로그다. */
+export const webLogger = createCategoryLogger(
+  "web",
+  process.env.LOG_WEB_ENABLED,
+);
+
+/** Cron 등록 및 매치 동기화 작업 로그다. */
+export const schedulerLogger = createCategoryLogger(
+  "scheduler",
+  process.env.LOG_SCHEDULER_ENABLED,
+);
+
+/** Discord Gateway 연결 및 명령 처리 로그다. */
+export const discordLogger = createCategoryLogger(
+  "discord",
+  process.env.LOG_DISCORD_ENABLED,
+);
 
 if (process.env.NODE_ENV !== "production") {
   globalForLogger.logger = logger;

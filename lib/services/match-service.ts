@@ -6,6 +6,7 @@ import {
   findMatchRosterHistories,
   type MatchRosterListItem,
 } from "@/lib/repositories/match-repository";
+import type { PubgMatch } from "@/lib/pubg/match-types";
 import { getMainClanSummary } from "@/lib/services/clan-service";
 
 
@@ -38,6 +39,13 @@ export type RecentWonMatch = {
     kills: number;
     damage: number;
   }>;
+};
+
+export type CreateRecentWonMatchesInput = {
+  history: PubgMatch;
+  storedMatchId: string;
+  clanAccountIds: ReadonlySet<string>;
+  minimumClanMemberCount?: number;
 };
 
 export async function getMatchRosterHistoryPage(
@@ -159,4 +167,58 @@ export async function getRecentWonMatches(
   );
 
   return results.filter((match): match is RecentWonMatch => match !== null);
+}
+
+/** 저장 직후 PUBG 응답에서 알림 대상인 클랜 치킨 로스터를 만든다. */
+export function createRecentWonMatchesFromHistory({
+  history,
+  storedMatchId,
+  clanAccountIds,
+  minimumClanMemberCount = 2,
+}: CreateRecentWonMatchesInput): RecentWonMatch[] {
+  return history.rosters.flatMap((roster) => {
+    if (roster.rank !== 1) {
+      return [];
+    }
+
+    const rosterParticipants = history.participants.filter(
+      (participant) => participant.rosterId === roster.id,
+    );
+    const clanMembers = rosterParticipants.filter((participant) =>
+      clanAccountIds.has(participant.stats.playerId),
+    );
+
+    if (clanMembers.length < minimumClanMemberCount) {
+      return [];
+    }
+
+    const totals = rosterParticipants.reduce(
+      (result, participant) => ({
+        kills: result.kills + participant.stats.kills,
+        damage: result.damage + participant.stats.damageDealt,
+      }),
+      { kills: 0, damage: 0 },
+    );
+
+    return [
+      {
+        id: `${storedMatchId}:${roster.id}`,
+        matchId: storedMatchId,
+        rosterId: roster.id,
+        mapName: history.mapName,
+        gameMode: history.gameMode,
+        matchType: history.matchType,
+        playedAt: new Date(history.createdAt),
+        rank: roster.rank,
+        kills: totals.kills,
+        damage: totals.damage,
+        members: clanMembers.map((participant) => ({
+          id: participant.id,
+          name: participant.stats.name,
+          kills: participant.stats.kills,
+          damage: participant.stats.damageDealt,
+        })),
+      },
+    ];
+  });
 }

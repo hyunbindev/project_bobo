@@ -79,7 +79,8 @@ export const clanMembers = pgTable(
     // PUBG 닉네임은 players.name에 있고, 여기에는 사용자가 입력한 이름을 저장한다.
     displayName: text("display_name"),
 
-    age: integer("age"),
+    // 나이는 매년 변하므로 사용자가 입력한 출생연도를 원본으로 저장한다.
+    birthYear: integer("birth_year"),
 
     status: clanMemberStatusEnum("status").default("active").notNull(),
 
@@ -112,11 +113,14 @@ export const clanMembers = pgTable(
 
     index("clan_members_player_id_idx").on(table.playerId),
 
-    check("clan_members_age_range", sql`${table.age} BETWEEN 1 AND 120`),
+    check(
+      "clan_members_birth_year_range",
+      sql`${table.birthYear} BETWEEN 1900 AND 2100`,
+    ),
 
     check(
       "clan_members_registered_profile_fields",
-      sql`NOT ${table.profileRegistered} OR (${table.displayName} IS NOT NULL AND ${table.age} IS NOT NULL)`,
+      sql`NOT ${table.profileRegistered} OR (${table.displayName} IS NOT NULL AND ${table.birthYear} IS NOT NULL)`,
     ),
     
   ],

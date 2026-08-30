@@ -38,7 +38,7 @@ export function ClanJoinModal() {
         body: JSON.stringify({
           nickname: formData.get("nickname"),
           displayName: formData.get("displayName"),
-          age: Number(formData.get("age")),
+          birthYear: Number(formData.get("birthYear")),
           // BOBO는 Kakao 서버 클랜이므로 현재 가입 폼에서는 플랫폼을 고정한다.
           platform: "kakao",
         }),
@@ -138,19 +138,19 @@ export function ClanJoinModal() {
               <Field>
                 <FieldLabel
                   className="text-[11px] font-black tracking-[0.12em]"
-                  htmlFor="age"
+                  htmlFor="birthYear"
                 >
-                  나이 <b className="text-primary">*</b>
+                  출생연도 <b className="text-primary">*</b>
                 </FieldLabel>
                 <Input
                   autoComplete="off"
                   className={fieldClassName}
                   disabled={isSubmitting}
-                  id="age"
-                  max={120}
-                  min={1}
-                  name="age"
-                  placeholder="예: 25"
+                  id="birthYear"
+                  max={new Date().getFullYear()}
+                  min={1900}
+                  name="birthYear"
+                  placeholder="예: 1998"
                   required
                   type="number"
                 />

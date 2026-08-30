@@ -1,54 +1,77 @@
 import "server-only";
 
 import {
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
   EmbedBuilder,
-  type ChatInputCommandInteraction,
+  SlashCommandBuilder,
 } from "discord.js";
 
+import type { DiscordCommand } from "@/lib/discord/discord-command";
+import { createDiscordAppUrl } from "@/lib/discord/discord-app-url";
 import type { RankingEntry, WeeklyRankingPeriod } from "@/lib/rankings/types";
 import { getMainClanSummary } from "@/lib/services/clan-service";
 import { getCurrentBoboKingRanking } from "@/lib/services/weekly-ranking-service";
+import { formatKstDate } from "@/lib/utils";
 
 const rankingValueFormatter = new Intl.NumberFormat("ko-KR", {
   maximumFractionDigits: 2,
 });
 
-/** 현재 진행 중인 주차의 BOBOKING 순위를 조회하여 Discord에 표시한다. */
-export async function executeBoboKingCommand(
-  interaction: ChatInputCommandInteraction,
-) {
-  // DB 집계가 Discord의 초기 응답 제한 시간을 넘을 수 있으므로 먼저 응답을 예약한다.
-  await interaction.deferReply();
+export const boboKingCommand: DiscordCommand = {
+  definition: new SlashCommandBuilder()
+    .setName("boboking")
+    .setNameLocalizations({ ko: "보보킹" })
+    .setDescription("Display the current weekly BOBOKING ranking")
+    .setDescriptionLocalizations({ ko: "이번 주 BOBOKING 순위를 표시합니다" }),
+  /** 현재 진행 중인 주차의 BOBOKING 순위를 조회하여 Discord에 표시한다. */
+  async execute(interaction) {
+    // DB 집계가 Discord의 초기 응답 제한 시간을 넘을 수 있으므로 먼저 응답을 예약한다.
+    await interaction.deferReply();
 
-  const clan = await getMainClanSummary();
+    const clan = await getMainClanSummary();
 
-  if (!clan) {
-    await interaction.editReply(
-      "등록된 클랜 정보가 없어 BOBOKING 순위를 조회할 수 없습니다.",
+    if (!clan) {
+      await interaction.editReply(
+        "등록된 클랜 정보가 없어 BOBOKING 순위를 조회할 수 없습니다.",
+      );
+      return;
+    }
+
+    const { period, ranking } = await getCurrentBoboKingRanking(clan.id);
+    const rankingDescription = createRankingDescription(
+      ranking.rankings,
+      ranking.unit,
     );
-    return;
-  }
 
-  const { period, ranking } = await getCurrentBoboKingRanking(clan.id);
-  const rankingDescription = createRankingDescription(
-    ranking.rankings,
-    ranking.unit,
-  );
+    const embed = new EmbedBuilder()
+      .setColor(0xf0b429)
+      .setTitle(`${clan.name} 이번 주 BOBOKING`)
+      .setDescription(rankingDescription)
+      .addFields({
+        name: "집계 기간",
+        value: formatWeeklyPeriod(period),
+        inline: false,
+      })
+      .setFooter({ text: "최소 5경기 참여 기준 · 킬, 기절, 대미지 종합 점수" })
+      .setTimestamp();
 
-  const embed = new EmbedBuilder()
-    .setColor(0xf0b429)
-    .setTitle(`${clan.name} 이번 주 BOBOKING`)
-    .setDescription(rankingDescription)
-    .addFields({
-      name: "집계 기간",
-      value: formatWeeklyPeriod(period),
-      inline: false,
-    })
-    .setFooter({ text: "최소 5경기 참여 기준 · 킬, 기절, 대미지 종합 점수" })
-    .setTimestamp();
+    const rankingUrl = createDiscordAppUrl("/ranking");
+    const components = rankingUrl
+      ? [
+          new ActionRowBuilder<ButtonBuilder>().addComponents(
+            new ButtonBuilder()
+              .setLabel("전체 랭킹 보기")
+              .setStyle(ButtonStyle.Link)
+              .setURL(rankingUrl),
+          ),
+        ]
+      : [];
 
-  await interaction.editReply({ embeds: [embed] });
-}
+    await interaction.editReply({ embeds: [embed], components });
+  },
+};
 
 function createRankingDescription(
   rankings: RankingEntry[],
@@ -71,16 +94,4 @@ function formatWeeklyPeriod(period: WeeklyRankingPeriod) {
   const inclusiveEndAt = new Date(period.endAt.getTime() - 1);
 
   return `${formatKstDate(period.startAt)} ~ ${formatKstDate(inclusiveEndAt)}`;
-}
-
-function formatKstDate(date: Date) {
-  const parts = new Intl.DateTimeFormat("ko-KR", {
-    timeZone: "Asia/Seoul",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(date);
-  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
-
-  return `${values.year}.${values.month}.${values.day}`;
 }

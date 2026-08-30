@@ -6,8 +6,10 @@ Discord 봇은 별도 서버가 아니라 Next.js의 Node 프로세스에서 실
 `instrumentation.ts`가 애플리케이션 시작 시 Gateway 연결을 한 번 생성하고,
 명령 이벤트는 `lib/discord/commands`의 registry로 전달한다.
 
-현재 등록된 명령은 연결 상태를 확인하는 `/ping`과 이번 주 종합 순위를 조회하는
-`/boboking`이다. 계정 연동 명령을 추가할 때는
+현재 등록된 명령은 연결 상태를 확인하는 `/ping`, 이번 주 종합 순위를 조회하는
+`/boboking`, 음성 채널 인원을 무작위로 나누는 `/team-split`, 최근 치킨 기록을
+표시하는 `/recent-win`, Discord 계정과 PUBG 계정을 연결하는 `/register-player`이다.
+계정 연동 명령을 추가할 때는
 command handler에서 DB를 직접 호출하지 않고 기존 service를 호출한다.
 
 ## 1. Discord Application 생성
@@ -28,27 +30,32 @@ scope를 추가한다.
 ```dotenv
 DISCORD_BOT_TOKEN=...
 DISCORD_APPLICATION_ID=...
+DISCORD_GUILD_ID=...
+APP_BASE_URL=https://www.boboclan.win
 ```
 
 Bot Token은 저장소에 커밋하거나 로그로 출력하지 않는다.
+`DISCORD_GUILD_ID`는 신규 치킨 경기 자동 알림을 받을 서버를 지정한다. 알림은
+해당 서버의 시스템 채널에 전송한다.
 
 ## 3. 글로벌 명령 등록
 
-개발 서버에 명령을 등록한다.
+애플리케이션의 Node.js 프로세스가 시작될 때 현재 명령 목록을 글로벌 명령으로
+한 번 등록한 뒤 Discord Gateway에 연결한다.
 
 ```bash
-npm run discord:register
+npm run dev
 ```
 
-운영 환경 파일을 사용할 때는 다음처럼 직접 실행한다.
+운영 환경에서도 별도 등록 명령 없이 애플리케이션을 실행하면 된다.
 
 ```bash
-node --env-file=.env.production scripts/register-discord-commands.mjs
+npm run start
 ```
 
-이 스크립트는 애플리케이션의 글로벌 Application Command 목록을 현재 정의로
-덮어쓴다. 따라서 봇이 설치된 모든 Discord 서버에서 명령을 사용할 수 있다.
-명령 정의가 변경됐을 때만 실행하며 애플리케이션 시작 때마다 실행하지 않는다.
+시작 등록은 애플리케이션의 글로벌 Application Command 목록을 현재 정의로
+덮어쓴다. 단일 프로세스 내부에서는 개발 모드의 모듈 재로딩이 발생해도
+`globalThis` 상태를 사용하여 한 번만 실행한다.
 
 ## 4. 실행 확인
 
