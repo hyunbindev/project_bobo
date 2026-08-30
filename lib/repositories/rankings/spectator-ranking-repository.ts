@@ -87,7 +87,6 @@ export async function findSpectatorRankings(
       ),
     )
     .groupBy(players.id, players.name)
-    .having(sql`count(*) >= ${input.minMatchCount}`)
     .orderBy(
       desc(averageSpectatorMinutes),
       desc(matchCount),

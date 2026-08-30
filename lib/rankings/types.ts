@@ -9,7 +9,6 @@ export type WeeklyRankingPeriod = {
 export type RankingServiceInput = {
   clanId: string;
   period: WeeklyRankingPeriod;
-  minMatchCount: number;
   limit: number;
 };
 

@@ -14,7 +14,6 @@ export function toRankingRepositoryInput(
     clanId: input.clanId,
     startAt: input.period.startAt,
     endAt: input.period.endAt,
-    minMatchCount: input.minMatchCount,
     limit: input.limit,
   };
 }

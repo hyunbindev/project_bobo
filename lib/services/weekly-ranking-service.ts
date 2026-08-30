@@ -104,7 +104,6 @@ const weeklyRankingDefinitions: readonly RankingDefinition[] = [
 export type AggregateWeeklyRankingsInput = {
   clanId: string;
   referenceAt?: Date;
-  minMatchCount?: number;
   limit?: number;
 };
 
@@ -134,7 +133,6 @@ export async function getCurrentBoboKingRanking(
     ? await getBoboKingRanking({
         clanId,
         period,
-        minMatchCount: 5,
         limit: Math.min(Math.max(Math.trunc(limit), 1), 100),
       })
     : {
@@ -155,7 +153,6 @@ export async function getWeeklyRankingPageData(
     ? await runRankingServices({
         clanId,
         period,
-        minMatchCount: 5,
         limit: 4,
       })
     : weeklyRankingDefinitions.map((definition) => ({
@@ -206,7 +203,6 @@ export async function aggregateWeeklyRankings(
   const serviceInput: RankingServiceInput = {
     clanId: input.clanId,
     period: getLastCompletedWeeklyRankingPeriod(input.referenceAt),
-    minMatchCount: Math.max(Math.trunc(input.minMatchCount ?? 5), 1),
     limit: Math.min(Math.max(Math.trunc(input.limit ?? 4), 1), 100),
   };
   const result: AggregateWeeklyRankingsResult = {
@@ -253,8 +249,8 @@ function validateInput(input: RankingServiceInput) {
     throw new RangeError("period.startAt must be before period.endAt.");
   }
 
-  if (input.minMatchCount < 1 || input.limit < 1) {
-    throw new RangeError("minMatchCount and limit must be positive.");
+  if (input.limit < 1) {
+    throw new RangeError("limit must be positive.");
   }
 }
 

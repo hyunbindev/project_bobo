@@ -54,7 +54,7 @@ export const boboKingCommand: DiscordCommand = {
         value: formatWeeklyPeriod(period),
         inline: false,
       })
-      .setFooter({ text: "최소 5경기 참여 기준 · 킬, 기절, 대미지 종합 점수" })
+      .setFooter({ text: "킬, 기절, 대미지 종합 점수" })
       .setTimestamp();
 
     const rankingUrl = createDiscordAppUrl("/ranking");

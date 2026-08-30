@@ -11,7 +11,6 @@ import {
   Flame,
   Footprints,
   HeartPulse,
-  Medal,
   Pill,
   ShieldCheck,
   Sparkles,
@@ -175,7 +174,6 @@ export default async function RankingPage() {
         <div className="mx-auto flex max-w-360 flex-wrap gap-2 px-5 py-5 sm:px-8 lg:px-12">
           <RuleBadge icon={ShieldCheck} text="클랜원 2명 이상 로스터" />
           <RuleBadge icon={Users} text="클랜원 기록만 집계" />
-          <RuleBadge icon={Medal} text="최소 5경기 이상" />
           <RuleBadge icon={Activity} text={periodLabel} />
         </div>
       </section>
