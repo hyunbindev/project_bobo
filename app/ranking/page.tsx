@@ -11,6 +11,7 @@ import {
   Flame,
   Footprints,
   HeartPulse,
+  History,
   Pill,
   ShieldCheck,
   Sparkles,
@@ -19,6 +20,7 @@ import {
   Users,
 } from "lucide-react";
 import { connection } from "next/server";
+import Link from "next/link";
 
 import { SiteHeader } from "@/components/clan-dashboard/site-header";
 import {
@@ -188,9 +190,17 @@ export default async function RankingPage() {
               이번주 랭킹
             </h2>
           </div>
-          <p className="max-w-sm text-xs leading-5 text-muted-foreground sm:text-right">
-            매주 월요일에 갱신되는 랭킹입니다.
-          </p>
+          <div className="flex flex-col gap-3 sm:items-end">
+            <Link
+              className="inline-flex w-fit items-center gap-2 rounded-sm border border-border/70 bg-card px-3 py-2 text-[9px] font-black text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
+              href="/ranking/history"
+            >
+              <History className="size-3.5" /> 지난 랭킹 기록
+            </Link>
+            <p className="max-w-sm text-xs leading-5 text-muted-foreground sm:text-right">
+              매주 월요일에 갱신되는 랭킹입니다.
+            </p>
+          </div>
         </div>
 
         <BoboKingCard ranking={data.boboKing} />
