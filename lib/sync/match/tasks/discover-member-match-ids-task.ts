@@ -1,6 +1,6 @@
 import type { Logger } from "pino";
 
-import { markPlayersSynced } from "@/lib/repositories/clan-member-repository";
+import { syncPlayersFromPubg } from "@/lib/repositories/clan-member-repository";
 import { MATCH_SYNC_PLATFORM } from "@/lib/sync/match/match-sync-config";
 import type {
   MatchSyncContext,
@@ -24,10 +24,7 @@ export async function discoverMemberMatchIdsTask(
     metrics,
   );
 
-  await markPlayersSynced(
-    players.map((player) => player.accountId),
-    MATCH_SYNC_PLATFORM,
-  );
+  await syncPlayersFromPubg(players);
 
   const matchIds = new Set<string>();
 

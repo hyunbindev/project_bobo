@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { clanMembers, clans, players } from "@/lib/db/schema";
@@ -141,26 +141,42 @@ export async function findStoredClanMember(
   return limit === undefined ? query : query.limit(limit);
 }
 
-export async function markPlayersSynced(
-  pubgAccountIds: string[],
-  platform: PubgPlatform,
+export async function syncPlayersFromPubg(
+  pubgPlayers: PubgPlayer[],
   database: DatabaseClient = db,
 ) {
-  const uniqueAccountIds = [...new Set(pubgAccountIds)];
+  const uniquePlayers = [
+    ...new Map(
+      pubgPlayers.map((player) => [
+        `${player.platform}:${player.accountId}`,
+        player,
+      ]),
+    ).values(),
+  ];
 
-  if (uniqueAccountIds.length === 0) {
+  if (uniquePlayers.length === 0) {
     return [];
   }
 
   return database
-    .update(players)
-    .set({ lastSyncedAt: new Date() })
-    .where(
-      and(
-        eq(players.platform, platform),
-        inArray(players.pubgAccountId, uniqueAccountIds),
-      ),
+    .insert(players)
+    .values(
+      uniquePlayers.map((player) => ({
+        pubgAccountId: player.accountId,
+        name: player.name,
+        platform: player.platform,
+        pubgClanId: player.clanId,
+        lastSyncedAt: new Date(),
+      })),
     )
+    .onConflictDoUpdate({
+      target: [players.platform, players.pubgAccountId],
+      set: {
+        name: sql`excluded.name`,
+        pubgClanId: sql`excluded.pubg_clan_id`,
+        lastSyncedAt: sql`excluded.last_synced_at`,
+      },
+    })
     .returning({ pubgAccountId: players.pubgAccountId });
 }
 
