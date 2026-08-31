@@ -22,6 +22,8 @@ export type NewMatchSyncResult = {
   syncedMatchCount: number;
   failedMatchCount: number;
   syncedMatches: PubgMatch[];
+  winNotificationCount: number;
+  failedWinNotificationCount: number;
 };
 
 export type CandidateVerificationResult = {

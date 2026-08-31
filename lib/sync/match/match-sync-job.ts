@@ -1,4 +1,4 @@
-import { logger } from "@/lib/logger";
+import { schedulerLogger } from "@/lib/logger";
 import type { PlayerApiMetrics } from "@/lib/sync/match/match-sync-types";
 import { CANDIDATE_DISCOVERY_MODE } from "@/lib/sync/match/strategies/candidate-discovery-strategy";
 import { resolveCandidateDiscoveryStrategy } from "@/lib/sync/match/strategies/resolve-candidate-discovery-strategy";
@@ -17,7 +17,7 @@ let isRunning = false;
  */
 export default async function clanMatchSyncJob() {
   if (isRunning) {
-    logger.debug(
+    schedulerLogger.debug(
       {
         event: "match_sync.skipped",
         reason: "already_running",
@@ -30,7 +30,7 @@ export default async function clanMatchSyncJob() {
   isRunning = true;
   const runId = crypto.randomUUID();
   const startedAt = Date.now();
-  const log = logger.child({ component: "match-sync", runId });
+  const log = schedulerLogger.child({ component: "match-sync", runId });
   const playerApiMetrics: PlayerApiMetrics = {
     requestCount: 0,
     rateLimitCount: 0,
@@ -98,6 +98,12 @@ export default async function clanMatchSyncJob() {
 
         failedMatchCount:
           matchSyncResult.failedMatchCount,
+
+        winNotificationCount:
+          matchSyncResult.winNotificationCount,
+
+        failedWinNotificationCount:
+          matchSyncResult.failedWinNotificationCount,
 
         candidatePlayerCount:
           candidatePlayerIds.length,

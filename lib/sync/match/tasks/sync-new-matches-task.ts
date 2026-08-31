@@ -1,8 +1,10 @@
 import type { Logger } from "pino";
 
+import { sendMatchWinNotification } from "@/lib/discord/messages/send-match-win-notification";
 import { getMatchById } from "@/lib/pubg/matches";
 import type { PubgMatch } from "@/lib/pubg/match-types";
 import { saveMatchHistory } from "@/lib/repositories/match-repository";
+import { createRecentWonMatchesFromHistory } from "@/lib/services/match-service";
 import {
   MATCH_FETCH_BATCH_SIZE,
   MATCH_SYNC_PLATFORM,
@@ -25,6 +27,8 @@ export async function syncNewMatchesTask(
   const syncedMatches: PubgMatch[] = [];
   let syncedMatchCount = 0;
   let failedMatchCount = 0;
+  let winNotificationCount = 0;
+  let failedWinNotificationCount = 0;
 
   for (
     let index = 0;
@@ -61,13 +65,16 @@ export async function syncNewMatchesTask(
         context.clanPubgAccountIds,
       );
 
+      let storedMatchId: string;
+
       try {
-        await saveMatchHistory({
+        const saveResult = await saveMatchHistory({
           history,
           participantAccountIds: clanRosterParticipants.map(
             (participant) => participant.stats.playerId,
           ),
         });
+        storedMatchId = saveResult.match.id;
         syncedMatchCount += 1;
         syncedMatches.push(history);
       } catch (error) {
@@ -83,6 +90,36 @@ export async function syncNewMatchesTask(
         continue;
       }
 
+      const wonMatches = createRecentWonMatchesFromHistory({
+        history,
+        storedMatchId,
+        clanAccountIds: context.clanPubgAccountIds,
+      });
+
+      for (const wonMatch of wonMatches) {
+        try {
+          const notificationResult =
+            await sendMatchWinNotification(wonMatch);
+
+          if (notificationResult.sent) {
+            winNotificationCount += 1;
+          } else {
+            failedWinNotificationCount += 1;
+          }
+        } catch (error) {
+          failedWinNotificationCount += 1;
+          log.error(
+            {
+              err: error,
+              event: "match_sync.win_notification_failed",
+              matchId: wonMatch.matchId,
+              rosterId: wonMatch.rosterId,
+            },
+            "Failed to send match win notification",
+          );
+        }
+      }
+
     }
   }
 
@@ -90,5 +127,7 @@ export async function syncNewMatchesTask(
     syncedMatchCount,
     failedMatchCount,
     syncedMatches,
+    winNotificationCount,
+    failedWinNotificationCount,
   };
 }

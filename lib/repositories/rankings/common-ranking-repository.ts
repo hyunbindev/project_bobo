@@ -14,7 +14,6 @@ export type RankingRepositoryInput = {
   clanId: string;
   startAt: Date;
   endAt: Date;
-  minMatchCount: number;
   limit: number;
 };
 
@@ -75,7 +74,6 @@ export async function findMetricRankings(
       ),
     )
     .groupBy(players.id, players.name)
-    .having(sql`count(*) >= ${input.minMatchCount}`)
     .orderBy(desc(input.metric), desc(matchCount), asc(players.id))
     .limit(input.limit);
 }

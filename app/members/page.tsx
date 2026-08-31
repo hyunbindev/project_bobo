@@ -1,11 +1,12 @@
 import { Radio, ShieldCheck, UserRoundCheck, Users } from "lucide-react";
 
+import { ClanMasterCard } from "@/components/clan-dashboard/clan-master-card";
 import { ClanMembersTable } from "@/components/clan-dashboard/clan-members-table";
 import { SiteHeader } from "@/components/clan-dashboard/site-header";
 import { getClanMemberList } from "@/lib/services/clan-member-service";
 
 export default async function MembersPage() {
-  const { clan, members } = await getClanMemberList();
+  const { clan, members, clanMaster } = await getClanMemberList();
   const registeredMemberCount = members.filter(
     (member) => member.profileRegistered,
   ).length;
@@ -26,16 +27,13 @@ export default async function MembersPage() {
             CLAN ROSTER
           </p>
           <h1 className="text-4xl font-black tracking-[-0.055em] sm:text-6xl">
-            <span
-              className="military-glitch"
-              data-text={"BOBO"}
-            >
+            <span className="military-glitch" data-text="BOBO">
               BOBO
             </span>
-            <br/>
+            <br />
             <span
               className="military-glitch text-primary"
-              data-text={"MEMBERS"}
+              data-text="MEMBERS"
             >
               MEMBERS
             </span>
@@ -75,6 +73,12 @@ export default async function MembersPage() {
       </section>
 
       <section className="mx-auto max-w-360 px-5 py-14 sm:px-8 lg:px-12 lg:py-20">
+        {clanMaster && (
+          <div className="mb-14 flex justify-center">
+            <ClanMasterCard nickname={clanMaster.nickname} />
+          </div>
+        )}
+
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="mb-2 text-[10px] font-black tracking-[0.24em] text-primary">

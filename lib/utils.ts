@@ -1,19 +1,48 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
+const kstDateFormatter = new Intl.DateTimeFormat("ko-KR", {
+  timeZone: "Asia/Seoul",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+const kstDateTimeFormatter = new Intl.DateTimeFormat("ko-KR", {
+  timeZone: "Asia/Seoul",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+});
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
 export function formatDateTime(date: Date) {
-  return new Intl.DateTimeFormat("ko-KR", {
-    timeZone: "Asia/Seoul",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(date);
+  return kstDateTimeFormatter.format(date);
+}
+
+/** 날짜를 KST 기준 YYYY.MM.DD 형식으로 변환한다. */
+export function formatKstDate(date: Date) {
+  const parts = kstDateFormatter.formatToParts(date);
+  const values = Object.fromEntries(
+    parts.map((part) => [part.type, part.value]),
+  );
+
+  return `${values.year}.${values.month}.${values.day}`;
+}
+
+/** 날짜와 시간을 KST 기준 MM.DD / HH:mm KST 형식으로 변환한다. */
+export function formatKstDateTime(date: Date) {
+  const parts = kstDateTimeFormatter.formatToParts(date);
+  const values = Object.fromEntries(
+    parts.map((part) => [part.type, part.value]),
+  );
+
+  return `${values.month}.${values.day} / ${values.hour}:${values.minute} KST`;
 }
 
 export type AnimateNumberOptions = {

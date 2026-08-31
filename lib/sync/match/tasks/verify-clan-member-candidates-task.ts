@@ -75,7 +75,7 @@ export async function verifyClanMemberCandidatesTask(
           player,
           member: {
             displayName: null,
-            age: null,
+            birthYear: null,
             profileRegistered: false,
           },
         });

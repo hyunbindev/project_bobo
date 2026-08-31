@@ -89,7 +89,6 @@ export async function findDamageCarryRankings(
       ),
     )
     .groupBy(players.id, players.name)
-    .having(sql`count(*) >= ${input.minMatchCount}`)
     .orderBy(desc(carryMatchCount), desc(matchCount), asc(players.id))
     .limit(input.limit);
 }

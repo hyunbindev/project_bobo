@@ -23,7 +23,7 @@ import { getMainClanSummary } from "@/lib/services/clan-service";
 type RegisterClanMemberInput = {
   nickname: string;
   displayName: string;
-  age: number;
+  birthYear: number;
   platform: PubgPlatform;
 };
 
@@ -54,11 +54,11 @@ function parseRegisterInput(value: unknown): RegisterClanMemberInput {
   if (
     typeof input.nickname !== "string" ||
     typeof input.displayName !== "string" ||
-    typeof input.age !== "number" ||
+    typeof input.birthYear !== "number" ||
     typeof input.platform !== "string"
   ) {
     throw new BadRequestError(
-      "nickname, displayName, age, and platform are required.",
+      "nickname, displayName, birthYear, and platform are required.",
     );
   }
 
@@ -69,8 +69,16 @@ function parseRegisterInput(value: unknown): RegisterClanMemberInput {
     throw new BadRequestError("displayName must contain 1 to 30 characters.");
   }
 
-  if (!Number.isInteger(input.age) || input.age < 1 || input.age > 120) {
-    throw new BadRequestError("age must be an integer from 1 to 120.");
+  const currentYear = new Date().getFullYear();
+
+  if (
+    !Number.isInteger(input.birthYear) ||
+    input.birthYear < 1900 ||
+    input.birthYear > currentYear
+  ) {
+    throw new BadRequestError(
+      `birthYear must be an integer from 1900 to ${currentYear}.`,
+    );
   }
 
   if (!isPubgPlatform(input.platform)) {
@@ -82,7 +90,7 @@ function parseRegisterInput(value: unknown): RegisterClanMemberInput {
   return {
     nickname,
     displayName,
-    age: input.age,
+    birthYear: input.birthYear,
     platform: input.platform,
   };
 }
@@ -184,7 +192,7 @@ export async function registerClanMember(input: unknown) {
       player,
       member: {
         displayName: data.displayName,
-        age: data.age,
+        birthYear: data.birthYear,
         profileRegistered: true,
       },
     });
@@ -201,12 +209,18 @@ export async function getClanMemberList() {
   const clan = await getMainClanSummary();
 
   if (!clan) {
-    return { clan: null, members: [] };
+    return { clan: null, members: [], clanMaster: null };
   }
 
   const members = await findActiveClanMembersByClanId(clan.pubgClanId);
+  const clanMasterAccountId = process.env.PUBG_CLAN_MASTER_ID?.trim();
+  const clanMaster = clanMasterAccountId
+    ? (members.find(
+        (member) => member.pubgAccountId === clanMasterAccountId,
+      ) ?? null)
+    : null;
 
-  return { clan, members };
+  return { clan, members, clanMaster };
 }
 
 export const getClanMemberDetail = cache(async (playerId: string) => {
@@ -243,7 +257,7 @@ export async function discoverClanMember(
       player,
       member: {
         displayName: null,
-        age: null,
+        birthYear: null,
         profileRegistered: false,
       },
     });

@@ -12,7 +12,7 @@ export type SaveClanMemberInput = {
   player: PubgPlayer;
   member: {
     displayName: string | null;
-    age: number | null;
+    birthYear: number | null;
     profileRegistered: boolean;
   };
 };
@@ -29,7 +29,7 @@ export async function findActiveClanMembersByClanId(
       nickname: players.name,
       platform: players.platform,
       displayName: clanMembers.displayName,
-      age: clanMembers.age,
+      birthYear: clanMembers.birthYear,
       profileRegistered: clanMembers.profileRegistered,
       status: clanMembers.status,
       joinedAt: clanMembers.joinedAt,
@@ -59,7 +59,7 @@ export async function findClanMemberDetailByPlayerId(
 
       memberId: clanMembers.id,
       displayName: clanMembers.displayName,
-      age: clanMembers.age,
+      birthYear: clanMembers.birthYear,
       status: clanMembers.status,
       profileRegistered: clanMembers.profileRegistered,
       joinedAt: clanMembers.joinedAt,
@@ -215,7 +215,7 @@ export async function saveClanMember(
     const memberUpdate = input.member.profileRegistered
       ? {
           displayName: input.member.displayName,
-          age: input.member.age,
+          birthYear: input.member.birthYear,
           profileRegistered: true,
           status: "active" as const,
           leftAt: null,
@@ -233,7 +233,7 @@ export async function saveClanMember(
         clanId: savedClan.id,
         playerId: savedPlayer.id,
         displayName: input.member.displayName,
-        age: input.member.age,
+        birthYear: input.member.birthYear,
         profileRegistered: input.member.profileRegistered,
       })
       .onConflictDoUpdate({
