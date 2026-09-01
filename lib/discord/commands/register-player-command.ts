@@ -64,10 +64,7 @@ export const registerPlayerCommand: DiscordCommand = {
 
       await interaction.editReply({
         content: [
-          `PUBG 아이디 **${result.pubgName}** 연결이 완료되었습니다.`,
-          result.usedStoredClanMember
-            ? "기존 클랜원 정보를 사용하여 API 조회 없이 등록했습니다."
-            : "PUBG 계정과 클랜 소속을 확인하여 등록했습니다.",
+          ` **${result.pubgName}** 등록이 완료되었습니다.`,
         ].join("\n"),
       });
     } catch (error) {
