@@ -10,6 +10,7 @@ const navigation = [
   { href: "/members", path: "/members", label: "클랜원" },
   { href: "/matches", path: "/matches", label: "클랜 전적" },
   { href: "/ranking", path: "/ranking", label: "랭킹" },
+  { href: "/records", path: "/records", label: "기록" },
 ];
 
 export function SiteHeader({

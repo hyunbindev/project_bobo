@@ -18,6 +18,7 @@ import {
   Trophy,
   Users,
 } from "lucide-react";
+import Link from "next/link";
 import { connection } from "next/server";
 
 import { SiteHeader } from "@/components/clan-dashboard/site-header";
@@ -188,9 +189,17 @@ export default async function RankingPage() {
               이번주 랭킹
             </h2>
           </div>
-          <p className="max-w-sm text-xs leading-5 text-muted-foreground sm:text-right">
-            매주 월요일에 갱신되는 랭킹입니다.
-          </p>
+          <div className="sm:text-right">
+            <p className="max-w-sm text-xs leading-5 text-muted-foreground">
+              매주 월요일에 갱신되는 랭킹입니다.
+            </p>
+            <Link
+              className="mt-2 inline-flex text-[10px] font-black tracking-wider text-primary transition-colors hover:text-primary-hover"
+              href="/records"
+            >
+              지난 랭킹 기록 보기 →
+            </Link>
+          </div>
         </div>
 
         <BoboKingCard ranking={data.boboKing} />

@@ -44,12 +44,14 @@ export function createWinMatchMessage(
   const members = [...match.members].sort(
     (left, right) => right.damage - left.damage,
   );
+  
+  const memberNames = members.map((member) => member.name).join(", ");
 
   const message = new ContainerBuilder()
     .setAccentColor(0xf0b429)
     .addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
-        "# 🍗 WINNER WINNER CHICKEN DINNER\n-# BOBO CLAN RECENT VICTORY",
+        `# ${memberNames} 힘을 합쳐 치킨을 먹었습니다!`,
       ),
     )
     .addSeparatorComponents(createSeparator(SeparatorSpacingSize.Small))
@@ -66,7 +68,6 @@ export function createWinMatchMessage(
     .addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
         [
-          "### BOBO TEAM RECORD",
           "`RANK` **#1**",
           `\`KILLS\` **${numberFormatter.format(match.kills)}**`,
           `\`DAMAGE\` **${numberFormatter.format(Math.round(match.damage))}**`,
@@ -82,7 +83,7 @@ export function createWinMatchMessage(
             ? members
                 .map(
                   (member, index) =>
-                    `${index+1} **${escapeMarkdown(member.name)}** · ${member.kills} K · ${numberFormatter.format(Math.round(member.damage))} DMG`,
+                    `${index+1} **${escapeMarkdown(member.name)}** · \`${member.kills} Kill\` · \`${numberFormatter.format(Math.round(member.damage))} damage\``,
                 )
                 .join("\n")
             : "클랜원 상세 기록이 없습니다.",

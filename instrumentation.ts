@@ -1,3 +1,5 @@
+import { getDiscordTextChannels } from "./lib/discord/messages/chat-list";
+
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") {
     return;
@@ -33,6 +35,8 @@ export async function register() {
       await startDiscordBot();
       //개발 테스트용 메세지 전송
       //await sendDiscordStartupMessage();
+      const chennels = await getDiscordTextChannels();
+      console.log(chennels);
     })
     .catch((error: unknown) => {
       discordLogger.error(

@@ -8,6 +8,15 @@ import { getReadyDiscordClient } from "@/lib/discord/runtime/discord-client";
 import { discordLogger } from "@/lib/logger";
 import type { RecentWonMatch } from "@/lib/services/match-service";
 
+const DISCORD_CHANNEL_IDS = [
+  ...new Set(
+    (process.env.DISCORD_CHANNEL_IDS ?? "")
+      .split(",")
+      .map((id) => id.trim())
+      .filter(Boolean),
+  ),
+];
+
 export type MatchWinNotificationResult = {
   sent: boolean;
   guildId: string;
@@ -50,21 +59,24 @@ export async function sendMatchWinNotification(
     return { sent: false, guildId, channelId: channel?.id ?? null };
   }
 
-  await sendDiscordMessage(
-    channel.id,
-    createWinMatchMessage(match, "자동 경기 알림"),
-  );
+  for (const configuredChannelId of DISCORD_CHANNEL_IDS) {
+    await sendDiscordMessage(
+      configuredChannelId,
+      createWinMatchMessage(match, "자동 경기 알림"),
+    );
+    
+    discordLogger.info(
+      {
+        event: "discord.match_win_notification_sent",
+        guildId,
+        channelId: configuredChannelId,
+        matchId: match.matchId,
+        rosterId: match.rosterId,
+      },
+      "Discord match win notification sent",
+    );
+  }
 
-  discordLogger.info(
-    {
-      event: "discord.match_win_notification_sent",
-      guildId,
-      channelId: channel.id,
-      matchId: match.matchId,
-      rosterId: match.rosterId,
-    },
-    "Discord match win notification sent",
-  );
 
   return { sent: true, guildId, channelId: channel.id };
 }

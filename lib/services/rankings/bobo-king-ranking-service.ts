@@ -12,7 +12,7 @@ export const boboKingRankingDefinition: RankingDefinition = {
   code: "bobo_king",
   label: "BOBOKING",
   title: "BOBOKING",
-  description: "킬, 기절, 데미지 합산 평균",
+  description: "판당 평균 킬, 대미지, 기절을 반영한 종합 점수",
   metric: "종합 점수",
   unit: "P",
 };
