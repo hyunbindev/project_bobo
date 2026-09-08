@@ -1,5 +1,3 @@
-import { getDiscordTextChannels } from "./lib/discord/messages/chat-list";
-
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") {
     return;
@@ -10,6 +8,7 @@ export async function register() {
     { registerDiscordCommands },
     { startDiscordBot },
     { sendDiscordStartupMessage },
+    { getDiscordTextChannels },
     { default: clanMatchSyncJob },
     { default: schedulerCronJob },
   ] = await Promise.all([
@@ -17,6 +16,7 @@ export async function register() {
     import("./lib/discord/runtime/register-discord-commands"),
     import("./lib/discord/runtime/discord-client"),
     import("./lib/discord/messages/send-discord-startup-message"),
+    import("./lib/discord/messages/chat-list"),
     import("./lib/sync/match/match-sync-job"),
     import("./lib/sync/scheduler"),
   ]);
