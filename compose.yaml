@@ -30,6 +30,7 @@ services:
       start_period: 10s
     networks:
       - bobo_backend
+      - db_access
     logging: *default-logging
 
   migrate:
@@ -123,6 +124,8 @@ networks:
   bobo_frontend:
   bobo_backend:
     internal: true
+  db_access:
+    driver: bridge
 
 secrets:
   cloudflare_tunnel_token:
