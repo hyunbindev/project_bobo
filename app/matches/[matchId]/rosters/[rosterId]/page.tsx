@@ -20,11 +20,16 @@ import { notFound } from "next/navigation";
 
 import { RosterParticipantsTable } from "@/components/clan-dashboard/roster-participants-table";
 import { SiteHeader } from "@/components/clan-dashboard/site-header";
+import { SquadHistorySection } from "@/components/clan-dashboard/squad-history";
+import { MatchDetailTabs } from "@/components/clan-dashboard/match-detail-tabs";
+import { getMatchDetailTab } from "@/lib/match-detail-navigation";
 import { getMainClanSummary } from "@/lib/services/clan-service";
 import { getMatchRosterDetail } from "@/lib/services/match-service";
+import { getSquadHistorySummary } from "@/lib/services/squad-history-service";
 
 type PageProps = {
   params: Promise<{ matchId: string; rosterId: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
 const mapLabels: Record<string, string> = {
@@ -63,7 +68,7 @@ export async function generateMetadata({
   };
 }
 
-export default async function RosterMatchDetailPage({ params }: PageProps) {
+export default async function RosterMatchDetailPage({ params, searchParams }: PageProps) {
   const { matchId, rosterId } = await params;
   const [detail, clan] = await Promise.all([
     getMatchRosterDetail(matchId, rosterId),
@@ -74,6 +79,13 @@ export default async function RosterMatchDetailPage({ params }: PageProps) {
     notFound();
   }
 
+  const query = await searchParams;
+  const requestedPage = Array.isArray(query.squadPage) ? query.squadPage[0] : query.squadPage;
+  const squadHistory = clan
+    ? await getSquadHistorySummary({ matchId, rosterId, clanId: clan.id })
+    : null;
+
+  const activeTab = squadHistory ? getMatchDetailTab(query) : "match";
   const mapName = formatMapName(detail.match.mapName);
   const mode = formatMode(detail.match.matchType, detail.match.gameMode);
   const rankStatus = formatRankStatus(detail.roster.rank);
@@ -183,175 +195,191 @@ export default async function RosterMatchDetailPage({ params }: PageProps) {
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-360 gap-8 px-5 py-14 sm:px-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:px-12 lg:py-20">
-        <div>
-          <div className="mb-6 flex items-end justify-between gap-4">
-            <div>
-              <p className="mb-2 text-[10px] font-black tracking-[0.24em] text-primary">
-                ROSTER MEMBERS
-              </p>
-              <h2 className="text-2xl font-black tracking-tight">
-                참여자 기록
-              </h2>
-            </div>
-            <span className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground">
-              <Users className="size-4 text-primary" />{" "}
-              {detail.participants.length} PLAYERS
-            </span>
-          </div>
+      {squadHistory && (
+        <SquadHistorySection history={squadHistory} mode={mode} />
+      )}
 
-          <RosterParticipantsTable participants={detail.participants} />
-        </div>
-
-        <aside className="space-y-5">
-          <div className="rounded-sm border border-border/60 bg-card p-6">
-            <p className="mb-2 text-[10px] font-black tracking-[0.22em] text-primary">
-              TEAM CONTRIBUTION
-            </p>
-            <h2 className="text-xl font-black">대미지 기여도</h2>
-            <div className="mt-7 space-y-5">
-              {detail.participants.map((member) => {
-                const contribution =
-                  detail.totals.damage > 0
-                    ? Math.round(
-                        (member.damageDealt / detail.totals.damage) * 100,
-                      )
-                    : 0;
-
-                return (
-                  <div key={member.id}>
-                    <div className="mb-2 flex items-center justify-between gap-3 text-[10px] font-bold">
-                      <span className="truncate">{member.name}</span>
-                      <span className="font-mono text-muted-foreground">
-                        {contribution}%
-                      </span>
-                    </div>
-                    <div className="h-1.5 overflow-hidden rounded-full bg-foreground/6">
-                      <div
-                        className="h-full rounded-full bg-primary"
-                        style={{ width: `${contribution}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="rounded-sm border border-border/60 bg-card p-6">
-            <p className="mb-5 text-[10px] font-black tracking-[0.22em] text-primary">
-              MATCH INFO
-            </p>
-            <dl className="space-y-4 text-xs">
-              <InfoRow icon={Map} label="맵" value={mapName} />
-              <InfoRow
-                icon={Swords}
-                label="모드"
-                value={formatGameMode(detail.match.gameMode)}
-              />
-              <InfoRow
-                icon={Trophy}
-                label="게임 유형"
-                value={formatMatchType(detail.match.matchType)}
-              />
-              <InfoRow
-                icon={Clock3}
-                label="경기 시간"
-                value={formatDuration(detail.match.duration)}
-              />
-              <InfoRow
-                icon={Users}
-                label="클랜원"
-                value={`${detail.clanMemberCount}명`}
-              />
-              <InfoRow
-                icon={Shield}
-                label="플랫폼"
-                value={detail.match.platform.toUpperCase()}
-              />
-            </dl>
-            <div className="mt-6 border-t border-border/50 pt-5">
-              <p className="text-[8px] font-black tracking-[0.17em] text-muted-foreground">
-                ROSTER ID
-              </p>
-              <p className="mt-2 break-all font-mono text-[9px] leading-4 text-foreground/70">
-                {detail.roster.id}
-              </p>
-            </div>
-          </div>
-        </aside>
-      </section>
-
-      <section className="border-t border-border/50 bg-surface">
-        <div className="mx-auto max-w-360 px-5 py-14 sm:px-8 lg:px-12 lg:py-20">
-          <div className="mb-7">
-            <p className="mb-2 text-[10px] font-black tracking-[0.24em] text-primary">
-              FIELD REPORT
-            </p>
-            <h2 className="text-2xl font-black tracking-tight">
-              상세 활동 기록
-            </h2>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {detail.participants.map((member) => (
-              <article
-                className="rounded-sm border border-border/60 bg-card p-5"
-                key={member.id}
-              >
-                <div className="flex items-start justify-between gap-3 border-b border-border/50 pb-4">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-black">{member.name}</p>
-                    <p className="mt-1 text-[8px] font-bold tracking-[0.14em] text-muted-foreground">
-                      {member.deathType.replaceAll("_", " ").toUpperCase()}
+      <div id="match-records" className="scroll-mt-18">
+        <MatchDetailTabs
+          key={`${matchId}:${rosterId}`}
+          matchId={matchId}
+          rosterId={rosterId}
+          initialTab={activeTab}
+          initialPage={Number.isSafeInteger(Number(requestedPage)) && Number(requestedPage) > 0 ? Number(requestedPage) : 1}
+          historyEnabled={Boolean(squadHistory)}
+        >
+            <section className="mx-auto grid max-w-360 gap-8 px-5 py-14 sm:px-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:px-12 lg:py-20">
+              <div>
+                <div className="mb-6 flex items-end justify-between gap-4">
+                  <div>
+                    <p className="mb-2 text-[10px] font-black tracking-[0.24em] text-primary">
+                      ROSTER MEMBERS
                     </p>
+                    <h2 className="text-2xl font-black tracking-tight">
+                      참여자 기록
+                    </h2>
                   </div>
-                  <span className="text-xs font-black text-primary">
-                    #{member.killPlace}
+                  <span className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground">
+                    <Users className="size-4 text-primary" />{" "}
+                    {detail.participants.length} PLAYERS
                   </span>
                 </div>
-                <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-5">
-                  <SmallStat icon={Pill} label="BOOST" value={member.boosts} />
-                  <SmallStat
-                    icon={HeartPulse}
-                    label="HEAL"
-                    value={member.heals}
-                  />
-                  <SmallStat
-                    icon={Crosshair}
-                    label="HEADSHOT"
-                    value={member.headshotKills}
-                  />
-                  <SmallStat
-                    icon={Target}
-                    label="LONGEST"
-                    value={`${Math.round(member.longestKill)}m`}
-                  />
-                  <SmallStat
-                    icon={Footprints}
-                    label="ON FOOT"
-                    value={formatDistance(member.walkDistance)}
-                  />
-                  <SmallStat
-                    icon={Car}
-                    label="VEHICLE"
-                    value={formatDistance(member.rideDistance)}
-                  />
-                  <SmallStat
-                    icon={PackageOpen}
-                    label="WEAPONS"
-                    value={member.weaponsAcquired}
-                  />
-                  <SmallStat
-                    icon={Skull}
-                    label="TEAM KILL"
-                    value={member.teamKills}
-                  />
-                </dl>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
+
+                <RosterParticipantsTable participants={detail.participants} />
+              </div>
+
+              <aside className="space-y-5">
+                <div className="rounded-sm border border-border/60 bg-card p-6">
+                  <p className="mb-2 text-[10px] font-black tracking-[0.22em] text-primary">
+                    TEAM CONTRIBUTION
+                  </p>
+                  <h2 className="text-xl font-black">대미지 기여도</h2>
+                  <div className="mt-7 space-y-5">
+                    {detail.participants.map((member) => {
+                      const contribution =
+                        detail.totals.damage > 0
+                          ? Math.round(
+                              (member.damageDealt / detail.totals.damage) * 100,
+                            )
+                          : 0;
+
+                      return (
+                        <div key={member.id}>
+                          <div className="mb-2 flex items-center justify-between gap-3 text-[10px] font-bold">
+                            <span className="truncate">{member.name}</span>
+                            <span className="font-mono text-muted-foreground">
+                              {contribution}%
+                            </span>
+                          </div>
+                          <div className="h-1.5 overflow-hidden rounded-full bg-foreground/6">
+                            <div
+                              className="h-full rounded-full bg-primary"
+                              style={{ width: `${contribution}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="rounded-sm border border-border/60 bg-card p-6">
+                  <p className="mb-5 text-[10px] font-black tracking-[0.22em] text-primary">
+                    MATCH INFO
+                  </p>
+                  <dl className="space-y-4 text-xs">
+                    <InfoRow icon={Map} label="맵" value={mapName} />
+                    <InfoRow
+                      icon={Swords}
+                      label="모드"
+                      value={formatGameMode(detail.match.gameMode)}
+                    />
+                    <InfoRow
+                      icon={Trophy}
+                      label="게임 유형"
+                      value={formatMatchType(detail.match.matchType)}
+                    />
+                    <InfoRow
+                      icon={Clock3}
+                      label="경기 시간"
+                      value={formatDuration(detail.match.duration)}
+                    />
+                    <InfoRow
+                      icon={Users}
+                      label="클랜원"
+                      value={`${detail.clanMemberCount}명`}
+                    />
+                    <InfoRow
+                      icon={Shield}
+                      label="플랫폼"
+                      value={detail.match.platform.toUpperCase()}
+                    />
+                  </dl>
+                  <div className="mt-6 border-t border-border/50 pt-5">
+                    <p className="text-[8px] font-black tracking-[0.17em] text-muted-foreground">
+                      ROSTER ID
+                    </p>
+                    <p className="mt-2 break-all font-mono text-[9px] leading-4 text-foreground/70">
+                      {detail.roster.id}
+                    </p>
+                  </div>
+                </div>
+              </aside>
+            </section>
+
+            <section className="border-t border-border/50 bg-surface">
+              <div className="mx-auto max-w-360 px-5 py-14 sm:px-8 lg:px-12 lg:py-20">
+                <div className="mb-7">
+                  <p className="mb-2 text-[10px] font-black tracking-[0.24em] text-primary">
+                    FIELD REPORT
+                  </p>
+                  <h2 className="text-2xl font-black tracking-tight">
+                    상세 활동 기록
+                  </h2>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                  {detail.participants.map((member) => (
+                    <article
+                      className="rounded-sm border border-border/60 bg-card p-5"
+                      key={member.id}
+                    >
+                      <div className="flex items-start justify-between gap-3 border-b border-border/50 pb-4">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-black">{member.name}</p>
+                          <p className="mt-1 text-[8px] font-bold tracking-[0.14em] text-muted-foreground">
+                            {member.deathType.replaceAll("_", " ").toUpperCase()}
+                          </p>
+                        </div>
+                        <span className="text-xs font-black text-primary">
+                          #{member.killPlace}
+                        </span>
+                      </div>
+                      <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-5">
+                        <SmallStat icon={Pill} label="BOOST" value={member.boosts} />
+                        <SmallStat
+                          icon={HeartPulse}
+                          label="HEAL"
+                          value={member.heals}
+                        />
+                        <SmallStat
+                          icon={Crosshair}
+                          label="HEADSHOT"
+                          value={member.headshotKills}
+                        />
+                        <SmallStat
+                          icon={Target}
+                          label="LONGEST"
+                          value={`${Math.round(member.longestKill)}m`}
+                        />
+                        <SmallStat
+                          icon={Footprints}
+                          label="ON FOOT"
+                          value={formatDistance(member.walkDistance)}
+                        />
+                        <SmallStat
+                          icon={Car}
+                          label="VEHICLE"
+                          value={formatDistance(member.rideDistance)}
+                        />
+                        <SmallStat
+                          icon={PackageOpen}
+                          label="WEAPONS"
+                          value={member.weaponsAcquired}
+                        />
+                        <SmallStat
+                          icon={Skull}
+                          label="TEAM KILL"
+                          value={member.teamKills}
+                        />
+                      </dl>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+        </MatchDetailTabs>
+      </div>
 
       <footer className="border-t border-border/50 bg-background">
         <div className="mx-auto flex max-w-360 flex-col gap-3 px-5 py-8 text-[9px] font-semibold tracking-wide text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-12">
