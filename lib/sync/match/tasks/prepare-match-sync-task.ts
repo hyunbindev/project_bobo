@@ -27,12 +27,7 @@ export async function prepareMatchSyncTask(): Promise<MatchSyncContext> {
     level: clanSummary.level,
     memberCount: clanSummary.memberCount,
   };
-  const storedMembers = await findStoredClanMember();
-  const clanMembers = storedMembers.filter(
-    ({ players }) =>
-      players.pubgClanId === targetClanId &&
-      players.platform === MATCH_SYNC_PLATFORM,
-  );
+  const clanMembers = await findStoredClanMember();
 
   return {
     targetClanId,

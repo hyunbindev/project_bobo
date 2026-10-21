@@ -182,8 +182,7 @@ export async function syncPlayersFromPubg(
       })
       .returning({ id: players.id, pubgAccountId: players.pubgAccountId });
 
-    // 정상 응답으로 소속을 확인한 선수만 처리한다. 무소속(null)도 탈퇴로 본다.
-    // 이전 탈퇴 기록과 과거 전적은 유지하고 기존 active 관계만 종료한다.
+    // 동기화시 기준 클랜아이디, 혹은 클랜이 NULL 일경우 탈퇴로 보고 상태를 LEFT로 수정한다.
     await tx
       .update(clanMembers)
       .set({
