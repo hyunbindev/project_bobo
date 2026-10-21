@@ -83,7 +83,8 @@ export const teamSplitCommand: DiscordCommand = {
       voiceChannel.members.get(interaction.user.id)?.displayName ??
       interaction.user.globalName ??
       interaction.user.username;
-    const savedResult = await createTeamSplit({
+    
+      const savedResult = await createTeamSplit({
       discordGuildId: guild.id,
       discordVoiceChannelId: voiceChannel.id,
       discordVoiceChannelName: voiceChannel.name,
@@ -92,6 +93,7 @@ export const teamSplitCommand: DiscordCommand = {
       membersPerTeam,
       members,
     });
+
     const resultUrl = createDiscordAppUrl(
       `/team-splits/${encodeURIComponent(savedResult.shareToken)}`,
     );

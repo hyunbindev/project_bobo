@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, exists, inArray, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { clanMembers, clans, players } from "@/lib/db/schema";
@@ -158,26 +158,61 @@ export async function syncPlayersFromPubg(
     return [];
   }
 
-  return database
-    .insert(players)
-    .values(
-      uniquePlayers.map((player) => ({
-        pubgAccountId: player.accountId,
-        name: player.name,
-        platform: player.platform,
-        pubgClanId: player.clanId,
-        lastSyncedAt: new Date(),
-      })),
-    )
-    .onConflictDoUpdate({
-      target: [players.platform, players.pubgAccountId],
-      set: {
-        name: sql`excluded.name`,
-        pubgClanId: sql`excluded.pubg_clan_id`,
-        lastSyncedAt: sql`excluded.last_synced_at`,
-      },
-    })
-    .returning({ pubgAccountId: players.pubgAccountId });
+  const now = new Date();
+
+  return database.transaction(async (tx) => {
+    const syncedPlayers = await tx
+      .insert(players)
+      .values(
+        uniquePlayers.map((player) => ({
+          pubgAccountId: player.accountId,
+          name: player.name,
+          platform: player.platform,
+          pubgClanId: player.clanId,
+          lastSyncedAt: now,
+        })),
+      )
+      .onConflictDoUpdate({
+        target: [players.platform, players.pubgAccountId],
+        set: {
+          name: sql`excluded.name`,
+          pubgClanId: sql`excluded.pubg_clan_id`,
+          lastSyncedAt: sql`excluded.last_synced_at`,
+        },
+      })
+      .returning({ id: players.id, pubgAccountId: players.pubgAccountId });
+
+    // 정상 응답으로 소속을 확인한 선수만 처리한다. 무소속(null)도 탈퇴로 본다.
+    // 이전 탈퇴 기록과 과거 전적은 유지하고 기존 active 관계만 종료한다.
+    await tx
+      .update(clanMembers)
+      .set({
+        status: "left",
+        leftAt: sql`coalesce(${clanMembers.leftAt}, ${now})`,
+        updatedAt: now,
+      })
+      .from(players)
+      .where(
+        and(
+          eq(clanMembers.playerId, players.id),
+          inArray(players.id, syncedPlayers.map((player) => player.id)),
+          eq(clanMembers.status, "active"),
+          exists(
+            tx
+              .select({ id: clans.id })
+              .from(clans)
+              .where(
+                and(
+                  eq(clans.id, clanMembers.clanId),
+                  sql`${clans.pubgClanId} is distinct from ${players.pubgClanId}`,
+                ),
+              ),
+          ),
+        ),
+      );
+
+    return syncedPlayers.map(({ pubgAccountId }) => ({ pubgAccountId }));
+  });
 }
 
 export async function saveClanMember(
