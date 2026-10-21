@@ -207,6 +207,7 @@ export default async function RosterMatchDetailPage({ params, searchParams }: Pa
           initialTab={activeTab}
           initialPage={Number.isSafeInteger(Number(requestedPage)) && Number(requestedPage) > 0 ? Number(requestedPage) : 1}
           historyEnabled={Boolean(squadHistory)}
+          members={squadHistory?.members}
         >
             <section className="mx-auto grid max-w-360 gap-8 px-5 py-14 sm:px-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:px-12 lg:py-20">
               <div>

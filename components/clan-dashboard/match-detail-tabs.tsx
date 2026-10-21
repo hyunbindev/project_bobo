@@ -5,6 +5,7 @@ import { useEffect, useId, useState, type ReactNode, type KeyboardEvent } from "
 
 import { SquadHistoryPanel } from "@/components/clan-dashboard/squad-history-panel";
 import { getMatchDetailTab, matchDetailHref, type MatchDetailTab } from "@/lib/match-detail-navigation";
+import type { SquadSummary } from "@/lib/services/squad-history-service";
 
 const tabs = [
   { value: "match", label: "이번 경기", icon: Crosshair },
@@ -12,7 +13,7 @@ const tabs = [
 ] as const;
 
 export function MatchDetailTabs({
-  children, matchId, rosterId, initialTab = "match", initialPage = 1, historyEnabled = true,
+  children, matchId, rosterId, initialTab = "match", initialPage = 1, historyEnabled = true, members = [],
 }: {
   children?: ReactNode;
   matchId: string;
@@ -20,6 +21,7 @@ export function MatchDetailTabs({
   initialTab?: MatchDetailTab;
   initialPage?: number;
   historyEnabled?: boolean;
+  members?: SquadSummary["members"];
 }) {
   const id = useId();
   const [selection, setSelection] = useState({ tab: initialTab, page: initialPage });
@@ -83,14 +85,32 @@ export function MatchDetailTabs({
           </div>
         </div>
       )}
-      <div id={`${id}-panel-match`} role={historyEnabled ? "tabpanel" : undefined} aria-labelledby={historyEnabled ? `${id}-tab-match` : undefined} hidden={activeTab !== "match"} tabIndex={historyEnabled ? 0 : undefined}>
-        {children}
-      </div>
-      {historyEnabled && (
-        <div id={`${id}-panel-history`} role="tabpanel" aria-labelledby={`${id}-tab-history`} hidden={activeTab !== "history"} tabIndex={0}>
-          {activeTab === "history" && <SquadHistoryPanel matchId={matchId} rosterId={rosterId} page={selection.page} onPageChange={(page) => select("history", page)} />}
+      <div className="grid min-h-[calc(100svh-8rem)] grid-cols-1 items-start">
+        <div
+          id={`${id}-panel-match`}
+          role={historyEnabled ? "tabpanel" : undefined}
+          aria-labelledby={historyEnabled ? `${id}-tab-match` : undefined}
+          aria-hidden={activeTab !== "match"}
+          inert={activeTab !== "match"}
+          tabIndex={historyEnabled && activeTab === "match" ? 0 : undefined}
+          className={`col-start-1 row-start-1 min-w-0 ${activeTab !== "match" ? "invisible pointer-events-none" : ""}`}
+        >
+          {children}
         </div>
-      )}
+        {historyEnabled && (
+          <div
+            id={`${id}-panel-history`}
+            role="tabpanel"
+            aria-labelledby={`${id}-tab-history`}
+            aria-hidden={activeTab !== "history"}
+            inert={activeTab !== "history"}
+            tabIndex={activeTab === "history" ? 0 : -1}
+            className={`col-start-1 row-start-1 min-w-0 ${activeTab !== "history" ? "invisible pointer-events-none" : ""}`}
+          >
+            <SquadHistoryPanel matchId={matchId} rosterId={rosterId} page={selection.page} enabled={activeTab === "history"} members={members} onPageChange={(page) => select("history", page)} />
+          </div>
+        )}
+      </div>
     </>
   );
 }
