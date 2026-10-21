@@ -26,11 +26,21 @@ const mapLabels: Record<string, string> = {
   Tiger_Main: "TAEGO",
 };
 
+type MatchHistoryItem = Pick<
+  MatchRosterListItem,
+  "matchId" | "rosterId" | "mapName" | "gameMode" | "matchType" |
+  "playedAt" | "rank" | "kills" | "damage"
+> & Partial<Pick<MatchRosterListItem, "dbnos" | "memberNames">>;
+
 export function MatchHistoryTable({
   matches,
+  variant = "team",
 }: {
-  matches: MatchRosterListItem[];
+  matches: MatchHistoryItem[];
+  variant?: "team" | "clan-squad";
 }) {
+  const isClanSquad = variant === "clan-squad";
+  const columnCount = isClanSquad ? 5 : 7;
   return (
     <div className="overflow-hidden rounded-sm border border-border/60 bg-card">
       <Table className="min-w-0 lg:min-w-250">
@@ -43,17 +53,17 @@ export function MatchHistoryTable({
               MAP / MODE
             </TableHead>
             <TableHead className="w-28 text-[9px] font-black tracking-[0.16em] text-muted-foreground">
-              TEAM KILLS
+              {isClanSquad ? "클랜원 합산 킬" : "TEAM KILLS"}
             </TableHead>
-            <TableHead className="w-20 text-[9px] font-black tracking-[0.16em] text-muted-foreground">
+            {!isClanSquad && <TableHead className="w-20 text-[9px] font-black tracking-[0.16em] text-muted-foreground">
               DBNO
-            </TableHead>
+            </TableHead>}
             <TableHead className="w-28 text-[9px] font-black tracking-[0.16em] text-muted-foreground">
-              DAMAGE
+              {isClanSquad ? "클랜원 합산 딜량" : "DAMAGE"}
             </TableHead>
-            <TableHead className="w-64 text-[9px] font-black tracking-[0.16em] text-muted-foreground">
+            {!isClanSquad && <TableHead className="w-64 text-[9px] font-black tracking-[0.16em] text-muted-foreground">
               MEMBERS
-            </TableHead>
+            </TableHead>}
             <TableHead className="w-40 px-6 text-right text-[9px] font-black tracking-[0.16em] text-muted-foreground">
               PLAYED
             </TableHead>
@@ -63,7 +73,7 @@ export function MatchHistoryTable({
         <TableBody>
           {matches.length === 0 ? (
             <TableRow className="hover:bg-transparent">
-              <TableCell className="h-64 text-center" colSpan={7}>
+              <TableCell className="h-64 text-center" colSpan={columnCount}>
                 <Trophy className="mx-auto size-8 text-primary/70" />
                 <p className="mt-4 text-sm font-black">저장된 경기가 없습니다.</p>
                 <p className="mt-2 text-xs text-muted-foreground">
@@ -80,7 +90,7 @@ export function MatchHistoryTable({
                   key={`${match.matchId}:${match.rosterId}`}
                 >
                   <TableRow className="border-border/50 hover:bg-foreground/[0.025] lg:hidden">
-                    <TableCell className="whitespace-normal p-0" colSpan={7}>
+                    <TableCell className="whitespace-normal p-0" colSpan={columnCount}>
                       <Link
                         aria-label={`${formatMapName(match.mapName)} 경기 상세 보기`}
                         className="block px-4 py-4 sm:px-5"
@@ -115,7 +125,8 @@ export function MatchHistoryTable({
                             {formatMode(match.matchType, match.gameMode)}
                           </span>
                           <span className="whitespace-nowrap">
-                            {match.kills}킬 · {match.dbnos}기절 · {Math.round(match.damage).toLocaleString("ko-KR")}딜
+                            {isClanSquad && "클랜원 합산 · "}
+                            {match.kills}킬 · {!isClanSquad && `${match.dbnos ?? 0}기절 · `}{Math.round(match.damage).toLocaleString("ko-KR")}딜
                           </span>
                         </div>
                       </Link>
@@ -154,16 +165,16 @@ export function MatchHistoryTable({
                       icon={Crosshair}
                       value={match.kills}
                     />
-                    <MetricCell href={href} icon={Activity} value={match.dbnos} />
+                    {!isClanSquad && <MetricCell href={href} icon={Activity} value={match.dbnos ?? 0} />}
                     <MetricCell
                       href={href}
                       icon={Trophy}
                       value={Math.round(match.damage).toLocaleString("ko-KR")}
                     />
 
-                    <TableCell className="p-0">
+                    {!isClanSquad && <TableCell className="p-0">
                       <Link className="flex flex-wrap gap-1 py-5" href={href}>
-                        {match.memberNames.map((member, index) => (
+                        {match.memberNames?.map((member, index) => (
                           <span
                             className="max-w-28 truncate rounded-sm bg-foreground/[0.055] px-2 py-1 text-[9px] font-bold text-muted-foreground"
                             key={`${member}:${index}`}
@@ -173,7 +184,7 @@ export function MatchHistoryTable({
                           </span>
                         ))}
                       </Link>
-                    </TableCell>
+                    </TableCell>}
 
                     <TableCell className="p-0 text-right">
                       <Link
