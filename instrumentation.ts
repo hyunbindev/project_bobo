@@ -35,8 +35,15 @@ export async function register() {
       await startDiscordBot();
       //개발 테스트용 메세지 전송
       //await sendDiscordStartupMessage();
-      const chennels = await getDiscordTextChannels();
-      console.log(chennels);
+      const channels = await getDiscordTextChannels();
+      discordLogger.info(
+        {
+          event: "discord.text_channels_loaded",
+          channelCount: channels.length,
+          channels,
+        },
+        "Discord text channels loaded",
+      );
     })
     .catch((error: unknown) => {
       discordLogger.error(
