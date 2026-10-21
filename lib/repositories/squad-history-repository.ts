@@ -28,7 +28,8 @@ export type SquadHistoryMatch = {
   damage: number;
 };
 
-// 조합 판정·통계·목록은 같은 조건을 공유하며 외부인은 제외한다.
+// 조회한 조합 전원이 같은 로스터에 있으면 다른 클랜원이 함께해도 포함한다.
+// 킬·딜량은 조회한 조합에 속한 플레이어만 합산한다.
 function squadHistoryCtes(input: SquadHistoryInput) {
   return sql`
     with active_members as (
@@ -52,8 +53,8 @@ function squadHistoryCtes(input: SquadHistoryInput) {
       select m.id as match_id, mp.pubg_roster_id as roster_id,
         m.map_name, m.played_at, m.game_mode, m.match_type,
         min(coalesce(mp.team_rank, mp.win_place))::integer as rank,
-        sum(mp.kills)::integer as kills,
-        sum(mp.damage_dealt)::double precision as damage,
+        (sum(mp.kills) filter (where mp.player_id = any(t.member_ids)))::integer as kills,
+        (sum(mp.damage_dealt) filter (where mp.player_id = any(t.member_ids)))::double precision as damage,
         array_agg(mp.player_id order by mp.player_id) as member_ids
       from target t
       join matches m on m.platform = t.platform
@@ -71,7 +72,7 @@ function squadHistoryCtes(input: SquadHistoryInput) {
       group by m.id, mp.pubg_roster_id
     ), squad_matches as (
       select r.* from roster_totals r
-      join target t on t.member_ids = r.member_ids
+      join target t on t.member_ids <@ r.member_ids
     )
   `;
 }
