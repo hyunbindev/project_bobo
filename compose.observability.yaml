@@ -48,6 +48,7 @@ services:
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD in .env.observability}
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://127.0.0.1:3001}
       GF_USERS_ALLOW_SIGN_UP: "false"
       GF_AUTH_ANONYMOUS_ENABLED: "false"
       GF_ANALYTICS_REPORTING_ENABLED: "false"
@@ -67,7 +68,10 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
-    networks: [observability]
+    networks:
+      observability:
+      app_frontend:
+        aliases: [bobo-grafana]
     mem_limit: 512m
     cpus: 0.75
     security_opt: ["no-new-privileges:true"]
@@ -81,3 +85,6 @@ volumes:
 networks:
   observability:
     internal: true
+  app_frontend:
+    external: true
+    name: ${APP_FRONTEND_NETWORK:-project-bobo_bobo_frontend}

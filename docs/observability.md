@@ -58,7 +58,17 @@ docker inspect project-bobo-app-1 --format '{{ index .Config.Labels "com.docker.
 출력이 `project-bobo`가 아니면 `TARGET_COMPOSE_PROJECT`를 맞춘다.
 컨테이너 이름을 바꿔 실행했다면 위 명령의 컨테이너 이름도 변경한다.
 앱 프로젝트만 수집하므로 로그 시스템 자신의 로그는 재수집하지 않는다.
-기존 앱과 Docker 네트워크를 공유할 필요는 없다.
+Alloy는 Docker 소켓으로 수집하므로 앱 네트워크에 연결하지 않는다.
+Grafana만 기존 앱의 frontend 네트워크에도 연결해 기존 cloudflared에서 접근하게 한다.
+Loki와 Alloy는 관측용 내부 네트워크에만 둔다.
+
+기존 앱이 먼저 실행되어 frontend 네트워크가 존재해야 한다.
+기본값은 `project-bobo_bobo_frontend`이며 실제 이름이 다르면
+`APP_FRONTEND_NETWORK`를 변경한다.
+
+```bash
+docker network ls
+```
 
 ```bash
 docker compose --env-file .env.observability -f compose.observability.yaml config --quiet
@@ -84,6 +94,20 @@ ssh -N -L 3001:127.0.0.1:3001 USER@SERVER
 사용자와 비밀번호는 `.env.observability`에 설정한 값을 사용한다.
 LAN 직접 접속이 필요하면 `GRAFANA_BIND_ADDRESS`를 서버의 LAN IP로 설정한다.
 Loki와 Alloy 포트는 호스트에 공개하지 않는다.
+
+### 기존 Cloudflare Tunnel로 접속
+
+1. `.env.observability`의 `GRAFANA_ROOT_URL`에 사용할 외부 주소를 지정한다.
+   예: `https://grafana.example.com`.
+2. Cloudflare 대시보드에서 기존 Tunnel에 공개 호스트명을 추가한다.
+   Service는 **HTTP**, URL은 **`bobo-grafana:3000`**으로 지정한다.
+3. Compose를 다시 적용한 뒤 외부 HTTPS 주소에서 Grafana 계정으로 로그인한다.
+
+기존 Tunnel 컨테이너와 Grafana는 `APP_FRONTEND_NETWORK`를 공유한다.
+앱 프로젝트와 관측 프로젝트의 이름은 다르므로 앱 재배포의
+`--remove-orphans`가 관측 컨테이너를 제거하지 않는다.
+Cloudflare Access 추가 인증은 구성하지 않는다. Grafana의 자체 로그인을 사용한다.
+이 파일을 복사하거나 Compose를 실행하는 것만으로 Cloudflare 공개 경로가 생성되지는 않는다.
 
 Grafana의 **Dashboards -> BOBO -> BOBO 운영 로그**를 연다.
 프로젝트 이름을 변경했다면 대시보드의 `Compose project` 입력도 맞춘다.
