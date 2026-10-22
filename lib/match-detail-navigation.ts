@@ -1,7 +1,5 @@
 export type MatchDetailSearchParams = Record<string, string | string[] | undefined>;
 
-export const MATCH_DETAIL_NAVIGATION_EVENT = "match-detail:navigate";
-
 export function getMatchDetailScrollTarget(hash: string) {
   if (hash === "#match-records") return "match-records";
   if (hash === "#squad-matches") return "squad-matches";

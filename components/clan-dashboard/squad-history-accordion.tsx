@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 
 import { SquadHistoryPanel } from "@/components/clan-dashboard/squad-history-panel";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { getMatchDetailScrollTarget, getSquadHistoryNavigation, MATCH_DETAIL_NAVIGATION_EVENT, squadHistoryHref } from "@/lib/match-detail-navigation";
+import { getMatchDetailScrollTarget, getSquadHistoryNavigation, squadHistoryHref } from "@/lib/match-detail-navigation";
 
 export function SquadHistoryAccordion({ matchId, rosterId, matchCount, initialOpen = false, initialPage = 1 }: {
   matchId: string;
@@ -36,10 +36,8 @@ export function SquadHistoryAccordion({ matchId, rosterId, matchCount, initialOp
     const query: Record<string, string[]> = {};
     for (const [key, value] of new URLSearchParams(window.location.search)) (query[key] ??= []).push(value);
     const href = squadHistoryHref(query, open, open ? page : undefined);
-    if (push) {
-      window.history.pushState(null, "", href);
-      window.dispatchEvent(new Event(MATCH_DETAIL_NAVIGATION_EVENT));
-    } else window.history.replaceState(null, "", href);
+    if (push) window.history.pushState(null, "", href);
+    else window.history.replaceState(null, "", href);
   }
 
   return (
