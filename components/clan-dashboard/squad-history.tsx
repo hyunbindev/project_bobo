@@ -1,7 +1,10 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 
-import { MatchHistoryTable } from "@/components/clan-dashboard/match-history-table";
+import { MatchHistoryTable, MatchHistoryTableSkeleton } from "@/components/clan-dashboard/match-history-table";
 import type { SquadHistory, SquadSummary } from "@/lib/services/squad-history-service";
+
+import { getSquadHistoryPagination } from "@/lib/squad-history-pagination";
 
 const formatter = new Intl.NumberFormat("ko-KR", { maximumFractionDigits: 1 });
 
@@ -34,7 +37,7 @@ export function SquadHistorySection({ history, mode, current }: {
           <span><strong className="text-primary">{formatter.format(history.winCount)}승</strong></span>
           <span>승률 <strong className="text-foreground">{formatter.format(history.winRate)}%</strong></span>
         </p>
-        <p className="mt-2 text-[10px] leading-4 text-muted-foreground sm:text-[11px]">{mode} · 같은 클랜원 구성 · 이 경기까지 수집된 기록</p>
+        <p className="mt-2 text-[10px] leading-4 text-muted-foreground sm:text-[11px]">{mode} · 이 멤버들이 함께한 경기 · 이 경기까지 수집된 기록</p>
       </div>
       <div className="px-5 py-4 sm:px-6">
         <table className="w-full table-fixed text-right tabular-nums">
@@ -91,27 +94,40 @@ export function SquadMatchHistorySection({ history, onPageChange }: {
   onPageChange: (page: number) => void;
 }) {
   return (
+    <SquadMatchHistoryLayout history={history} onPageChange={onPageChange}>
+      <MatchHistoryTable matches={history.items} variant="clan-squad" />
+    </SquadMatchHistoryLayout>
+  );
+}
+
+function SquadMatchHistoryLayout({ history, onPageChange, children }: {
+  history: Pick<SquadHistory, "matchCount" | "page" | "totalPages">;
+  onPageChange?: (page: number) => void;
+  children: ReactNode;
+}) {
+  return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-sm font-bold">함께한 경기 <span className="text-muted-foreground">{formatter.format(history.matchCount)}개</span></h3>
         <span className="text-xs text-muted-foreground">최신순 · {history.page} / {history.totalPages} 페이지</span>
       </div>
-      <MatchHistoryTable matches={history.items} variant="clan-squad" />
+      {children}
       <nav aria-label="스쿼드 조합 경기 페이지" className="mt-4 flex items-center justify-end gap-2 text-xs font-bold">
-        <button type="button" disabled={history.page <= 1} onClick={() => onPageChange(history.page - 1)} className="min-h-10 rounded-sm border border-border px-4 hover:border-primary/50 hover:text-primary disabled:cursor-not-allowed disabled:opacity-40">이전</button>
+        <button type="button" disabled={!onPageChange || history.page <= 1} onClick={() => onPageChange?.(history.page - 1)} className="min-h-10 rounded-sm border border-border px-4 hover:border-primary/50 hover:text-primary disabled:cursor-not-allowed disabled:opacity-40">이전</button>
         <span aria-live="polite" className="px-3 tabular-nums">{history.page} / {history.totalPages}</span>
-        <button type="button" disabled={history.page >= history.totalPages} onClick={() => onPageChange(history.page + 1)} className="min-h-10 rounded-sm border border-border px-4 hover:border-primary/50 hover:text-primary disabled:cursor-not-allowed disabled:opacity-40">다음</button>
+        <button type="button" disabled={!onPageChange || history.page >= history.totalPages} onClick={() => onPageChange?.(history.page + 1)} className="min-h-10 rounded-sm border border-border px-4 hover:border-primary/50 hover:text-primary disabled:cursor-not-allowed disabled:opacity-40">다음</button>
       </nav>
     </div>
   );
 }
 
-export function SquadMatchHistorySkeleton() {
+export function SquadMatchHistorySkeleton({ matchCount, page }: { matchCount: number; page: number }) {
+  const pagination = getSquadHistoryPagination(matchCount, page);
   return (
-    <div role="status" aria-label="함께한 경기 기록 로딩 중" aria-live="polite" aria-busy="true" className="rounded-sm border border-border/60 bg-card p-5">
-      <div aria-hidden="true" className="space-y-3 motion-safe:animate-pulse">
-        {["w-full", "w-4/5", "w-3/5"].map((width) => <div key={width} className={`h-3 rounded-sm bg-muted ${width}`} />)}
-      </div>
+    <div role="status" aria-label="함께한 경기 기록 로딩 중" aria-busy="true">
+      <SquadMatchHistoryLayout history={{ matchCount, ...pagination }}>
+        <MatchHistoryTableSkeleton rowCount={pagination.rowCount} />
+      </SquadMatchHistoryLayout>
     </div>
   );
 }

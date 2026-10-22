@@ -4,7 +4,7 @@ import {
   type SquadHistoryInput,
 } from "@/lib/repositories/squad-history-repository";
 
-const PAGE_SIZE = 10;
+import { getSquadHistoryPagination, SQUAD_HISTORY_PAGE_SIZE } from "@/lib/squad-history-pagination";
 
 export async function getSquadHistorySummary(input: SquadHistoryInput) {
   const summary = await findSquadHistorySummary(input);
@@ -22,12 +22,8 @@ export async function getSquadHistory(
   const summary = await getSquadHistorySummary(input);
   if (!summary) return null;
 
-  const totalPages = Math.max(Math.ceil(summary.matchCount / PAGE_SIZE), 1);
-  const page = Math.min(
-    Math.max(Number.isFinite(requestedPage) ? Math.trunc(requestedPage) : 1, 1),
-    totalPages,
-  );
-  const items = await findSquadHistoryMatches(input, PAGE_SIZE, (page - 1) * PAGE_SIZE);
+  const { page, totalPages } = getSquadHistoryPagination(summary.matchCount, requestedPage);
+  const items = await findSquadHistoryMatches(input, SQUAD_HISTORY_PAGE_SIZE, (page - 1) * SQUAD_HISTORY_PAGE_SIZE);
 
   return {
     ...summary,
