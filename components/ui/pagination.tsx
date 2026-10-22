@@ -1,4 +1,5 @@
 import * as React from "react";
+import Link from "next/link";
 import type { VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils";
@@ -41,7 +42,7 @@ function PaginationItem({ ...props }: React.ComponentProps<"li">) {
 type PaginationLinkProps = {
   isActive?: boolean;
 } & Pick<VariantProps<typeof buttonVariants>, "size"> &
-  React.ComponentProps<"a">;
+  React.ComponentProps<typeof Link>;
 
 function PaginationLink({
   className,
@@ -50,7 +51,7 @@ function PaginationLink({
   ...props
 }: PaginationLinkProps) {
   return (
-    <a
+    <Link
       {...props}
       aria-current={isActive ? "page" : undefined}
       data-slot="pagination-link"
