@@ -27,6 +27,7 @@ export function MatchPagination({
               currentPage === 1 ? "pointer-events-none opacity-40" : ""
             }
             href={`?page=${Math.max(currentPage - 1, 1)}`}
+            scroll={false}
             text="이전"
           />
         </PaginationItem>
@@ -45,6 +46,7 @@ export function MatchPagination({
                     : "rounded-sm"
                 }
                 href={`?page=${page}`}
+                scroll={false}
                 isActive={page === currentPage}
               >
                 {page}
@@ -60,6 +62,7 @@ export function MatchPagination({
               currentPage === totalPages ? "pointer-events-none opacity-40" : ""
             }
             href={`?page=${Math.min(currentPage + 1, totalPages)}`}
+            scroll={false}
             text="다음"
           />
         </PaginationItem>
