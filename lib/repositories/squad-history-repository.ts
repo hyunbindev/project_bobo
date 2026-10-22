@@ -32,7 +32,7 @@ export type SquadHistoryMatch = {
   damage: number;
 };
 
-// Match the exact active clan-member composition and exclude later matches.
+// Include rosters containing every target member and exclude later matches.
 // Both current and historical metrics include only these same members.
 function squadHistoryCtes(input: SquadHistoryInput) {
   return sql`
@@ -77,7 +77,7 @@ function squadHistoryCtes(input: SquadHistoryInput) {
       group by m.id, mp.pubg_roster_id
     ), squad_matches as (
       select r.* from roster_totals r
-      join target t on t.member_ids = r.member_ids
+      join target t on t.member_ids <@ r.member_ids
     )
   `;
 }

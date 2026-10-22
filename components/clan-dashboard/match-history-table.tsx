@@ -1,6 +1,6 @@
 import { Activity, Clock3, Crosshair, Map, Trophy } from "lucide-react";
 import Link from "next/link";
-import { Fragment } from "react";
+import { Fragment, type ReactNode } from "react";
 
 import {
   Table,
@@ -42,34 +42,7 @@ export function MatchHistoryTable({
   const isClanSquad = variant === "clan-squad";
   const columnCount = isClanSquad ? 5 : 7;
   return (
-    <div className="overflow-hidden rounded-sm border border-border/60 bg-card">
-      <Table className="min-w-0 lg:min-w-250">
-        <TableHeader className="hidden bg-muted/20 lg:table-header-group">
-          <TableRow className="border-border/60 hover:bg-transparent">
-            <TableHead className="w-20 px-6 text-[9px] font-black tracking-[0.16em] text-muted-foreground">
-              RANK
-            </TableHead>
-            <TableHead className="text-[9px] font-black tracking-[0.16em] text-muted-foreground">
-              MAP / MODE
-            </TableHead>
-            <TableHead className="w-28 text-[9px] font-black tracking-[0.16em] text-muted-foreground">
-              {isClanSquad ? "클랜원 합산 킬" : "TEAM KILLS"}
-            </TableHead>
-            {!isClanSquad && <TableHead className="w-20 text-[9px] font-black tracking-[0.16em] text-muted-foreground">
-              DBNO
-            </TableHead>}
-            <TableHead className="w-28 text-[9px] font-black tracking-[0.16em] text-muted-foreground">
-              {isClanSquad ? "클랜원 합산 딜량" : "DAMAGE"}
-            </TableHead>
-            {!isClanSquad && <TableHead className="w-64 text-[9px] font-black tracking-[0.16em] text-muted-foreground">
-              MEMBERS
-            </TableHead>}
-            <TableHead className="w-40 px-6 text-right text-[9px] font-black tracking-[0.16em] text-muted-foreground">
-              PLAYED
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-
+    <MatchHistoryFrame isClanSquad={isClanSquad}>
         <TableBody>
           {matches.length === 0 ? (
             <TableRow className="hover:bg-transparent">
@@ -201,7 +174,79 @@ export function MatchHistoryTable({
             })
           )}
         </TableBody>
+    </MatchHistoryFrame>
+  );
+}
+
+function MatchHistoryFrame({ isClanSquad, children }: { isClanSquad: boolean; children: ReactNode }) {
+  return (
+    <div className="overflow-hidden rounded-sm border border-border/60 bg-card">
+      <Table className="min-w-0 lg:min-w-250">
+        <TableHeader className="hidden bg-muted/20 lg:table-header-group">
+          <TableRow className="border-border/60 hover:bg-transparent">
+            <TableHead className="w-20 px-6 text-[9px] font-black tracking-[0.16em] text-muted-foreground">
+              RANK
+            </TableHead>
+            <TableHead className="text-[9px] font-black tracking-[0.16em] text-muted-foreground">
+              MAP / MODE
+            </TableHead>
+            <TableHead className="w-28 text-[9px] font-black tracking-[0.16em] text-muted-foreground">
+              {isClanSquad ? "클랜원 합산 킬" : "TEAM KILLS"}
+            </TableHead>
+            {!isClanSquad && <TableHead className="w-20 text-[9px] font-black tracking-[0.16em] text-muted-foreground">
+              DBNO
+            </TableHead>}
+            <TableHead className="w-28 text-[9px] font-black tracking-[0.16em] text-muted-foreground">
+              {isClanSquad ? "클랜원 합산 딜량" : "DAMAGE"}
+            </TableHead>
+            {!isClanSquad && <TableHead className="w-64 text-[9px] font-black tracking-[0.16em] text-muted-foreground">
+              MEMBERS
+            </TableHead>}
+            <TableHead className="w-40 px-6 text-right text-[9px] font-black tracking-[0.16em] text-muted-foreground">
+              PLAYED
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+
+        {children}
       </Table>
+    </div>
+  );
+}
+
+export function MatchHistoryTableSkeleton({ rowCount }: { rowCount: number }) {
+  return (
+    <div aria-hidden="true" className="motion-safe:animate-pulse">
+      <MatchHistoryFrame isClanSquad>
+        <TableBody>
+          {Array.from({ length: rowCount }, (_, index) => (
+            <TableRow key={index} className="border-border/50 hover:bg-transparent">
+              <TableCell colSpan={5} className="p-0">
+                <div className="px-4 py-4 sm:px-5 lg:hidden">
+                  <div className="flex h-7 items-center justify-between gap-3">
+                    <div className="h-5 w-40 rounded-sm bg-muted" />
+                    <div className="h-3 w-20 rounded-sm bg-muted" />
+                  </div>
+                  <div className="mt-2 flex h-lh items-center justify-between gap-3 text-[10px]">
+                    <div className="h-2.5 w-24 rounded-sm bg-muted" />
+                    <div className="h-2.5 w-32 rounded-sm bg-muted" />
+                  </div>
+                </div>
+                <div className="hidden grid-cols-[5rem_1fr_7rem_7rem_10rem] items-center py-5 lg:grid">
+                  <div className="ml-6 h-7 w-8 rounded-sm bg-muted" />
+                  <div>
+                    <div className="flex h-5 items-center"><div className="h-3.5 w-24 rounded-sm bg-muted" /></div>
+                    <div className="mt-1 flex h-lh items-center text-[10px]"><div className="h-2.5 w-28 rounded-sm bg-muted" /></div>
+                  </div>
+                  <div className="h-3.5 w-12 rounded-sm bg-muted" />
+                  <div className="h-3.5 w-16 rounded-sm bg-muted" />
+                  <div className="mr-6 ml-auto h-2.5 w-28 rounded-sm bg-muted" />
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </MatchHistoryFrame>
     </div>
   );
 }

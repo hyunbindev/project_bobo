@@ -52,7 +52,7 @@ export function SquadHistoryAccordion({ matchId, rosterId, matchCount, initialOp
       </CollapsibleTrigger>
       <CollapsibleContent>
         <div className="border-t border-border/50 p-4 sm:p-6">
-          <SquadHistoryPanel matchId={matchId} rosterId={rosterId} page={selection.page}
+          <SquadHistoryPanel matchId={matchId} rosterId={rosterId} matchCount={matchCount} page={selection.page}
             onPageChange={(page) => {
               navigate(true, page, true);
             }}

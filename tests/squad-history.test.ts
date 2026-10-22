@@ -10,6 +10,7 @@ import { getMatchDetailScrollTarget, getSquadHistoryNavigation, squadHistoryHref
 import type { SquadHistory } from "../lib/services/squad-history-service";
 import { MatchHistoryTable } from "../components/clan-dashboard/match-history-table";
 import { fetchSquadHistory } from "../lib/squad-history-client";
+import { getSquadHistoryPagination } from "../lib/squad-history-pagination";
 
 test("조합 비교는 동일 멤버의 이전 평균과 승률을 표시하고 목록의 여백을 예약하지 않는다", () => {
   const history: SquadHistory = {
@@ -99,14 +100,19 @@ test("경기 목록은 기본 접힘이며 기존 탭 링크와 페이지 이동
   assert.ok(!html.includes('role="status"'));
 });
 
-test("목록 로딩 상태는 고정 목록 높이 없이 표시한다", () => {
-  const html = renderToStaticMarkup(createElement(SquadMatchHistorySkeleton));
+test("목록 로딩 상태는 대상 페이지의 경기 수만큼 행을 예약한다", () => {
+  const html = renderToStaticMarkup(createElement(SquadMatchHistorySkeleton, { matchCount: 23, page: 3 }));
   assert.ok(html.includes('role="status"'));
   assert.ok(html.includes('aria-busy="true"'));
   assert.ok(html.includes('aria-label="함께한 경기 기록 로딩 중"'));
   assert.ok(!html.includes("함께한 경기 기록을 불러오는 중입니다."));
   assert.ok(!html.includes("<a "));
-  assert.ok(!html.includes("<button"));
+  assert.equal((html.match(/colSpan="5"/g) ?? []).length, 3);
+  assert.equal((html.match(/disabled=""/g) ?? []).length, 2);
+  assert.ok(html.includes("3 / 3"));
+  assert.deepEqual(getSquadHistoryPagination(23, 1), { page: 1, totalPages: 3, rowCount: 10 });
+  assert.deepEqual(getSquadHistoryPagination(23, 99), { page: 3, totalPages: 3, rowCount: 3 });
+  assert.deepEqual(getSquadHistoryPagination(1, NaN), { page: 1, totalPages: 1, rowCount: 1 });
 });
 
 test("비동기 전적 조회는 날짜를 복원하고 취소 신호와 페이지를 전달한다", async (context) => {
@@ -156,7 +162,7 @@ test("공용 전적 표의 기본 팀 기록 표시를 유지한다", () => {
 
 // TEST_DATABASE_URL을 지정하고 npx tsx --test tests/squad-history.test.ts로 실행한다.
 // 트랜잭션 내부의 임시 테이블만 사용하며 실제 서비스 데이터는 변경하지 않는다.
-test("정확한 조합과 경기 시점으로 집계하고 이번 경기를 이전 평균에서 제외한다", {
+test("대상 조합을 포함한 경기로 요약과 목록을 집계하고 이번 경기를 이전 평균에서 제외한다", {
   skip: !process.env.TEST_DATABASE_URL,
 }, async (context) => {
   process.env.DATABASE_URL ??= process.env.TEST_DATABASE_URL;
@@ -226,29 +232,33 @@ test("정확한 조합과 경기 시점으로 집계하고 이번 경기를 이�
 
     const summary = await findSquadHistorySummary(target, database);
     assert.ok(summary);
-    assert.equal(summary.matchCount, 3);
-    assert.equal(summary.winCount, 1);
-    assert.equal(summary.averageRank, 3);
-    assert.equal(summary.averageDamage, 1100 / 3);
-    assert.equal(summary.previousMatchCount, 2);
+    assert.equal(summary.matchCount, 5);
+    assert.equal(summary.winCount, 2);
+    assert.equal(summary.averageRank, 12 / 5);
+    assert.equal(summary.averageDamage, 600);
+    assert.equal(summary.previousMatchCount, 4);
     assert.equal(summary.previousAverageKills, 4);
-    assert.equal(summary.previousAverageDamage, 400);
-    assert.equal(summary.previousAverageRank, 4);
+    assert.equal(summary.previousAverageDamage, 675);
+    assert.equal(summary.previousAverageRank, 11 / 4);
     assert.deepEqual(summary.members.map((m) => m.name), ["Player1", "Player2"]);
     const items = await findSquadHistoryMatches(target, 10, 0, database);
-    assert.deepEqual(items.map((m) => m.matchId), [1, 10, 2].map(uuid));
+    assert.deepEqual(items.map((m) => m.matchId), [1, 10, 3, 2, 0].map(uuid));
     assert.equal(items.length, summary.matchCount);
-    assert.equal(items.at(-1)?.damage, 600);
+    assert.equal(items.at(-1)?.damage, 1000);
     assert.equal(items.at(-1)?.kills, 4);
-    assert.equal(items.find((m) => m.matchId === uuid(3)), undefined);
+    assert.equal(items.find((m) => m.matchId === uuid(3))?.damage, 900);
+    assert.equal(items.find((m) => m.matchId === uuid(3))?.kills, 4);
     const triple = await findSquadHistorySummary({ ...target, matchId: uuid(3) }, database);
     assert.ok(triple);
-    assert.equal(triple.matchCount, 1);
+    assert.equal(triple.matchCount, 2);
     assert.equal(triple.winCount, 1);
-    assert.equal(triple.averageRank, 1);
-    assert.equal(triple.averageDamage, 10899);
-    assert.equal(triple.previousMatchCount, 0);
-    assert.equal(triple.previousAverageDamage, null);
+    assert.equal(triple.averageRank, 1.5);
+    assert.equal(triple.averageDamage, 10949);
+    assert.equal(triple.previousMatchCount, 1);
+    assert.equal(triple.previousAverageDamage, 10999);
+    const tripleItems = await findSquadHistoryMatches({ ...target, matchId: uuid(3) }, 10, 0, database);
+    assert.deepEqual(tripleItems.map((m) => m.matchId), [3, 0].map(uuid));
+    assert.equal(tripleItems.length, triple.matchCount);
     assert.equal((await findSquadHistorySummary({ ...target, matchId: uuid(0) }, database))?.matchCount, 1);
     assert.ok(items[0].playedAt instanceof Date);
     assert.equal(await findSquadHistorySummary({ ...target, matchId: uuid(4) }, database), null);
@@ -259,9 +269,9 @@ test("정확한 조합과 경기 시점으로 집계하고 이번 경기를 이�
     const firstPage = await findSquadHistoryMatches(target, 10, 0, database);
     const secondPage = await findSquadHistoryMatches(target, 10, 10, database);
     assert.equal(firstPage.length, 10);
-    assert.equal(secondPage.length, 3);
-    assert.equal(new Set([...firstPage, ...secondPage].map((m) => m.matchId)).size, 13);
-    assert.equal((await findSquadHistorySummary(target, database))?.matchCount, 13);
+    assert.equal(secondPage.length, 5);
+    assert.equal(new Set([...firstPage, ...secondPage].map((m) => m.matchId)).size, 15);
+    assert.equal((await findSquadHistorySummary(target, database))?.matchCount, 15);
 
     // Service도 같은 임시 테이블에서 조회해 페이지 보정과 승률을 검증한다.
     const { db } = await import("../lib/db");
@@ -270,9 +280,9 @@ test("정확한 조합과 경기 시점으로 집계하고 이번 경기를 이�
     const lastPage = await getSquadHistory(target, 999);
     assert.ok(lastPage);
     assert.equal(lastPage.page, 2);
-    assert.equal(lastPage.items.length, 3);
+    assert.equal(lastPage.items.length, 5);
     assert.equal(lastPage.totalPages, 2);
-    assert.equal(lastPage.winRate, 1 / 13 * 100);
+    assert.equal(lastPage.winRate, 2 / 15 * 100);
     assert.equal((await getSquadHistory(target, -1))?.page, 1);
     assert.equal((await getSquadHistory(target, Infinity))?.page, 1);
     assert.equal((await getSquadHistory(target, 1.9))?.page, 1);

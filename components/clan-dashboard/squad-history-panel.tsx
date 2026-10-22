@@ -7,10 +7,11 @@ import { fetchSquadHistory } from "@/lib/squad-history-client";
 import type { SquadHistory } from "@/lib/services/squad-history-service";
 
 export function SquadHistoryPanel({
-  matchId, rosterId, page, onPageChange,
+  matchId, rosterId, matchCount, page, onPageChange,
 }: {
   matchId: string;
   rosterId: string;
+  matchCount: number;
   page: number;
   onPageChange: (page: number) => void;
 }) {
@@ -21,7 +22,6 @@ export function SquadHistoryPanel({
   const key = `${matchId}:${rosterId}:${page}:${attempt}`;
 
   useEffect(() => {
-    if (result?.key === key) return;
     const controller = new AbortController();
     void fetchSquadHistory(matchId, rosterId, page, controller.signal)
       .then((data) => {
@@ -31,7 +31,7 @@ export function SquadHistoryPanel({
         if (!controller.signal.aborted) setResult({ key, data: null, error: error instanceof Error ? error.message : "기록을 불러오지 못했습니다." });
       });
     return () => controller.abort();
-  }, [matchId, rosterId, page, key, result?.key]);
+  }, [matchId, rosterId, page, key]);
 
   const loading = result?.key !== key;
   let content;
@@ -49,7 +49,7 @@ export function SquadHistoryPanel({
   }
   return (
     <div id="squad-matches" className="scroll-mt-24" aria-busy={loading} data-scroll-ready={!loading}>
-      {loading ? <SquadMatchHistorySkeleton /> : content}
+      {loading ? <SquadMatchHistorySkeleton matchCount={matchCount} page={page} /> : content}
     </div>
   );
 }
