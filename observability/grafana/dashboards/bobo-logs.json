@@ -1,0 +1,244 @@
+{
+  "uid": "bobo-logs",
+  "title": "BOBO 운영 로그",
+  "description": "기존 컨테이너 로그와 Pino 이벤트 기반. HTTP 요청 계측은 아직 포함하지 않습니다.",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": false,
+  "tags": [
+    "bobo",
+    "logs"
+  ],
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "project",
+        "label": "Compose project",
+        "type": "textbox",
+        "query": "project-bobo",
+        "current": {
+          "text": "project-bobo",
+          "value": "project-bobo"
+        },
+        "hide": 0
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "서비스별 로그 수 / 5분",
+      "type": "timeseries",
+      "datasource": {
+        "type": "loki",
+        "uid": "bobo-loki"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "bobo-loki"
+          },
+          "expr": "sum by (service_name) (count_over_time({project=\"$project\"}[5m]))",
+          "queryType": "range",
+          "legendFormat": "{{service_name}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 2,
+      "title": "앱 오류 로그 수 / 5분",
+      "type": "timeseries",
+      "datasource": {
+        "type": "loki",
+        "uid": "bobo-loki"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "bobo-loki"
+          },
+          "expr": "sum(count_over_time({project=\"$project\", service_name=\"app\"} | json | __error__=\"\" | level >= 50 [5m]))",
+          "queryType": "range",
+          "legendFormat": "{{service_name}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 3,
+      "title": "경기 동기화 평균 처리 시간",
+      "type": "timeseries",
+      "datasource": {
+        "type": "loki",
+        "uid": "bobo-loki"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "bobo-loki"
+          },
+          "expr": "avg_over_time({project=\"$project\", service_name=\"app\"} | json | event=\"match_sync.completed\" | unwrap durationMs | __error__=\"\" [5m])",
+          "queryType": "range",
+          "legendFormat": "{{service_name}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 4,
+      "title": "치킨 알림 발송 건수 / 5분 (채널별 발송 기준)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "loki",
+        "uid": "bobo-loki"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "bobo-loki"
+          },
+          "expr": "sum(count_over_time({project=\"$project\", service_name=\"app\"} | json | __error__=\"\" | event=\"discord.match_win_notification_sent\" [5m]))",
+          "queryType": "range",
+          "legendFormat": "{{service_name}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 5,
+      "title": "앱 오류 상세",
+      "type": "logs",
+      "datasource": {
+        "type": "loki",
+        "uid": "bobo-loki"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 24,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "bobo-loki"
+          },
+          "expr": "{project=\"$project\", service_name=\"app\"} | json | __error__=\"\" | level >= 50",
+          "queryType": "range",
+          "legendFormat": "{{service_name}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "wrapLogMessage": true,
+        "sortOrder": "Descending",
+        "enableLogDetails": true
+      }
+    },
+    {
+      "id": 6,
+      "title": "전체 컨테이너 로그",
+      "type": "logs",
+      "datasource": {
+        "type": "loki",
+        "uid": "bobo-loki"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 24,
+        "w": 24,
+        "h": 10
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "bobo-loki"
+          },
+          "expr": "{project=\"$project\"}",
+          "queryType": "range",
+          "legendFormat": "{{service_name}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "wrapLogMessage": true,
+        "sortOrder": "Descending",
+        "enableLogDetails": true
+      }
+    }
+  ],
+  "annotations": {
+    "list": []
+  }
+}

@@ -1,0 +1,68 @@
+logging {
+  level  = "info"
+  format = "json"
+}
+
+// Only collect the existing application project, not this logging stack.
+discovery.docker "bobo" {
+  host             = "unix:///var/run/docker.sock"
+  refresh_interval = "15s"
+
+  filter {
+    name   = "label"
+    values = ["com.docker.compose.project=" + sys.env("TARGET_COMPOSE_PROJECT")]
+  }
+}
+
+discovery.relabel "bobo" {
+  targets = discovery.docker.bobo.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
+    target_label  = "project"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "service_name"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+}
+
+loki.source.docker "bobo" {
+  host          = "unix:///var/run/docker.sock"
+  targets       = discovery.relabel.bobo.output
+  labels        = {}
+  relabel_rules = discovery.relabel.bobo.rules
+  forward_to    = [loki.process.bobo.receiver]
+}
+
+loki.process "bobo" {
+  // Non-JSON PostgreSQL/cloudflared output is retained unchanged.
+  stage.json {
+    expressions = {
+      category = "logCategory",
+    }
+    drop_malformed = false
+  }
+
+  stage.labels {
+    values = {
+      category = "",
+    }
+  }
+
+  // requestId, runId, playerId and matchId stay in the log body.
+  forward_to = [loki.write.local.receiver]
+}
+
+loki.write "local" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

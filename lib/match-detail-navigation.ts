@@ -1,22 +1,33 @@
-export type MatchDetailTab = "match" | "history";
 export type MatchDetailSearchParams = Record<string, string | string[] | undefined>;
 
-export function getMatchDetailTab(query: MatchDetailSearchParams): MatchDetailTab {
-  const tab = Array.isArray(query.tab) ? query.tab[0] : query.tab;
-  return tab === "history" ? "history" : "match";
+export const MATCH_DETAIL_NAVIGATION_EVENT = "match-detail:navigate";
+
+export function getMatchDetailScrollTarget(hash: string) {
+  if (hash === "#match-records") return "match-records";
+  if (hash === "#squad-matches") return "squad-matches";
+  return null;
 }
 
-export function matchDetailHref(
-  query: MatchDetailSearchParams,
-  tab: MatchDetailTab,
-  page?: number,
-) {
+export function getSquadHistoryNavigation(query: MatchDetailSearchParams) {
+  const first = (value: string | string[] | undefined) => Array.isArray(value) ? value[0] : value;
+  const page = Number(first(query.squadPage) ?? 1);
+  return {
+    // Preserve links to the former history tab.
+    open: first(query.squadHistory) === "open" || first(query.tab) === "history" || query.squadPage !== undefined,
+    page: Number.isSafeInteger(page) && page > 0 ? page : 1,
+  };
+}
+
+export function squadHistoryHref(query: MatchDetailSearchParams, open: boolean, page?: number) {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(query)) {
-    if (key === "tab" || value === undefined || (page !== undefined && key === "squadPage")) continue;
+    if (["tab", "squadHistory", "squadPage"].includes(key) || value === undefined) continue;
     for (const item of Array.isArray(value) ? value : [value]) params.append(key, item);
   }
-  params.set("tab", tab);
-  if (page !== undefined) params.set("squadPage", String(page));
-  return `?${params.toString()}#${page === undefined ? "match-records" : "squad-matches"}`;
+  if (open) {
+    params.set("squadHistory", "open");
+    if (page !== undefined) params.set("squadPage", String(page));
+  }
+  const search = params.toString();
+  return `${search ? `?${search}` : ""}#${open && page !== undefined ? "squad-matches" : "squad-history"}`;
 }

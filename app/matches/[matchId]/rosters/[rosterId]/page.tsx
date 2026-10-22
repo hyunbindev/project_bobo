@@ -1,31 +1,17 @@
 import type { Metadata } from "next";
-import {
-  Activity,
-  Car,
-  Clock3,
-  Crosshair,
-  Footprints,
-  HeartPulse,
-  Map,
-  PackageOpen,
-  Pill,
-  Shield,
-  Skull,
-  Swords,
-  Target,
-  Trophy,
-  Users,
-} from "lucide-react";
+import Link from "next/link";
+import { ArrowLeft, Clock3, MapPin, Trophy } from "lucide-react";
 import { notFound } from "next/navigation";
 
 import { RosterParticipantsTable } from "@/components/clan-dashboard/roster-participants-table";
 import { SiteHeader } from "@/components/clan-dashboard/site-header";
+import { SquadHistoryAccordion } from "@/components/clan-dashboard/squad-history-accordion";
 import { SquadHistorySection } from "@/components/clan-dashboard/squad-history";
-import { MatchDetailTabs } from "@/components/clan-dashboard/match-detail-tabs";
-import { getMatchDetailTab } from "@/lib/match-detail-navigation";
+import { getSquadHistoryNavigation } from "@/lib/match-detail-navigation";
 import { getMainClanSummary } from "@/lib/services/clan-service";
 import { getMatchRosterDetail } from "@/lib/services/match-service";
 import { getSquadHistorySummary } from "@/lib/services/squad-history-service";
+import { MatchDetailScroll } from "./match-detail-scroll";
 
 type PageProps = {
   params: Promise<{ matchId: string; rosterId: string }>;
@@ -33,452 +19,117 @@ type PageProps = {
 };
 
 const mapLabels: Record<string, string> = {
-  Baltic_Main: "ERANGEL",
-  Chimera_Main: "PARAMO",
-  Desert_Main: "MIRAMAR",
-  DihorOtok_Main: "VIKENDI",
-  Heaven_Main: "HAVEN",
-  Kiki_Main: "DESTON",
-  Neon_Main: "RONDO",
-  Range_Main: "CAMP JACKAL",
-  Savage_Main: "SANHOK",
-  Summerland_Main: "KARAKIN",
-  Tiger_Main: "TAEGO",
+  Baltic_Main: "ERANGEL", Chimera_Main: "PARAMO", Desert_Main: "MIRAMAR",
+  DihorOtok_Main: "VIKENDI", Heaven_Main: "HAVEN", Kiki_Main: "DESTON",
+  Neon_Main: "RONDO", Range_Main: "CAMP JACKAL", Savage_Main: "SANHOK",
+  Summerland_Main: "KARAKIN", Tiger_Main: "TAEGO",
 };
 
-export async function generateMetadata({
-  params,
-}: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { matchId, rosterId } = await params;
   const detail = await getMatchRosterDetail(matchId, rosterId);
-
-  if (!detail) {
-    return { title: "경기를 찾을 수 없음" };
-  }
-
-  const mapName = formatMapName(detail.match.mapName);
-  const title = `${mapName} #${detail.roster.rank} 로스터 전적 | BOBO`;
+  if (!detail) return { title: "경기를 찾을 수 없음" };
+  const title = `${formatMapName(detail.match.mapName)} #${detail.roster.rank} 로스터 전적 | BOBO`;
   const description = `${formatMode(detail.match.matchType, detail.match.gameMode)} · ${detail.totals.kills}킬 · ${Math.round(detail.totals.damage).toLocaleString("ko-KR")} 대미지`;
-
-  return {
-    title,
-    description,
-    openGraph: { title, description, images: [] },
-    twitter: { card: "summary", title, description, images: [] },
-  };
+  return { title, description, openGraph: { title, description, images: [] }, twitter: { card: "summary", title, description, images: [] } };
 }
 
 export default async function RosterMatchDetailPage({ params, searchParams }: PageProps) {
   const { matchId, rosterId } = await params;
-  const [detail, clan] = await Promise.all([
-    getMatchRosterDetail(matchId, rosterId),
-    getMainClanSummary(),
+  const [detail, clan, query] = await Promise.all([
+    getMatchRosterDetail(matchId, rosterId), getMainClanSummary(), searchParams,
   ]);
+  if (!detail) notFound();
 
-  if (!detail) {
-    notFound();
-  }
-
-  const query = await searchParams;
-  const requestedPage = Array.isArray(query.squadPage) ? query.squadPage[0] : query.squadPage;
-  const squadHistory = clan
-    ? await getSquadHistorySummary({ matchId, rosterId, clanId: clan.id })
-    : null;
-
-  const activeTab = squadHistory ? getMatchDetailTab(query) : "match";
-  const mapName = formatMapName(detail.match.mapName);
+  const squadHistory = clan ? await getSquadHistorySummary({ matchId, rosterId, clanId: clan.id }) : null;
+  const navigation = getSquadHistoryNavigation(query);
   const mode = formatMode(detail.match.matchType, detail.match.gameMode);
-  const rankStatus = formatRankStatus(detail.roster.rank);
-  const matchMetrics = [
-    {
-      label: "TEAM KILLS",
-      value: detail.totals.kills.toLocaleString("ko-KR"),
-      icon: Crosshair,
-      tone: "text-primary",
-    },
-    {
-      label: "TOTAL DAMAGE",
-      value: Math.round(detail.totals.damage).toLocaleString("ko-KR"),
-      icon: Target,
-      tone: "text-info",
-    },
-    {
-      label: "DBNO",
-      value: detail.totals.dbnos.toLocaleString("ko-KR"),
-      icon: Activity,
-      tone: "text-kill",
-    },
-    {
-      label: "REVIVES",
-      value: detail.totals.revives.toLocaleString("ko-KR"),
-      icon: HeartPulse,
-      tone: "text-support",
-    },
-  ];
+  const squadMemberIds = new Set(squadHistory?.members.map((member) => member.id));
+  const currentSquad = detail.participants.reduce((totals, member) => {
+    if (squadMemberIds.has(member.playerId)) {
+      totals.kills += member.kills;
+      totals.damage += member.damageDealt;
+    }
+    return totals;
+  }, { kills: 0, damage: 0, rank: detail.roster.rank });
 
   return (
     <main className="min-h-screen bg-background pt-18 text-foreground">
-      <SiteHeader
-        clanName={clan?.name ?? "BOBO"}
-        clanTag={clan?.tag ?? "BOBO"}
-      />
-
-      <section className="relative overflow-hidden border-b border-border/50">
-        <div className="hero-grid absolute inset-0 opacity-25" />
-        <div className="hero-glow absolute -left-40 top-0 size-96 rounded-full" />
-        <div className="relative mx-auto grid max-w-360 gap-10 px-5 py-14 sm:px-8 lg:grid-cols-[minmax(0,1fr)_240px] lg:px-12 lg:py-20">
-          <div>
-            <p className="mb-4 flex items-center gap-2 text-[10px] font-black tracking-[0.26em] text-primary">
-              <Shield className="size-3.5" /> ROSTER MATCH REPORT
-            </p>
-            <div className="flex flex-wrap items-end gap-x-5 gap-y-3">
-              <h1 className="text-5xl font-black tracking-[-0.06em] sm:text-7xl">
-                {mapName}
-              </h1>
-              <span className="mb-2 rounded-sm border border-primary/35 bg-primary/10 px-3 py-1 text-[10px] font-black tracking-[0.18em] text-primary">
-                {mode}
-              </span>
-            </div>
-            <p className="mt-5 max-w-2xl text-sm leading-6 text-muted-foreground">
-              클랜원 {detail.clanMemberCount}명이 함께한 로스터의 경기 결과입니다.
-              팀 성적과 참여자 {detail.participants.length}명의 전체 기록을
-              확인할 수 있습니다.
-            </p>
-            <div className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-[10px] font-semibold text-muted-foreground">
-              <span className="flex items-center gap-2">
-                <Clock3 className="size-3.5 text-primary" />{" "}
-                {formatPlayedAt(detail.match.playedAt)}
-              </span>
-              <span>경기 시간 {formatDuration(detail.match.duration)}</span>
-              <span className="font-mono">
-                MATCH / {detail.match.pubgMatchId}
-              </span>
+      <MatchDetailScroll key={`${matchId}:${rosterId}`} historyAvailable={Boolean(squadHistory)} />
+      <SiteHeader clanName={clan?.name ?? "BOBO"} clanTag={clan?.tag ?? "BOBO"} />
+      <div className="mx-auto max-w-6xl px-5 pb-14 sm:px-8 lg:px-10">
+        <header className="pb-8 pt-7 sm:pb-10 sm:pt-10">
+          <Link href="/matches" className="inline-flex min-h-9 items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-primary">
+            <ArrowLeft aria-hidden="true" className="size-3.5" /> 경기 목록
+          </Link>
+          <div className="mt-5 flex flex-wrap items-center gap-4 sm:gap-6">
+            <span className="text-6xl font-black leading-none tracking-[-0.08em] text-primary sm:text-7xl">#{detail.roster.rank}</span>
+            <div className="min-w-0">
+              <p className="flex items-center gap-2 text-[10px] font-black tracking-[0.18em] text-primary sm:text-xs">
+                {detail.roster.rank === 1 && <Trophy aria-hidden="true" className="size-3.5" />}
+                {formatRankStatus(detail.roster.rank)}
+              </p>
+              <h1 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">{formatMapName(detail.match.mapName)}</h1>
+              <p className="mt-1 text-xs text-muted-foreground">{mode} · {detail.match.totalTeams}팀</p>
             </div>
           </div>
+          <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5"><Clock3 aria-hidden="true" className="size-3.5" />{formatPlayedAt(detail.match.playedAt)}</span>
+            <span>경기 시간 {formatDuration(detail.match.duration)}</span>
+          </div>
+        </header>
 
-          <div className="flex items-end justify-between border-l-2 border-primary pl-6 lg:block lg:text-right">
+        {squadHistory && (
+          <section aria-label="조합 전적과 이번 경기 비교">
+            <SquadHistorySection history={squadHistory} mode={mode} current={currentSquad} />
+            <SquadHistoryAccordion key={`${matchId}:${rosterId}`} matchId={matchId} rosterId={rosterId}
+              matchCount={squadHistory.matchCount} initialOpen={navigation.open} initialPage={navigation.page} />
+          </section>
+        )}
+
+        <section id="match-records" aria-labelledby="participants-heading" className={`${squadHistory ? "mt-10 sm:mt-12" : ""} scroll-mt-24`}>
+          <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
             <div>
-              <p className="text-[10px] font-black tracking-[0.24em] text-muted-foreground">
-                FINAL RANK
-              </p>
-              <p className="mt-1 text-7xl font-black tracking-[-0.08em] text-primary sm:text-8xl">
-                #{detail.roster.rank}
-              </p>
+              <p className="text-[10px] font-bold tracking-[0.18em] text-primary">MATCH PERFORMANCE</p>
+              <h2 id="participants-heading" className="mt-2 text-xl font-black tracking-tight sm:text-2xl">이번 경기 참여자 기록</h2>
             </div>
-            <div className="lg:mt-3">
-              <p className="text-xs font-black tracking-[0.2em] text-primary">
-                {rankStatus}
-              </p>
-              <p className="mt-1 text-[9px] font-semibold text-muted-foreground">
-                {detail.match.totalTeams} TEAMS
-              </p>
-            </div>
+            <span className="text-xs text-muted-foreground">전체 팀원 {detail.participants.length}명</span>
           </div>
-        </div>
-      </section>
-
-      <section className="border-b border-border/50 bg-surface">
-        <div className="mx-auto grid max-w-360 grid-cols-2 px-5 sm:px-8 lg:grid-cols-4 lg:px-12">
-          {matchMetrics.map(({ label, value, icon: Icon, tone }) => (
-            <div
-              className="border-border/50 px-4 py-6 first:pl-0 even:border-l lg:border-l lg:px-7 lg:first:border-l-0 lg:first:pl-0"
-              key={label}
-            >
-              <p className="flex items-center gap-2 text-[9px] font-black tracking-[0.17em] text-muted-foreground">
-                <Icon className={`size-3.5 ${tone}`} /> {label}
-              </p>
-              <p className="mt-2 text-3xl font-black tracking-[-0.045em]">
-                {value}
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {squadHistory && (
-        <SquadHistorySection history={squadHistory} mode={mode} />
-      )}
-
-      <div id="match-records" className="scroll-mt-18">
-        <MatchDetailTabs
-          key={`${matchId}:${rosterId}`}
-          matchId={matchId}
-          rosterId={rosterId}
-          initialTab={activeTab}
-          initialPage={Number.isSafeInteger(Number(requestedPage)) && Number(requestedPage) > 0 ? Number(requestedPage) : 1}
-          historyEnabled={Boolean(squadHistory)}
-          members={squadHistory?.members}
-        >
-            <section className="mx-auto grid max-w-360 gap-8 px-5 py-14 sm:px-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:px-12 lg:py-20">
-              <div>
-                <div className="mb-6 flex items-end justify-between gap-4">
-                  <div>
-                    <p className="mb-2 text-[10px] font-black tracking-[0.24em] text-primary">
-                      ROSTER MEMBERS
-                    </p>
-                    <h2 className="text-2xl font-black tracking-tight">
-                      참여자 기록
-                    </h2>
-                  </div>
-                  <span className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground">
-                    <Users className="size-4 text-primary" />{" "}
-                    {detail.participants.length} PLAYERS
-                  </span>
-                </div>
-
-                <RosterParticipantsTable participants={detail.participants} />
+          <dl className="mb-4 grid grid-cols-2 gap-px overflow-hidden rounded-sm border border-border/60 bg-border/60 sm:grid-cols-4">
+            {[
+              ["팀 킬", detail.totals.kills], ["팀 딜", Math.round(detail.totals.damage)],
+              ["기절", detail.totals.dbnos], ["소생", detail.totals.revives],
+            ].map(([label, value]) => (
+              <div key={label} className="bg-card px-5 py-4">
+                <dt className="text-xs text-muted-foreground">{label}</dt>
+                <dd className="mt-1 text-2xl font-black tabular-nums">{value.toLocaleString("ko-KR")}</dd>
               </div>
+            ))}
+          </dl>
+          <p className="mb-3 text-xs leading-5 text-muted-foreground">클랜원과 외부 팀원을 포함한 기록입니다. 각 참여자를 펼치면 상세 활동을 확인할 수 있습니다.</p>
+          <RosterParticipantsTable participants={detail.participants} />
+        </section>
 
-              <aside className="space-y-5">
-                <div className="rounded-sm border border-border/60 bg-card p-6">
-                  <p className="mb-2 text-[10px] font-black tracking-[0.22em] text-primary">
-                    TEAM CONTRIBUTION
-                  </p>
-                  <h2 className="text-xl font-black">대미지 기여도</h2>
-                  <div className="mt-7 space-y-5">
-                    {detail.participants.map((member) => {
-                      const contribution =
-                        detail.totals.damage > 0
-                          ? Math.round(
-                              (member.damageDealt / detail.totals.damage) * 100,
-                            )
-                          : 0;
-
-                      return (
-                        <div key={member.id}>
-                          <div className="mb-2 flex items-center justify-between gap-3 text-[10px] font-bold">
-                            <span className="truncate">{member.name}</span>
-                            <span className="font-mono text-muted-foreground">
-                              {contribution}%
-                            </span>
-                          </div>
-                          <div className="h-1.5 overflow-hidden rounded-full bg-foreground/6">
-                            <div
-                              className="h-full rounded-full bg-primary"
-                              style={{ width: `${contribution}%` }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="rounded-sm border border-border/60 bg-card p-6">
-                  <p className="mb-5 text-[10px] font-black tracking-[0.22em] text-primary">
-                    MATCH INFO
-                  </p>
-                  <dl className="space-y-4 text-xs">
-                    <InfoRow icon={Map} label="맵" value={mapName} />
-                    <InfoRow
-                      icon={Swords}
-                      label="모드"
-                      value={formatGameMode(detail.match.gameMode)}
-                    />
-                    <InfoRow
-                      icon={Trophy}
-                      label="게임 유형"
-                      value={formatMatchType(detail.match.matchType)}
-                    />
-                    <InfoRow
-                      icon={Clock3}
-                      label="경기 시간"
-                      value={formatDuration(detail.match.duration)}
-                    />
-                    <InfoRow
-                      icon={Users}
-                      label="클랜원"
-                      value={`${detail.clanMemberCount}명`}
-                    />
-                    <InfoRow
-                      icon={Shield}
-                      label="플랫폼"
-                      value={detail.match.platform.toUpperCase()}
-                    />
-                  </dl>
-                  <div className="mt-6 border-t border-border/50 pt-5">
-                    <p className="text-[8px] font-black tracking-[0.17em] text-muted-foreground">
-                      ROSTER ID
-                    </p>
-                    <p className="mt-2 break-all font-mono text-[9px] leading-4 text-foreground/70">
-                      {detail.roster.id}
-                    </p>
-                  </div>
-                </div>
-              </aside>
-            </section>
-
-            <section className="border-t border-border/50 bg-surface">
-              <div className="mx-auto max-w-360 px-5 py-14 sm:px-8 lg:px-12 lg:py-20">
-                <div className="mb-7">
-                  <p className="mb-2 text-[10px] font-black tracking-[0.24em] text-primary">
-                    FIELD REPORT
-                  </p>
-                  <h2 className="text-2xl font-black tracking-tight">
-                    상세 활동 기록
-                  </h2>
-                </div>
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                  {detail.participants.map((member) => (
-                    <article
-                      className="rounded-sm border border-border/60 bg-card p-5"
-                      key={member.id}
-                    >
-                      <div className="flex items-start justify-between gap-3 border-b border-border/50 pb-4">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-black">{member.name}</p>
-                          <p className="mt-1 text-[8px] font-bold tracking-[0.14em] text-muted-foreground">
-                            {member.deathType.replaceAll("_", " ").toUpperCase()}
-                          </p>
-                        </div>
-                        <span className="text-xs font-black text-primary">
-                          #{member.killPlace}
-                        </span>
-                      </div>
-                      <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-5">
-                        <SmallStat icon={Pill} label="BOOST" value={member.boosts} />
-                        <SmallStat
-                          icon={HeartPulse}
-                          label="HEAL"
-                          value={member.heals}
-                        />
-                        <SmallStat
-                          icon={Crosshair}
-                          label="HEADSHOT"
-                          value={member.headshotKills}
-                        />
-                        <SmallStat
-                          icon={Target}
-                          label="LONGEST"
-                          value={`${Math.round(member.longestKill)}m`}
-                        />
-                        <SmallStat
-                          icon={Footprints}
-                          label="ON FOOT"
-                          value={formatDistance(member.walkDistance)}
-                        />
-                        <SmallStat
-                          icon={Car}
-                          label="VEHICLE"
-                          value={formatDistance(member.rideDistance)}
-                        />
-                        <SmallStat
-                          icon={PackageOpen}
-                          label="WEAPONS"
-                          value={member.weaponsAcquired}
-                        />
-                        <SmallStat
-                          icon={Skull}
-                          label="TEAM KILL"
-                          value={member.teamKills}
-                        />
-                      </dl>
-                    </article>
-                  ))}
-                </div>
-              </div>
-            </section>
-
-        </MatchDetailTabs>
-      </div>
-
-      <footer className="border-t border-border/50 bg-background">
-        <div className="mx-auto flex max-w-360 flex-col gap-3 px-5 py-8 text-[9px] font-semibold tracking-wide text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-12">
+        <footer className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-border/50 pt-5 text-[10px] text-muted-foreground">
           <span>BOBO CLAN · MATCH ARCHIVE</span>
-          <span>{detail.match.pubgMatchId}</span>
-        </div>
-      </footer>
+          <span className="inline-flex items-center gap-1.5"><MapPin aria-hidden="true" className="size-3" />{formatMapName(detail.match.mapName)} · {mode}</span>
+        </footer>
+      </div>
     </main>
   );
 }
 
-function InfoRow({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: typeof Map;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-4">
-      <dt className="flex items-center gap-2 text-muted-foreground">
-        <Icon className="size-3.5 text-primary" /> {label}
-      </dt>
-      <dd className="text-right font-black">{value}</dd>
-    </div>
-  );
+function formatMapName(name: string) { return mapLabels[name] ?? name.replace(/_Main$/i, "").toUpperCase(); }
+function formatMode(type: string, mode: string) {
+  return `${type === "competitive" ? "경쟁전" : type === "custom" ? "커스텀" : "일반전"} · ${mode.replaceAll("-", " ").toUpperCase()}`;
 }
-
-function SmallStat({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: typeof Map;
-  label: string;
-  value: string | number;
-}) {
-  return (
-    <div>
-      <dt className="flex items-center gap-1.5 text-[8px] font-black tracking-[0.12em] text-muted-foreground">
-        <Icon className="size-3 text-primary" /> {label}
-      </dt>
-      <dd className="mt-1.5 text-sm font-black">{value}</dd>
-    </div>
-  );
-}
-
-function formatMapName(mapName: string) {
-  return mapLabels[mapName] ?? mapName.replace(/_Main$/i, "").toUpperCase();
-}
-
-function formatMode(matchType: string, gameMode: string) {
-  return `${formatMatchType(matchType)} · ${formatGameMode(gameMode)}`;
-}
-
-function formatMatchType(matchType: string) {
-  if (matchType === "competitive") return "경쟁전";
-  if (matchType === "custom") return "커스텀";
-  return "일반전";
-}
-
-function formatGameMode(gameMode: string) {
-  return gameMode.replaceAll("-", " ").toUpperCase();
-}
-
 function formatRankStatus(rank: number) {
-  if (rank === 1) return "WINNER WINNER";
-  if (rank <= 3) return "TOP 3";
-  if (rank <= 10) return "TOP 10";
-  return "ELIMINATED";
+  return rank === 1 ? "WINNER WINNER" : rank <= 3 ? "TOP 3" : rank <= 10 ? "TOP 10" : "MATCH RESULT";
 }
-
-function formatPlayedAt(playedAt: Date) {
-  return new Intl.DateTimeFormat("ko-KR", {
-    timeZone: "Asia/Seoul",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(playedAt);
+function formatPlayedAt(date: Date) {
+  return new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false }).format(date);
 }
-
-function formatDuration(totalSeconds: number) {
-  const seconds = Math.max(Math.round(totalSeconds), 0);
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
-
-  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
-}
-
-function formatDistance(distanceInMeters: number) {
-  if (distanceInMeters >= 1_000) {
-    return `${(distanceInMeters / 1_000).toFixed(1)}km`;
-  }
-
-  return `${Math.round(distanceInMeters)}m`;
+function formatDuration(value: number) {
+  const seconds = Math.max(Math.round(value), 0);
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 }

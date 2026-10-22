@@ -23,6 +23,7 @@ export async function register() {
   void clanMatchSyncJob();
   
   schedulerCronJob();
-  // Discord 실패가 웹 서버 시작을 중단시키지 않도록 background task로 실행한다.
+
+  
   void bootstrapDiscord();
 }
