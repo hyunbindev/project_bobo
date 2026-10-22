@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-import { getMatchDetailScrollTarget, MATCH_DETAIL_NAVIGATION_EVENT } from "@/lib/match-detail-navigation";
+import { getMatchDetailScrollTarget } from "@/lib/match-detail-navigation";
 
 /** Resolve fragment navigation after async content and accordion motion settle. */
 export function MatchDetailScroll({ historyAvailable }: { historyAvailable: boolean }) {
@@ -75,12 +75,10 @@ export function MatchDetailScroll({ historyAvailable }: { historyAvailable: bool
     navigate();
     window.addEventListener("hashchange", navigate);
     window.addEventListener("popstate", navigate);
-    window.addEventListener(MATCH_DETAIL_NAVIGATION_EVENT, navigate);
     return () => {
       cancelPending();
       window.removeEventListener("hashchange", navigate);
       window.removeEventListener("popstate", navigate);
-      window.removeEventListener(MATCH_DETAIL_NAVIGATION_EVENT, navigate);
     };
   }, [historyAvailable]);
 
