@@ -14,6 +14,10 @@ export type SquadHistorySummary = {
   winCount: number;
   averageRank: number | null;
   averageDamage: number | null;
+  previousMatchCount: number;
+  previousAverageKills: number | null;
+  previousAverageDamage: number | null;
+  previousAverageRank: number | null;
 };
 
 export type SquadHistoryMatch = {
@@ -28,8 +32,8 @@ export type SquadHistoryMatch = {
   damage: number;
 };
 
-// 조회한 조합 전원이 같은 로스터에 있으면 다른 클랜원이 함께해도 포함한다.
-// 킬·딜량은 조회한 조합에 속한 플레이어만 합산한다.
+// Match the exact active clan-member composition and exclude later matches.
+// Both current and historical metrics include only these same members.
 function squadHistoryCtes(input: SquadHistoryInput) {
   return sql`
     with active_members as (
@@ -38,7 +42,7 @@ function squadHistoryCtes(input: SquadHistoryInput) {
       join players p on p.id = cm.player_id
       where cm.clan_id = ${input.clanId}::uuid and cm.status = 'active'
     ), target as (
-      select m.platform, m.match_type, m.game_mode,
+      select m.platform, m.match_type, m.game_mode, m.played_at as current_played_at,
         array_agg(mp.player_id order by mp.player_id) as member_ids,
         jsonb_agg(jsonb_build_object('id', mp.player_id, 'name', am.name)
           order by am.name, mp.player_id) as members
@@ -59,6 +63,7 @@ function squadHistoryCtes(input: SquadHistoryInput) {
       from target t
       join matches m on m.platform = t.platform
         and m.match_type = t.match_type and m.game_mode = t.game_mode
+        and m.played_at <= t.current_played_at
       join match_participants mp on mp.match_id = m.id
       join active_members am on am.player_id = mp.player_id
       where mp.pubg_roster_id is not null
@@ -72,7 +77,7 @@ function squadHistoryCtes(input: SquadHistoryInput) {
       group by m.id, mp.pubg_roster_id
     ), squad_matches as (
       select r.* from roster_totals r
-      join target t on t.member_ids <@ r.member_ids
+      join target t on t.member_ids = r.member_ids
     )
   `;
 }
@@ -87,10 +92,14 @@ export async function findSquadHistorySummary(
       count(s.match_id)::integer as "matchCount",
       count(s.match_id) filter (where s.rank = 1)::integer as "winCount",
       avg(s.rank)::double precision as "averageRank",
-      avg(s.damage)::double precision as "averageDamage"
+      avg(s.damage)::double precision as "averageDamage",
+      count(s.match_id) filter (where s.played_at < t.current_played_at)::integer as "previousMatchCount",
+      (avg(s.kills) filter (where s.played_at < t.current_played_at))::double precision as "previousAverageKills",
+      (avg(s.damage) filter (where s.played_at < t.current_played_at))::double precision as "previousAverageDamage",
+      (avg(s.rank) filter (where s.played_at < t.current_played_at))::double precision as "previousAverageRank"
     from target t
     left join squad_matches s on true
-    group by t.members
+    group by t.members, t.current_played_at
   `);
   return result.rows[0] ?? null;
 }

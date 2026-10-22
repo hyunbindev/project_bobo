@@ -1,158 +1,117 @@
 import Link from "next/link";
-import { ArrowUpRight, Users } from "lucide-react";
 
 import { MatchHistoryTable } from "@/components/clan-dashboard/match-history-table";
 import type { SquadHistory, SquadSummary } from "@/lib/services/squad-history-service";
 
-const numberFormatter = new Intl.NumberFormat("ko-KR", { maximumFractionDigits: 1 });
-export function SquadHistorySection({
-  history,
-  mode,
-}: {
+const formatter = new Intl.NumberFormat("ko-KR", { maximumFractionDigits: 1 });
+
+export function SquadHistorySection({ history, mode, current }: {
   history: SquadSummary;
   mode: string;
+  current: { kills: number; damage: number; rank: number };
 }) {
   const metrics = [
-    { label: "함께한 경기", value: `${history.matchCount.toLocaleString("ko-KR")}회` },
-    { label: "치킨", value: `${history.winCount.toLocaleString("ko-KR")}회` },
-    { label: "평균 순위", value: history.averageRank === null ? "—" : `#${numberFormatter.format(history.averageRank)}` },
-    { label: "평균 클랜원 합산 딜량", value: history.averageDamage === null ? "—" : Math.round(history.averageDamage).toLocaleString("ko-KR") },
+    { label: "킬", current: current.kills, average: history.previousAverageKills },
+    { label: "딜", current: Math.round(current.damage), average: history.previousAverageDamage },
+    { label: "순위", current: current.rank, average: history.previousAverageRank },
   ];
+  const memberNames = history.members.map((member) => member.name).join(" · ") || "이 조합";
 
   return (
-    <section id="squad-history" className="scroll-mt-24 border-b border-border/50 bg-surface">
-      <div className="mx-auto max-w-360 px-5 py-10 sm:px-8 lg:px-12 lg:py-14">
-        <h2 className="flex items-center gap-2 text-2xl font-black tracking-tight">
-          <Users className="size-5 text-primary" /> 함께한 클랜원 정보
-        </h2>
-        <SquadMemberCards members={history.members} />
-        <p className="mt-3 text-xs font-semibold text-muted-foreground">{mode} · 수집된 전체 기록 기준</p>
-        <dl className="mt-7 grid grid-cols-2 gap-px overflow-hidden rounded-sm border border-border/60 bg-border/60 lg:grid-cols-4">
-          {metrics.map((metric) => (
-            <div key={metric.label} className="bg-card p-5">
-              <dt className="text-[11px] font-bold text-muted-foreground">{metric.label}</dt>
-              <dd className="mt-3 text-2xl font-black tracking-tight">{metric.value}</dd>
-            </div>
+    <div className="overflow-hidden rounded-sm border border-border/70 bg-card">
+      <div className="border-b border-border/60 px-5 py-5 sm:px-6 sm:py-6">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-2 text-2xl font-black tracking-tight sm:text-3xl">
+          {history.members.map((member, index) => (
+            <span key={member.id} className="inline-flex min-w-0 max-w-full items-center gap-2">
+              {index > 0 && <span aria-hidden="true" className="text-muted-foreground/50">·</span>}
+              <Link href={`/members/${member.id}`} className="break-all underline-offset-4 hover:text-primary hover:underline">{member.name}</Link>
+            </span>
           ))}
-        </dl>
-      </div>
-    </section>
-  );
-}
-
-export function SquadMatchHistorySection({
-  history,
-  onPageChange,
-}: {
-  history: SquadHistory;
-  onPageChange: (page: number) => void;
-}) {
-  return (
-    <section id="squad-matches" className="scroll-mt-24 border-t border-border/50 bg-surface">
-      <div className="mx-auto max-w-360 px-5 py-14 sm:px-8 lg:px-12 lg:py-20">
-        <SquadMatchHistoryHeading members={history.members} page={history.page} totalPages={history.totalPages} />
-        <div className="min-h-240 lg:min-h-225">
-          <MatchHistoryTable
-            matches={history.items}
-            variant="clan-squad"
-          />
         </div>
-        <nav aria-label="스쿼드 조합 경기 페이지" className="mt-5 flex items-center justify-end gap-4 text-xs font-bold">
-          <button type="button" disabled={history.page <= 1} onClick={() => onPageChange(history.page - 1)} className="hover:text-primary disabled:text-muted-foreground/50">이전</button>
-          <span>{history.page} / {history.totalPages}</span>
-          <button type="button" disabled={history.page >= history.totalPages} onClick={() => onPageChange(history.page + 1)} className="hover:text-primary disabled:text-muted-foreground/50">다음</button>
-        </nav>
+        <h2 className="mt-2 text-lg font-bold tracking-tight text-foreground sm:text-xl">함께한 기록과 이번 경기</h2>
+        <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+          <span>함께한 <strong className="text-foreground">{formatter.format(history.matchCount)}판</strong></span>
+          <span><strong className="text-primary">{formatter.format(history.winCount)}승</strong></span>
+          <span>승률 <strong className="text-foreground">{formatter.format(history.winRate)}%</strong></span>
+        </p>
+        <p className="mt-2 text-[10px] leading-4 text-muted-foreground sm:text-[11px]">{mode} · 같은 클랜원 구성 · 이 경기까지 수집된 기록</p>
       </div>
-    </section>
-  );
-}
-
-function SquadMatchHistoryHeading({ members, page, totalPages }: {
-  members: SquadSummary["members"];
-  page: number;
-  totalPages?: number;
-}) {
-  return (
-    <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-      <h2 className="min-w-0 text-2xl font-black tracking-tight [overflow-wrap:anywhere]">
-        <span>{members.map((member) => member.name).join(", ")}</span>
-        {" "}<br />가같이 참여한 경기들
-      </h2>
-      <span className="shrink-0 text-xs text-muted-foreground">최신순 · {page} / {totalPages ?? "—"} 페이지</span>
+      <div className="px-5 py-4 sm:px-6">
+        <table className="w-full table-fixed text-right tabular-nums">
+          <caption className="sr-only">동일한 클랜원들의 이번 경기 성적과 이전 경기 평균 비교</caption>
+          <thead>
+            <tr className="text-[10px] text-muted-foreground sm:text-[11px]">
+              <th scope="col" className="w-1/5 pb-2 text-left font-medium">지표</th>
+              <th scope="col" className="pb-2 font-bold text-primary">이번 경기</th>
+              <th scope="col" className="pb-2 font-medium">이전 {formatter.format(history.previousMatchCount)}경기 평균</th>
+            </tr>
+          </thead>
+          <tbody>
+            {metrics.map((metric) => {
+              const precision = metric.label === "딜" ? 1 : 10;
+              const difference = metric.average === null ? null : Math.round(
+                (metric.label === "순위" ? metric.average - metric.current : metric.current - metric.average) * precision,
+              ) / precision;
+              return (
+              <tr key={metric.label} className="border-t border-border/40">
+                <th scope="row" className="py-2.5 text-left text-xs font-semibold">{metric.label}</th>
+                <td className="py-2.5 text-base font-black tracking-tight sm:text-lg">
+                  <span className="inline-flex flex-wrap items-baseline justify-end gap-x-1.5">
+                    <span>{metric.label === "순위" && "#"}{formatter.format(metric.current)}</span>
+                    {difference !== null && (
+                      <span
+                        className={`text-xs font-semibold ${difference > 0 ? "text-success" : difference < 0 ? "text-destructive" : "text-muted-foreground"}`}
+                        title={metric.label === "순위" ? "이전 평균보다 순위가 오르면 +로 표시합니다." : "이전 경기 평균 대비 변화량"}
+                      >
+                        {`(${difference > 0 ? "+" : ""}${formatter.format(difference)})`}
+                      </span>
+                    )}
+                  </span>
+                </td>
+                <td className="py-2.5 text-sm font-semibold text-muted-foreground sm:text-base">{metric.average === null ? "—" : `${metric.label === "순위" ? "#" : ""}${formatter.format(metric.average)}`}</td>
+              </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        <div className="mt-1 border-t border-border/50 pt-3">
+          <p className="break-words text-xs font-semibold leading-5">
+            {`${memberNames}의 `}
+            <strong className="text-primary">{formatter.format(current.rank === 1 ? history.winCount : history.matchCount)}번째 {current.rank === 1 ? "치킨 경기" : "함께한 경기"}</strong>
+            입니다!
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
 
-export function SquadMatchHistorySkeleton({ members = [], page = 1 }: {
-  members?: SquadSummary["members"];
-  page?: number;
+export function SquadMatchHistorySection({ history, onPageChange }: {
+  history: SquadHistory;
+  onPageChange: (page: number) => void;
 }) {
   return (
-    <section role="status" aria-live="polite" aria-busy="true" className="border-t border-border/50 bg-surface">
-      <span className="sr-only">함께한 경기 기록을 불러오는 중입니다.</span>
-      <div aria-hidden="true" className="mx-auto max-w-360 px-5 py-14 sm:px-8 lg:px-12 lg:py-20">
-        <SquadMatchHistoryHeading members={members} page={page} />
-        <div className="min-h-240 lg:min-h-225">
-          <div className="overflow-hidden rounded-sm border border-border/60 bg-card motion-safe:animate-pulse">
-            <div className="hidden h-10 grid-cols-[60px_1fr_100px_100px_140px] items-center gap-6 bg-muted/20 px-6 lg:grid">
-              {["w-8", "w-24", "w-16", "w-16", "w-20"].map((width, index) => <span key={index} className={`h-2 rounded-sm bg-muted ${width}`} />)}
-            </div>
-            {Array.from({ length: 10 }, (_, index) => (
-              <div key={index} className="flex h-22 flex-col justify-center gap-3 border-t border-border/50 px-4 first:border-t-0 sm:px-5 lg:h-20 lg:flex-row lg:items-center lg:justify-between lg:gap-6 lg:px-6">
-                <div className="flex items-center justify-between gap-4 lg:contents">
-                  <div className="flex min-w-0 items-center gap-3 lg:contents">
-                    <span className="h-6 w-8 shrink-0 rounded-sm bg-muted lg:w-12" />
-                    <div className="space-y-2 lg:flex-1"><div className="h-4 w-28 rounded-sm bg-muted" /><div className="hidden h-2 w-32 rounded-sm bg-muted lg:block" /></div>
-                  </div>
-                  <span className="h-2 w-20 rounded-sm bg-muted lg:order-last lg:w-28" />
-                  <span className="hidden h-4 w-16 rounded-sm bg-muted lg:block" />
-                  <span className="hidden h-4 w-20 rounded-sm bg-muted lg:block" />
-                </div>
-                <div className="flex justify-between gap-6 lg:hidden"><span className="h-2 w-24 rounded-sm bg-muted" /><span className="h-2 w-32 rounded-sm bg-muted" /></div>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="mt-5 flex h-4 justify-end gap-4"><span className="h-3 w-8 rounded-sm bg-muted" /><span className="h-3 w-12 rounded-sm bg-muted" /><span className="h-3 w-8 rounded-sm bg-muted" /></div>
+    <div>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-sm font-bold">함께한 경기 <span className="text-muted-foreground">{formatter.format(history.matchCount)}개</span></h3>
+        <span className="text-xs text-muted-foreground">최신순 · {history.page} / {history.totalPages} 페이지</span>
       </div>
-    </section>
+      <MatchHistoryTable matches={history.items} variant="clan-squad" />
+      <nav aria-label="스쿼드 조합 경기 페이지" className="mt-4 flex items-center justify-end gap-2 text-xs font-bold">
+        <button type="button" disabled={history.page <= 1} onClick={() => onPageChange(history.page - 1)} className="min-h-10 rounded-sm border border-border px-4 hover:border-primary/50 hover:text-primary disabled:cursor-not-allowed disabled:opacity-40">이전</button>
+        <span aria-live="polite" className="px-3 tabular-nums">{history.page} / {history.totalPages}</span>
+        <button type="button" disabled={history.page >= history.totalPages} onClick={() => onPageChange(history.page + 1)} className="min-h-10 rounded-sm border border-border px-4 hover:border-primary/50 hover:text-primary disabled:cursor-not-allowed disabled:opacity-40">다음</button>
+      </nav>
+    </div>
   );
 }
 
-function SquadMemberCards({ members }: { members: SquadHistory["members"] }) {
+export function SquadMatchHistorySkeleton() {
   return (
-        <div className="mt-5 flex w-full flex-wrap justify-between gap-3">
-          {members.map((member, index) => {
-            // 카드 내부 너비(cqi)에 닉네임 길이와 문자 폭을 반영한다.
-            const nameWidth = Array.from(member.name).reduce(
-              (width, character) => width + (/[^\u0000-\u007f]|[MW@#%]/.test(character) ? 1.1 : 0.75),
-              0,
-            );
-            return (
-            <Link
-              key={member.id}
-              href={`/members/${member.id}`}
-              className="@container group relative flex min-w-0 flex-1 basis-full flex-col justify-between gap-5 border border-border bg-linear-to-br from-primary/10 via-card to-card p-5 transition-colors hover:border-primary/60 hover:from-primary/20 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary sm:basis-[calc(50%-0.375rem)] lg:basis-0 lg:p-6"
-            >
-              <span aria-hidden="true" className="absolute -left-px -top-px size-4 border-l-2 border-t-2 border-primary" />
-              <span aria-hidden="true" className="absolute -bottom-px -right-px size-4 border-b-2 border-r-2 border-primary/50 transition-colors group-hover:border-primary" />
-              <span className="flex items-center justify-between gap-3">
-                <span className="font-mono text-[10px] font-bold tracking-[0.16em] text-muted-foreground">
-                  SQUAD MEMBER / {String(index + 1).padStart(2, "0")}
-                </span>
-                <ArrowUpRight aria-hidden="true" className="size-4 shrink-0 text-primary/60 transition-colors group-hover:text-primary" />
-              </span>
-              <span
-                title={member.name}
-                className="block w-full min-w-0 truncate font-black leading-tight tracking-tight text-primary"
-                style={{ fontSize: `clamp(0.875rem, ${100 / Math.max(nameWidth, 10)}cqi, 1.5rem)` }}
-              >
-                {member.name}
-              </span>
-            </Link>
-            );
-          })}
-        </div>
-
+    <div role="status" aria-label="함께한 경기 기록 로딩 중" aria-live="polite" aria-busy="true" className="rounded-sm border border-border/60 bg-card p-5">
+      <div aria-hidden="true" className="space-y-3 motion-safe:animate-pulse">
+        {["w-full", "w-4/5", "w-3/5"].map((width) => <div key={width} className={`h-3 rounded-sm bg-muted ${width}`} />)}
+      </div>
+    </div>
   );
 }

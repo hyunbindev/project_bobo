@@ -1,6 +1,6 @@
 import type { PubgClan } from "@/lib/pubg/clan-types";
 import { findStoredClanMember } from "@/lib/repositories/clan-member-repository";
-import { getMainClanSummary } from "@/lib/services/clan-service";
+import { ensureMainClanSummary } from "@/lib/services/clan-service";
 import {
   MATCH_SYNC_PLATFORM,
   PLAYER_BATCH_SIZE,
@@ -12,13 +12,9 @@ import type { MatchSyncContext } from "@/lib/sync/match/match-sync-types";
  * repository가 오래 동기화되지 않은 멤버부터 정렬하므로 매 실행마다 다음 멤버로 순환한다.
  */
 export async function prepareMatchSyncTask(): Promise<MatchSyncContext> {
-  const clanSummary = await getMainClanSummary();
+  const clanSummary = await ensureMainClanSummary(MATCH_SYNC_PLATFORM);
 
-  if (!clanSummary) {
-    throw new Error("Main clan is not configured.");
-  }
-
-  const targetClanId = process.env.PUBG_CLAN_ID || clanSummary.pubgClanId;
+  const targetClanId = clanSummary.pubgClanId;
   const targetClan: PubgClan = {
     id: clanSummary.pubgClanId,
     platform: clanSummary.platform,
