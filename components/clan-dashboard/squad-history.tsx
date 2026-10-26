@@ -63,7 +63,7 @@ export function SquadHistorySection({ history, mode, current }: {
                     <span>{metric.label === "순위" && "#"}{formatter.format(metric.current)}</span>
                     {difference !== null && (
                       <span
-                        className={`text-xs font-semibold ${difference > 0 ? "text-success" : difference < 0 ? "text-destructive" : "text-muted-foreground"}`}
+                        className={`text-xs font-semibold ${difference > 0 ? "text-success/70" : difference < 0 ? "text-destructive/70" : "text-muted-foreground"}`}
                         title={metric.label === "순위" ? "이전 평균보다 순위가 오르면 +로 표시합니다." : "이전 경기 평균 대비 변화량"}
                       >
                         {`(${difference > 0 ? "+" : ""}${formatter.format(difference)})`}
