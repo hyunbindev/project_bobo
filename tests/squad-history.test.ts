@@ -32,14 +32,14 @@ test("조합 비교는 동일 멤버의 이전 평균과 승률을 표시하고 
   assert.ok(summaryHtml.includes("이전 13경기 평균"));
   assert.ok(summaryHtml.includes("승률"));
   const html = summaryHtml + listHtml;
-  assert.ok(html.includes("함께한 14매치 중 "));
+  assert.ok(html.replace(/<[^>]*>/g, "").includes("함께한 14매치 중 2번째 치킨 매치!"));
   assert.ok(!html.includes("함께한 기록과 이번 경기"));
   assert.ok(!html.includes("현재 경기"));
   assert.ok(html.includes("#3.8"));
   assert.ok(html.includes("A&lt;script&gt;"));
   assert.ok(html.includes("(+400)"));
   assert.ok(html.includes("(+2.8)"));
-  assert.ok(html.includes("2번째 치킨 매치!"));
+  assert.ok(html.includes("2번째 치킨</strong>"));
   assert.ok(!html.includes("min-h-240"));
   assert.ok(!html.includes("min-h-225"));
   assert.ok(html.includes('href="/matches/match/rosters/roster"'));
@@ -55,8 +55,7 @@ test("첫 경기는 비교 수치를 만들어내지 않는다", () => {
       previousMatchCount: 0, previousAverageKills: null, previousAverageDamage: null, previousAverageRank: null },
     mode: "일반전 · SQUAD", current: { kills: 2, damage: 300, rank: 1 },
   }));
-  assert.ok(html.includes("함께한 1매치 중 "));
-  assert.ok(html.includes("1번째 치킨 매치!"));
+  assert.ok(html.replace(/<[^>]*>/g, "").includes("함께한 1매치 중 1번째 치킨 매치!"));
   assert.ok(!html.includes("NaN"));
   assert.ok(!html.includes("딜 더"));
   assert.ok(!html.includes("이전 경기 평균 대비 변화량"));
@@ -73,7 +72,7 @@ test("감소량은 빨간색, 동일 수치는 중립색이며 비우승 경기�
   assert.ok(html.includes("(-2)"));
   assert.ok(html.includes("(0)"));
   assert.ok(!html.includes("PlayerA의 "));
-  assert.ok(html.includes("함께한 5번째 매치"));
+  assert.ok(html.replace(/<[^>]*>/g, "").includes("함께한 5번째 매치"));
   assert.ok(!html.includes("번째 치킨 매치"));
 });
 

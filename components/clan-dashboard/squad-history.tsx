@@ -31,12 +31,15 @@ export function SquadHistorySection({ history, mode, current }: {
           ))}
         </div>
         <h2 className="mt-2 text-lg font-bold tracking-tight text-foreground sm:text-xl">
+          함께한{" "}
+          <strong className="tabular-nums text-primary">{formatter.format(history.matchCount)}{current.rank === 1 ? "매치" : "번째"}</strong>
           {current.rank === 1 ? (
             <>
-              {`함께한 ${formatter.format(history.matchCount)}매치 중 `}
-              <strong className="text-primary">{formatter.format(history.winCount)}번째 치킨 매치!</strong>
+              {" 중 "}
+              <strong className="tabular-nums text-primary">{formatter.format(history.winCount)}번째 치킨</strong>
+              {" 매치!"}
             </>
-          ) : `함께한 ${formatter.format(history.matchCount)}번째 매치`}
+          ) : " 매치"}
         </h2>
         <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
           <span>함께한 <strong className="text-foreground">{formatter.format(history.matchCount)}판</strong></span>
