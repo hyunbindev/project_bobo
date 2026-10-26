@@ -13,7 +13,7 @@ export function MatchDetailScroll({ historyAvailable }: { historyAvailable: bool
       cancelPending();
       const requestedTarget = getMatchDetailScrollTarget(window.location.hash);
       if (!requestedTarget) return;
-      const targetId = requestedTarget === "squad-matches" && !historyAvailable ? "match-records" : requestedTarget;
+      const targetId = requestedTarget !== "match-records" && !historyAvailable ? "match-records" : requestedTarget;
       let frame = 0;
       let cancelled = false;
       let previousTop: number | undefined;

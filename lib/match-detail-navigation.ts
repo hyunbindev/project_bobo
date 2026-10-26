@@ -1,6 +1,7 @@
 export type MatchDetailSearchParams = Record<string, string | string[] | undefined>;
 
 export function getMatchDetailScrollTarget(hash: string) {
+  if (hash === "#squad-summary") return "squad-summary";
   if (hash === "#match-records") return "match-records";
   if (hash === "#squad-matches") return "squad-matches";
   return null;

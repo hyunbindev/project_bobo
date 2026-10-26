@@ -46,6 +46,7 @@ const targetParticipant = alias(matchParticipants, "target_participant");
 export type MatchRosterDetailParticipant = {
   id: string;
   playerId: string;
+  pubgAccountId: string;
   name: string;
   pubgClanId: string | null;
   teamId: number | null;
@@ -307,6 +308,7 @@ export async function findMatchRosterDetail(
       participantId: matchParticipants.pubgParticipantId,
       playerId: players.id,
       playerName: players.name,
+      pubgAccountId: players.pubgAccountId,
       pubgClanId: players.pubgClanId,
       teamId: matchParticipants.teamId,
       teamRank: matchParticipants.teamRank,
@@ -372,6 +374,7 @@ export async function findMatchRosterDetail(
       id: row.participantId,
       playerId: row.playerId,
       name: row.playerName,
+      pubgAccountId: row.pubgAccountId,
       pubgClanId: row.pubgClanId,
       teamId: row.teamId,
       teamRank: row.teamRank,

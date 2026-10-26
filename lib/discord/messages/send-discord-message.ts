@@ -9,6 +9,11 @@ export async function sendDiscordMessage(
   channelId: string,
   message: string | MessageCreateOptions,
 ) {
+  const channel = await getDiscordSendableChannel(channelId);
+  return channel.send(message);
+}
+
+export async function getDiscordSendableChannel(channelId: string) {
   const client = await getReadyDiscordClient();
   const channel = await client.channels.fetch(channelId);
 
@@ -16,5 +21,5 @@ export async function sendDiscordMessage(
     throw new Error(`Discord channel is not sendable: ${channelId}`);
   }
 
-  return channel.send(message);
+  return channel;
 }

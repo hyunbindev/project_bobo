@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import {
@@ -10,6 +10,30 @@ import {
 import type { PubgPlatform } from "@/lib/pubg/types";
 
 type DatabaseClient = typeof db;
+
+/** 발송 대상 Discord 서버에 연동된 계정만 고정된 PUBG 계정 ID로 조회한다. */
+export async function findDiscordAccountsForPlayers(
+  accountIds: string[],
+  platform: PubgPlatform,
+  guildId: string,
+  database: DatabaseClient = db,
+) {
+  if (accountIds.length === 0) return [];
+  return database.select({
+    pubgAccountId: players.pubgAccountId,
+    discordUserId: clanMemberDiscordAccounts.discordUserId,
+    discordDisplayName: clanMemberDiscordAccounts.discordDisplayName,
+  })
+    .from(clanMemberDiscordAccounts)
+    .innerJoin(clanMembers, eq(clanMembers.id, clanMemberDiscordAccounts.clanMemberId))
+    .innerJoin(players, eq(players.id, clanMembers.playerId))
+    .where(and(
+      inArray(players.pubgAccountId, accountIds),
+      eq(players.platform, platform),
+      eq(clanMembers.status, "active"),
+      eq(clanMemberDiscordAccounts.discordGuildId, guildId),
+    ));
+}
 
 export type LinkDiscordAccountInput = {
   clanMemberId: string;

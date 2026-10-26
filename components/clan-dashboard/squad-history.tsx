@@ -20,7 +20,7 @@ export function SquadHistorySection({ history, mode, current }: {
   ];
 
   return (
-    <div className="overflow-hidden rounded-sm border border-border/70 bg-card">
+    <div id="squad-summary" className="scroll-mt-24 overflow-hidden rounded-sm border border-border/70 bg-card">
       <div className="border-b border-border/60 px-5 py-5 sm:px-6 sm:py-6">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-2 text-2xl font-black tracking-tight sm:text-3xl">
           {history.members.map((member, index) => (
