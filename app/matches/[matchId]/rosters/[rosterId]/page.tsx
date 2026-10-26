@@ -31,13 +31,20 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!detail) return { title: "경기를 찾을 수 없음" };
   const title = `${formatMapName(detail.match.mapName)} #${detail.roster.rank} 로스터 전적 | BOBO`;
   const description = `${formatMode(detail.match.matchType, detail.match.gameMode)} · ${detail.totals.kills}킬 · ${Math.round(detail.totals.damage).toLocaleString("ko-KR")} 대미지`;
-  return { title, description, openGraph: { title, description, images: [] }, twitter: { card: "summary", title, description, images: [] } };
+  
+  return { 
+    title,
+    description,
+    openGraph: { title, description, images: [] },
+    twitter: { card: "summary", title, description, images: [] } 
+  };
 }
 
 export default async function RosterMatchDetailPage({ params, searchParams }: PageProps) {
   const { matchId, rosterId } = await params;
   const [detail, clan, query] = await Promise.all([
-    getMatchRosterDetail(matchId, rosterId), getMainClanSummary(), searchParams,
+    getMatchRosterDetail(matchId, rosterId), getMainClanSummary(),
+    searchParams,
   ]);
   if (!detail) notFound();
 
@@ -59,9 +66,11 @@ export default async function RosterMatchDetailPage({ params, searchParams }: Pa
       <SiteHeader clanName={clan?.name ?? "BOBO"} clanTag={clan?.tag ?? "BOBO"} />
       <div className="mx-auto max-w-6xl px-5 pb-14 sm:px-8 lg:px-10">
         <header className="pb-8 pt-7 sm:pb-10 sm:pt-10">
+
           <Link href="/matches" className="inline-flex min-h-9 items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-primary">
             <ArrowLeft aria-hidden="true" className="size-3.5" /> 경기 목록
           </Link>
+
           <div className="mt-5 flex flex-wrap items-center gap-4 sm:gap-6">
             <span className="text-6xl font-black leading-none tracking-[-0.08em] text-primary sm:text-7xl">#{detail.roster.rank}</span>
             <div className="min-w-0">
@@ -74,7 +83,10 @@ export default async function RosterMatchDetailPage({ params, searchParams }: Pa
             </div>
           </div>
           <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5"><Clock3 aria-hidden="true" className="size-3.5" />{formatPlayedAt(detail.match.playedAt)}</span>
+            <span className="inline-flex items-center gap-1.5">
+              <Clock3 aria-hidden="true" className="size-3.5" />
+              {formatPlayedAt(detail.match.playedAt)}
+            </span>
             <span>경기 시간 {formatDuration(detail.match.duration)}</span>
           </div>
         </header>
@@ -112,7 +124,10 @@ export default async function RosterMatchDetailPage({ params, searchParams }: Pa
 
         <footer className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-border/50 pt-5 text-[10px] text-muted-foreground">
           <span>BOBO CLAN · MATCH ARCHIVE</span>
-          <span className="inline-flex items-center gap-1.5"><MapPin aria-hidden="true" className="size-3" />{formatMapName(detail.match.mapName)} · {mode}</span>
+          <span className="inline-flex items-center gap-1.5">
+            <MapPin aria-hidden="true" className="size-3" />
+            {formatMapName(detail.match.mapName)} · {mode}
+          </span>
         </footer>
       </div>
     </main>

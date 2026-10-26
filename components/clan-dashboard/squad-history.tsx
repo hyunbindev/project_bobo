@@ -18,7 +18,6 @@ export function SquadHistorySection({ history, mode, current }: {
     { label: "딜", current: Math.round(current.damage), average: history.previousAverageDamage },
     { label: "순위", current: current.rank, average: history.previousAverageRank },
   ];
-  const memberNames = history.members.map((member) => member.name).join(" · ") || "이 조합";
 
   return (
     <div className="overflow-hidden rounded-sm border border-border/70 bg-card">
@@ -31,7 +30,14 @@ export function SquadHistorySection({ history, mode, current }: {
             </span>
           ))}
         </div>
-        <h2 className="mt-2 text-lg font-bold tracking-tight text-foreground sm:text-xl">함께한 기록과 이번 경기</h2>
+        <h2 className="mt-2 text-lg font-bold tracking-tight text-foreground sm:text-xl">
+          {current.rank === 1 ? (
+            <>
+              {`함께한 ${formatter.format(history.matchCount)}매치 중 `}
+              <strong className="text-primary">{formatter.format(history.winCount)}번째 치킨 매치!</strong>
+            </>
+          ) : `함께한 ${formatter.format(history.matchCount)}번째 매치`}
+        </h2>
         <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
           <span>함께한 <strong className="text-foreground">{formatter.format(history.matchCount)}판</strong></span>
           <span><strong className="text-primary">{formatter.format(history.winCount)}승</strong></span>
@@ -56,34 +62,27 @@ export function SquadHistorySection({ history, mode, current }: {
                 (metric.label === "순위" ? metric.average - metric.current : metric.current - metric.average) * precision,
               ) / precision;
               return (
-              <tr key={metric.label} className="border-t border-border/40">
-                <th scope="row" className="py-2.5 text-left text-xs font-semibold">{metric.label}</th>
-                <td className="py-2.5 text-base font-black tracking-tight sm:text-lg">
-                  <span className="inline-flex flex-wrap items-baseline justify-end gap-x-1.5">
-                    <span>{metric.label === "순위" && "#"}{formatter.format(metric.current)}</span>
-                    {difference !== null && (
-                      <span
-                        className={`text-xs font-semibold ${difference > 0 ? "text-success" : difference < 0 ? "text-destructive" : "text-muted-foreground"}`}
-                        title={metric.label === "순위" ? "이전 평균보다 순위가 오르면 +로 표시합니다." : "이전 경기 평균 대비 변화량"}
-                      >
-                        {`(${difference > 0 ? "+" : ""}${formatter.format(difference)})`}
-                      </span>
-                    )}
-                  </span>
-                </td>
-                <td className="py-2.5 text-sm font-semibold text-muted-foreground sm:text-base">{metric.average === null ? "—" : `${metric.label === "순위" ? "#" : ""}${formatter.format(metric.average)}`}</td>
-              </tr>
+                <tr key={metric.label} className="border-t border-border/40">
+                  <th scope="row" className="py-2.5 text-left text-xs font-semibold">{metric.label}</th>
+                  <td className="py-2.5 text-base font-black tracking-tight sm:text-lg">
+                    <span className="inline-flex flex-wrap items-baseline justify-end gap-x-1.5">
+                      <span>{metric.label === "순위" && "#"}{formatter.format(metric.current)}</span>
+                      {difference !== null && (
+                        <span
+                          className={`text-xs font-semibold ${difference > 0 ? "text-success/70" : difference < 0 ? "text-destructive/70" : "text-muted-foreground"}`}
+                          title={metric.label === "순위" ? "이전 평균보다 순위가 오르면 +로 표시합니다." : "이전 경기 평균 대비 변화량"}
+                        >
+                          {`(${difference > 0 ? "+" : ""}${formatter.format(difference)})`}
+                        </span>
+                      )}
+                    </span>
+                  </td>
+                  <td className="py-2.5 text-sm font-semibold text-muted-foreground sm:text-base">{metric.average === null ? "—" : `${metric.label === "순위" ? "#" : ""}${formatter.format(metric.average)}`}</td>
+                </tr>
               );
             })}
           </tbody>
         </table>
-        <div className="mt-1 border-t border-border/50 pt-3">
-          <p className="break-words text-xs font-semibold leading-5">
-            {`${memberNames}의 `}
-            <strong className="text-primary">{formatter.format(current.rank === 1 ? history.winCount : history.matchCount)}번째 {current.rank === 1 ? "치킨 경기" : "함께한 경기"}</strong>
-            입니다!
-          </p>
-        </div>
       </div>
     </div>
   );
