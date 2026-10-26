@@ -4,6 +4,7 @@ import { SlashCommandBuilder } from "discord.js";
 
 import type { DiscordCommand } from "@/lib/discord/discord-command";
 import { createWinMatchMessage } from "@/lib/discord/messages/create-win-match-message";
+import { loadWinMatchProfiles, loadWinMatchSummary } from "@/lib/discord/messages/win-match-context";
 import { getRecentWonMatches } from "@/lib/services/match-service";
 
 export const recentWinCommand: DiscordCommand = {
@@ -25,8 +26,10 @@ export const recentWinCommand: DiscordCommand = {
       return;
     }
 
-    await interaction.editReply(
-      createWinMatchMessage(match, `${interaction.user.username} 요청`),
-    );
+    const [summary, profiles] = await Promise.all([
+      loadWinMatchSummary(match),
+      loadWinMatchProfiles(match, interaction.guild),
+    ]);
+    await interaction.editReply(createWinMatchMessage(match, { summary, profiles }));
   },
 };

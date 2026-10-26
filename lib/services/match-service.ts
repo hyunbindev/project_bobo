@@ -33,8 +33,10 @@ export type RecentWonMatch = {
   rank: number;
   kills: number;
   damage: number;
+  platform: PubgMatch["platform"];
   members: Array<{
     id: string;
+    pubgAccountId: string;
     name: string;
     kills: number;
     damage: number;
@@ -154,10 +156,12 @@ export async function getRecentWonMatches(
         rank: match.rank,
         kills: match.kills,
         damage: match.damage,
+        platform: detail.match.platform,
         members: detail.participants
           .filter((participant) => participant.clanMember)
           .map((participant) => ({
             id: participant.id,
+            pubgAccountId: participant.pubgAccountId,
             name: participant.name,
             kills: participant.kills,
             damage: participant.damageDealt,
@@ -212,8 +216,10 @@ export function createRecentWonMatchesFromHistory({
         rank: roster.rank,
         kills: totals.kills,
         damage: totals.damage,
+        platform: history.platform,
         members: clanMembers.map((participant) => ({
           id: participant.id,
+          pubgAccountId: participant.stats.playerId,
           name: participant.stats.name,
           kills: participant.stats.kills,
           damage: participant.stats.damageDealt,

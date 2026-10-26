@@ -1,7 +1,8 @@
 import "server-only";
 
 import { createWinMatchMessage } from "@/lib/discord/messages/create-win-match-message";
-import { sendDiscordMessage } from "@/lib/discord/messages/send-discord-message";
+import { getDiscordSendableChannel } from "@/lib/discord/messages/send-discord-message";
+import { loadWinMatchProfiles, loadWinMatchSummary } from "@/lib/discord/messages/win-match-context";
 import { discordLogger } from "@/lib/logger";
 import type { RecentWonMatch } from "@/lib/services/match-service";
 
@@ -28,12 +29,12 @@ export async function sendMatchWinNotification(
   }
 
   const sentChannelIds: string[] = [];
+  const summary = await loadWinMatchSummary(match);
 
   for (const channelId of DISCORD_CHANNEL_IDS) {
-    await sendDiscordMessage(
-      channelId,
-      createWinMatchMessage(match, "자동 경기 알림"),
-    );
+    const channel = await getDiscordSendableChannel(channelId);
+    const profiles = await loadWinMatchProfiles(match, "guild" in channel ? channel.guild : null);
+    await channel.send(createWinMatchMessage(match, { summary, profiles }));
 
     sentChannelIds.push(channelId);
 

@@ -79,6 +79,8 @@ test("감소량은 빨간색, 동일 수치는 중립색이며 비우승 경기�
 test("경기 목록은 기본 접힘이며 기존 탭 링크와 페이지 이동 URL을 지원한다", () => {
   assert.equal(getMatchDetailScrollTarget("#match-records"), "match-records");
   assert.equal(getMatchDetailScrollTarget("#squad-matches"), "squad-matches");
+  assert.equal(getMatchDetailScrollTarget("#squad-summary"), "squad-summary");
+  assert.deepEqual(getSquadHistoryNavigation({ squadHistory: "open", squadPage: "1" }), { open: true, page: 1 });
   assert.equal(getMatchDetailScrollTarget("#unknown"), null);
   assert.equal(getMatchDetailScrollTarget(""), null);
   assert.deepEqual(getSquadHistoryNavigation({}), { open: false, page: 1 });
