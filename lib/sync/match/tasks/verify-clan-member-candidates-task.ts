@@ -1,6 +1,6 @@
 import type { Logger } from "pino";
 
-import { saveClanMember } from "@/lib/repositories/clan-member-repository";
+import { saveClanMember } from "@/lib/members/repository";
 import {
   MATCH_SYNC_PLATFORM,
   PLAYER_BATCH_SIZE,

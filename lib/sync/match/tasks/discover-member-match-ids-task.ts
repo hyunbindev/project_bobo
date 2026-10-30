@@ -1,6 +1,6 @@
 import type { Logger } from "pino";
 
-import { syncPlayersFromPubg } from "@/lib/repositories/clan-member-repository";
+import { syncPlayersFromPubg } from "@/lib/members/repository";
 import { MATCH_SYNC_PLATFORM } from "@/lib/sync/match/match-sync-config";
 import type {
   MatchSyncContext,

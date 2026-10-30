@@ -15,10 +15,11 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
+
 import type {
   PlayerTrendMetric,
   PlayerTrendPoint,
-} from "@/lib/player-stat-types";
+} from "@/lib/player-stats/types";
 
 const toneClasses = {
   primary: "text-primary",

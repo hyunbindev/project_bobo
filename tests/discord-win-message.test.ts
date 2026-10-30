@@ -4,8 +4,8 @@ import Module, { createRequire } from "node:module";
 import type { Guild } from "discord.js";
 import { Client } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
-import type { RecentWonMatch } from "../lib/services/match-service";
-import type { SquadSummary } from "../lib/services/squad-history-service";
+import type { RecentWonMatch } from "../lib/matches/types";
+import type { SquadSummary } from "../lib/squad-history/types";
 
 const match: RecentWonMatch = {
   id: "match:roster", matchId: "00000000-0000-4000-8000-000000000001", rosterId: "roster",

@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { MatchRosterListItem } from "@/lib/repositories/match-repository";
+import type { MatchRosterListItem } from "@/lib/matches/types";
 
 const mapLabels: Record<string, string> = {
   Baltic_Main: "ERANGEL",

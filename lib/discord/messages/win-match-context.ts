@@ -3,10 +3,11 @@ import "server-only";
 import type { Guild } from "discord.js";
 
 import { discordLogger } from "@/lib/logger";
-import { findDiscordAccountsForPlayers } from "@/lib/repositories/discord-account-repository";
-import { getMainClanSummary } from "@/lib/services/clan-service";
-import type { RecentWonMatch } from "@/lib/services/match-service";
-import { getSquadHistorySummary, type SquadSummary } from "@/lib/services/squad-history-service";
+import { findDiscordAccountsForPlayers } from "@/lib/discord-accounts/repository";
+import { getMainClanSummary } from "@/lib/clans/service";
+import type { RecentWonMatch } from "@/lib/matches/types";
+import { getSquadHistorySummary } from "@/lib/squad-history/service";
+import type { SquadSummary } from "@/lib/squad-history/types";
 
 export type WinMatchProfile = {
   userId: string;

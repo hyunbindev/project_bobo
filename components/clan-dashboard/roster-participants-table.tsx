@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowUpRight, ChevronDown } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
-import type { MatchRosterDetailParticipant } from "@/lib/repositories/match-repository";
+import type { MatchRosterDetailParticipant } from "@/lib/matches/types";
 
 type RosterParticipant = MatchRosterDetailParticipant & { clanMember: boolean };
 

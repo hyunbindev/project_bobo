@@ -11,7 +11,7 @@ import {
 
 import type { DiscordCommand } from "@/lib/discord/discord-command";
 import { createDiscordAppUrl } from "@/lib/discord/discord-app-url";
-import { createTeamSplit } from "@/lib/services/team-split-service";
+import { createTeamSplit } from "@/lib/team-split/service";
 
 const MAX_MEMBERS_PER_TEAM = 99;
 

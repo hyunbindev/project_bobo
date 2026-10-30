@@ -5,8 +5,8 @@ import {
   TeamSplitResult,
   TeamSplitUnavailable,
 } from "@/components/team-split";
-import { getMainClanSummary } from "@/lib/services/clan-service";
-import { getActiveTeamSplitResult } from "@/lib/services/team-split-service";
+import { getMainClanSummary } from "@/lib/clans/service";
+import { getActiveTeamSplitResult } from "@/lib/team-split/service";
 import { formatKstDateTime } from "@/lib/utils";
 
 export const metadata: Metadata = {

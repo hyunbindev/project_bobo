@@ -1,5 +1,5 @@
 import { parseJsonBody, withApiErrorHandler } from "@/lib/api/route-handler";
-import { registerClanMember } from "@/lib/services/clan-member-service";
+import { registerClanMember } from "@/lib/members/service";
 
 export const POST = withApiErrorHandler(async (request) => {
   const input = await parseJsonBody(request);

@@ -6,9 +6,9 @@ import { ClanJoinModal } from "@/components/clan-dashboard/clan-join-modal";
 import { RecentClanMatches } from "@/components/clan-dashboard/recent-clan-matches";
 import { SiteHeader } from "@/components/clan-dashboard/site-header";
 import { AnimatedRankingValue } from "@/components/clan-rankings/animated-ranking-value";
-import { getMainClanSummary } from "@/lib/services/clan-service";
-import { getRecentWonMatches } from "@/lib/services/match-service";
-import { getCurrentBoboKingRanking } from "@/lib/services/weekly-ranking-service";
+import { getMainClanSummary } from "@/lib/clans/service";
+import { getRecentWonMatches } from "@/lib/matches/service";
+import { getCurrentBoboKingRanking } from "@/lib/rankings/weekly-ranking-service";
 
 export default async function Home() {
   // DB 값은 빌드 시점이 아니라 실제 페이지 요청 시점에 조회한다.

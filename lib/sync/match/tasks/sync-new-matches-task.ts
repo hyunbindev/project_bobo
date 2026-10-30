@@ -3,8 +3,8 @@ import type { Logger } from "pino";
 import { sendMatchWinNotification } from "@/lib/discord/messages/send-match-win-notification";
 import { getMatchById } from "@/lib/pubg/matches";
 import type { PubgMatch } from "@/lib/pubg/match-types";
-import { saveMatchHistory } from "@/lib/repositories/match-repository";
-import { createRecentWonMatchesFromHistory } from "@/lib/services/match-service";
+import { saveMatchHistory } from "@/lib/matches/repository";
+import { createRecentWonMatchesFromHistory } from "@/lib/matches/service";
 import {
   MATCH_FETCH_BATCH_SIZE,
   MATCH_SYNC_PLATFORM,

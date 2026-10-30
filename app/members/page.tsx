@@ -3,7 +3,7 @@ import { Radio, ShieldCheck, UserRoundCheck, Users } from "lucide-react";
 import { ClanMasterCard } from "@/components/clan-dashboard/clan-master-card";
 import { ClanMembersTable } from "@/components/clan-dashboard/clan-members-table";
 import { SiteHeader } from "@/components/clan-dashboard/site-header";
-import { getClanMemberList } from "@/lib/services/clan-member-service";
+import { getClanMemberList } from "@/lib/members/service";
 
 export default async function MembersPage() {
   const { clan, members, clanMaster } = await getClanMemberList();

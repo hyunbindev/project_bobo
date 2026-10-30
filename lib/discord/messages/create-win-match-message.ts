@@ -14,7 +14,7 @@ import {
 
 import { createDiscordAppUrl } from "@/lib/discord/discord-app-url";
 import type { WinMatchContext } from "@/lib/discord/messages/win-match-context";
-import type { RecentWonMatch } from "@/lib/services/match-service";
+import type { RecentWonMatch } from "@/lib/matches/types";
 
 const numberFormatter = new Intl.NumberFormat("ko-KR");
 const mapLabels: Record<string, string> = {
@@ -89,11 +89,15 @@ export function createWinMatchMessage(
     ].join("\n"));
     message.addTextDisplayComponents(text);
   }
+
   if (members.length === 0) message.addTextDisplayComponents(new TextDisplayBuilder().setContent("클랜원 상세 기록이 없습니다."));
 
   if (detailUrl) {
     const buttons = new ActionRowBuilder<ButtonBuilder>().addComponents(
-      new ButtonBuilder().setLabel("이번 경기 기록").setStyle(ButtonStyle.Link).setURL(detailUrl),
+      new ButtonBuilder()
+          .setLabel("이번 경기 기록")
+          .setStyle(ButtonStyle.Link)
+          .setURL(detailUrl),
     );
     if (historyUrl) buttons.addComponents(new ButtonBuilder().setLabel("함께한 전적").setStyle(ButtonStyle.Link).setURL(historyUrl));
     message.addActionRowComponents(buttons);

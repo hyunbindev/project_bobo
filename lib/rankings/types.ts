@@ -58,3 +58,38 @@ export type WeeklyRankingPageData = {
   boboKing: RankingResult;
   rankings: RegularRankingResult[];
 };
+
+export type AggregateWeeklyRankingsInput = {
+  clanId: string;
+  referenceAt?: Date;
+  limit?: number;
+};
+
+export type AggregateWeeklyRankingsResult = {
+  clanId: string;
+  period: WeeklyRankingPeriod;
+  rankings: RankingResult[];
+};
+
+export type WeeklyRankingServiceDependencies = {
+  saveResults: (result: AggregateWeeklyRankingsResult) => Promise<void>;
+};
+
+export type CurrentBoboKingRankingResult = {
+  period: WeeklyRankingPeriod;
+  ranking: RankingResult;
+};
+
+export type RankingRepositoryInput = {
+  clanId: string;
+  startAt: Date;
+  endAt: Date;
+  limit: number;
+};
+
+export type RankingMetricRow = {
+  playerId: string;
+  playerName: string;
+  value: number;
+  matchCount: number;
+};

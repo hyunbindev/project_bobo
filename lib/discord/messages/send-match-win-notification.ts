@@ -4,7 +4,7 @@ import { createWinMatchMessage } from "@/lib/discord/messages/create-win-match-m
 import { getDiscordSendableChannel } from "@/lib/discord/messages/send-discord-message";
 import { loadWinMatchProfiles, loadWinMatchSummary } from "@/lib/discord/messages/win-match-context";
 import { discordLogger } from "@/lib/logger";
-import type { RecentWonMatch } from "@/lib/services/match-service";
+import type { RecentWonMatch } from "@/lib/matches/types";
 
 const DISCORD_CHANNEL_IDS = [
   ...new Set(

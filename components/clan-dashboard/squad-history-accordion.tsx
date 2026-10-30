@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 
 import { SquadHistoryPanel } from "@/components/clan-dashboard/squad-history-panel";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { getMatchDetailScrollTarget, getSquadHistoryNavigation, squadHistoryHref } from "@/lib/match-detail-navigation";
+import { getMatchDetailScrollTarget, getSquadHistoryNavigation, squadHistoryHref } from "@/lib/matches/navigation";
 
 export function SquadHistoryAccordion({ matchId, rosterId, matchCount, initialOpen = false, initialPage = 1 }: {
   matchId: string;

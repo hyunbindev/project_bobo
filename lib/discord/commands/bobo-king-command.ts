@@ -11,8 +11,8 @@ import {
 import type { DiscordCommand } from "@/lib/discord/discord-command";
 import { createDiscordAppUrl } from "@/lib/discord/discord-app-url";
 import type { RankingEntry, WeeklyRankingPeriod } from "@/lib/rankings/types";
-import { getMainClanSummary } from "@/lib/services/clan-service";
-import { getCurrentBoboKingRanking } from "@/lib/services/weekly-ranking-service";
+import { getMainClanSummary } from "@/lib/clans/service";
+import { getCurrentBoboKingRanking } from "@/lib/rankings/weekly-ranking-service";
 import { formatKstDate } from "@/lib/utils";
 
 const rankingValueFormatter = new Intl.NumberFormat("ko-KR", {

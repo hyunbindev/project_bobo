@@ -27,8 +27,8 @@ import {
 } from "@/components/clan-rankings/ranking-card";
 import { BoboKingCard } from "@/components/clan-rankings/bobo-king-card";
 import type { RegularRankingCode } from "@/lib/rankings/types";
-import { getMainClanSummary } from "@/lib/services/clan-service";
-import { getWeeklyRankingPageData } from "@/lib/services/weekly-ranking-service";
+import { getMainClanSummary } from "@/lib/clans/service";
+import { getWeeklyRankingPageData } from "@/lib/rankings/weekly-ranking-service";
 import { formatKstDate } from "@/lib/utils";
 
 export const metadata: Metadata = {

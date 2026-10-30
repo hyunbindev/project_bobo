@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 
 import { SquadMatchHistorySection, SquadMatchHistorySkeleton } from "@/components/clan-dashboard/squad-history";
-import { fetchSquadHistory } from "@/lib/squad-history-client";
-import type { SquadHistory } from "@/lib/services/squad-history-service";
+import { fetchSquadHistory } from "@/lib/squad-history/client";
+import type { SquadHistory } from "@/lib/squad-history/types";
 
 export function SquadHistoryPanel({
   matchId, rosterId, matchCount, page, onPageChange,

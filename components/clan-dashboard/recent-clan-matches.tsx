@@ -1,6 +1,6 @@
 import { Clock3 } from "lucide-react";
 
-import type { RecentWonMatch } from "@/lib/services/match-service";
+import type { RecentWonMatch } from "@/lib/matches/types";
 import Link from "next/link";
 
 const mapLabels: Record<string, string> = {

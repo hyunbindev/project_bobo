@@ -2,9 +2,9 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { MatchHistoryTable, MatchHistoryTableSkeleton } from "@/components/clan-dashboard/match-history-table";
-import type { SquadHistory, SquadSummary } from "@/lib/services/squad-history-service";
+import type { SquadHistory, SquadSummary } from "@/lib/squad-history/types";
 
-import { getSquadHistoryPagination } from "@/lib/squad-history-pagination";
+import { getSquadHistoryPagination } from "@/lib/squad-history/pagination";
 
 const formatter = new Intl.NumberFormat("ko-KR", { maximumFractionDigits: 1 });
 

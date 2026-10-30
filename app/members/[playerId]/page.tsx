@@ -23,8 +23,8 @@ import { SiteHeader } from "@/components/clan-dashboard/site-header";
 import {
   getClanMemberDetail,
   getStoredPlayerSummary,
-} from "@/lib/services/clan-member-service";
-import { getMainClanSummary } from "@/lib/services/clan-service";
+} from "@/lib/members/service";
+import { getMainClanSummary } from "@/lib/clans/service";
 import {
   getPlayerHighRecord,
   getPlayerMatchHistoryPage,
@@ -32,7 +32,7 @@ import {
   PLAYER_TREND_DAYS,
   PLAYER_TREND_MATCH_LIMIT,
   type HighRecord,
-} from "@/lib/services/player-stat-service";
+} from "@/lib/player-stats/service";
 
 import { formatDateTime } from "@/lib/utils";
 
