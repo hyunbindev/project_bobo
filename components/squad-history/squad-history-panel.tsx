@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { SquadMatchHistorySection, SquadMatchHistorySkeleton } from "@/components/clan-dashboard/squad-history";
+import { SquadMatchHistorySection, SquadMatchHistorySkeleton } from "@/components/squad-history/squad-history";
 import { fetchSquadHistory } from "@/lib/squad-history/client";
 import type { SquadHistory } from "@/lib/squad-history/types";
 

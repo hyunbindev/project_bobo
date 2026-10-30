@@ -4,11 +4,11 @@ import { Client } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { SquadHistorySection, SquadMatchHistorySection, SquadMatchHistorySkeleton } from "../components/clan-dashboard/squad-history";
-import { SquadHistoryAccordion } from "../components/clan-dashboard/squad-history-accordion";
+import { SquadHistorySection, SquadMatchHistorySection, SquadMatchHistorySkeleton } from "../components/squad-history/squad-history";
+import { SquadHistoryAccordion } from "../components/squad-history/squad-history-accordion";
 import { getMatchDetailScrollTarget, getSquadHistoryNavigation, squadHistoryHref } from "../lib/matches/navigation";
 import type { SquadHistory } from "../lib/squad-history/types";
-import { MatchHistoryTable } from "../components/clan-dashboard/match-history-table";
+import { MatchHistoryTable } from "../components/matches/match-history-table";
 import { fetchSquadHistory } from "../lib/squad-history/client";
 import { getSquadHistoryPagination } from "../lib/squad-history/pagination";
 

@@ -1,6 +1,6 @@
 import {
   PlayerTrendChart,
-} from "@/components/clan-dashboard/player-trend-chart";
+} from "@/components/player-stats/player-trend-chart";
 import type { PlayerTrendMetric } from "@/lib/player-stats/types";
 
 export type { PlayerTrendMetric } from "@/lib/player-stats/types";

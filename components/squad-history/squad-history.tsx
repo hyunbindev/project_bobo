@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { MatchHistoryTable, MatchHistoryTableSkeleton } from "@/components/clan-dashboard/match-history-table";
+import { MatchHistoryTable, MatchHistoryTableSkeleton } from "@/components/matches/match-history-table";
 import type { SquadHistory, SquadSummary } from "@/lib/squad-history/types";
 
 import { getSquadHistoryPagination } from "@/lib/squad-history/pagination";

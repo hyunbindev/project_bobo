@@ -12,11 +12,11 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-import { SiteHeader } from "@/components/clan-dashboard/site-header";
+import { SiteHeader } from "@/components/layout/site-header";
 import {
   RankingTrendChart,
   type RankingTrend,
-} from "@/components/clan-records/ranking-trend-chart";
+} from "@/components/rankings/ranking-trend-chart";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 

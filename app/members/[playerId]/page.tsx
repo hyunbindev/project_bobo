@@ -11,15 +11,15 @@ import {
 } from "lucide-react";
 import { notFound } from "next/navigation";
 
-import { HistoryBackButton } from "@/components/clan-dashboard/history-back-button";
-import { MatchHistoryTable } from "@/components/clan-dashboard/match-history-table";
-import { MatchPagination } from "@/components/clan-dashboard/match-pagination";
-import { PlayerPerformanceTrends } from "@/components/clan-dashboard/player-performance-trends";
+import { HistoryBackButton } from "@/components/layout/history-back-button";
+import { MatchHistoryTable } from "@/components/matches/match-history-table";
+import { MatchPagination } from "@/components/matches/match-pagination";
+import { PlayerPerformanceTrends } from "@/components/player-stats/player-performance-trends";
 import {
   PlayerRecords,
   type PlayerRecord,
-} from "@/components/clan-dashboard/player-records";
-import { SiteHeader } from "@/components/clan-dashboard/site-header";
+} from "@/components/player-stats/player-records";
+import { SiteHeader } from "@/components/layout/site-header";
 import {
   getClanMemberDetail,
   getStoredPlayerSummary,

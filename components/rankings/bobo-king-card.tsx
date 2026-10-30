@@ -1,7 +1,7 @@
 import { Crown } from "lucide-react";
 import Link from "next/link";
 
-import { AnimatedRankingValue } from "@/components/clan-rankings/animated-ranking-value";
+import { AnimatedRankingValue } from "@/components/rankings/animated-ranking-value";
 import type { RankingResult } from "@/lib/rankings/types";
 import { cn } from "@/lib/utils";
 

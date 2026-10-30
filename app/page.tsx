@@ -3,10 +3,10 @@ import { ArrowUpRight, Crosshair, Crown, Users } from "lucide-react";
 import Link from "next/link";
 import { connection } from "next/server";
 
-import { ClanJoinModal } from "@/components/clan-dashboard/clan-join-modal";
-import { RecentClanMatches } from "@/components/clan-dashboard/recent-clan-matches";
-import { SiteHeader } from "@/components/clan-dashboard/site-header";
-import { AnimatedRankingValue } from "@/components/clan-rankings/animated-ranking-value";
+import { ClanJoinModal } from "@/components/members/clan-join-modal";
+import { RecentClanMatches } from "@/components/matches/recent-clan-matches";
+import { SiteHeader } from "@/components/layout/site-header";
+import { AnimatedRankingValue } from "@/components/rankings/animated-ranking-value";
 import { getMainClanSummary } from "@/lib/clans/service";
 import { getRecentWonMatches } from "@/lib/matches/service";
 import { getCurrentBoboKingRanking } from "@/lib/rankings/weekly-ranking-service";

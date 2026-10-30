@@ -3,7 +3,7 @@
 import { ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { SquadHistoryPanel } from "@/components/clan-dashboard/squad-history-panel";
+import { SquadHistoryPanel } from "@/components/squad-history/squad-history-panel";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { getMatchDetailScrollTarget, getSquadHistoryNavigation, squadHistoryHref } from "@/lib/matches/navigation";
 

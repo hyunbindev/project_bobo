@@ -3,7 +3,7 @@
 import { Crown, Radio, Shield, Star } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-import { ClanMasterSignalWing } from "@/components/clan-dashboard/clan-master-signal-wing";
+import { ClanMasterSignalWing } from "@/components/members/clan-master-signal-wing";
 
 /** 멤버 페이지 상단에 표시하는 클랜 마스터 프로필이다. */
 export function ClanMasterCard({ nickname }: { nickname: string }) {

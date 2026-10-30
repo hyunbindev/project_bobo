@@ -1,5 +1,5 @@
 import { formatDateTime } from "@/lib/shared/date";
-import { Activity, Clock3, Crosshair, Map, Trophy } from "lucide-react";
+import { Activity, Clock3, Crosshair, Map, Trophy, Users } from "lucide-react";
 import Link from "next/link";
 import { Fragment, type ReactNode } from "react";
 
@@ -91,6 +91,23 @@ export function MatchHistoryTable({
                             {match.kills}킬 · {!isClanSquad && `${match.dbnos ?? 0}기절 · `}{Math.round(match.damage).toLocaleString("ko-KR")}딜
                           </span>
                         </div>
+
+                        {!isClanSquad && Boolean(match.memberNames?.length) && (
+                          <div className="mt-3 flex min-w-0 items-start gap-2 border-t border-border/40 pt-3">
+                            <Users aria-hidden="true" className="mt-1 size-3.5 shrink-0 text-muted-foreground" />
+                            <ul aria-label="경기 참가자" className="flex min-w-0 flex-1 flex-wrap gap-1.5">
+                              {match.memberNames?.map((member, index) => (
+                                <li
+                                  className="min-w-0 max-w-36 truncate rounded-sm bg-foreground/[0.055] px-2 py-1 text-[10px] font-bold text-muted-foreground"
+                                  key={`${member}:${index}`}
+                                  title={member}
+                                >
+                                  {member}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
                       </Link>
                     </TableCell>
                   </TableRow>

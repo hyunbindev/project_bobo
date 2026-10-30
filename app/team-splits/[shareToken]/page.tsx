@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { SiteHeader } from "@/components/clan-dashboard/site-header";
+import { SiteHeader } from "@/components/layout/site-header";
 import {
   TeamSplitResult,
   TeamSplitUnavailable,

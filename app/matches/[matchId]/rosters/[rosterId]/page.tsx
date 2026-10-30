@@ -4,10 +4,10 @@ import Link from "next/link";
 import { ArrowLeft, Clock3, MapPin, Trophy } from "lucide-react";
 import { notFound } from "next/navigation";
 
-import { RosterParticipantsTable } from "@/components/clan-dashboard/roster-participants-table";
-import { SiteHeader } from "@/components/clan-dashboard/site-header";
-import { SquadHistoryAccordion } from "@/components/clan-dashboard/squad-history-accordion";
-import { SquadHistorySection } from "@/components/clan-dashboard/squad-history";
+import { RosterParticipantsTable } from "@/components/matches/roster-participants-table";
+import { SiteHeader } from "@/components/layout/site-header";
+import { SquadHistoryAccordion } from "@/components/squad-history/squad-history-accordion";
+import { SquadHistorySection } from "@/components/squad-history/squad-history";
 import { getSquadHistoryNavigation } from "@/lib/matches/navigation";
 import { getMainClanSummary } from "@/lib/clans/service";
 import { getMatchRosterDetail } from "@/lib/matches/service";
