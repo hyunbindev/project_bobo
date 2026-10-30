@@ -1,3 +1,4 @@
+import { formatKstMonthDay } from "@/lib/shared/date";
 import { ArrowUpRight, Crosshair, Crown, Users } from "lucide-react";
 import Link from "next/link";
 import { connection } from "next/server";
@@ -257,11 +258,5 @@ function SectionHeading({
 }
 
 function formatRankingPeriod(startAt: Date, endAt: Date) {
-  const formatter = new Intl.DateTimeFormat("ko-KR", {
-    timeZone: "Asia/Seoul",
-    month: "2-digit",
-    day: "2-digit",
-  });
-
-  return `${formatter.format(startAt)} — ${formatter.format(new Date(endAt.getTime() - 1))}`;
+  return `${formatKstMonthDay(startAt)} — ${formatKstMonthDay(new Date(endAt.getTime() - 1))}`;
 }

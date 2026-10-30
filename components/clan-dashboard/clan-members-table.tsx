@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatDateTime } from "@/lib/utils";
+import { formatDateTime } from "@/lib/shared/date";
 import { useRouter } from "next/navigation";
 
 export type ClanMembersTableItem = {

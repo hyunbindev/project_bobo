@@ -13,7 +13,7 @@ import { createDiscordAppUrl } from "@/lib/discord/discord-app-url";
 import type { RankingEntry, WeeklyRankingPeriod } from "@/lib/rankings/types";
 import { getMainClanSummary } from "@/lib/clans/service";
 import { getCurrentBoboKingRanking } from "@/lib/rankings/weekly-ranking-service";
-import { formatKstDate } from "@/lib/utils";
+import { formatKstDate } from "@/lib/shared/date";
 
 const rankingValueFormatter = new Intl.NumberFormat("ko-KR", {
   maximumFractionDigits: 2,

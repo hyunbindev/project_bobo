@@ -1,5 +1,7 @@
 "use client";
 
+import { formatKstMonthDay } from "@/lib/shared/date";
+
 import {
   CartesianGrid,
   Line,
@@ -20,6 +22,8 @@ import type {
   PlayerTrendMetric,
   PlayerTrendPoint,
 } from "@/lib/player-stats/types";
+import { formatMapName } from "@/lib/pubg/maps";
+import { formatGameMode } from "@/lib/pubg/game-modes";
 
 const toneClasses = {
   primary: "text-primary",
@@ -138,32 +142,14 @@ export function PlayerTrendChart({ metric }: { metric: PlayerTrendMetric }) {
   );
 }
 
-const mapLabels: Record<string, string> = {
-  Baltic_Main: "ERANGEL",
-  Chimera_Main: "PARAMO",
-  Desert_Main: "MIRAMAR",
-  DihorOtok_Main: "VIKENDI",
-  Heaven_Main: "HAVEN",
-  Kiki_Main: "DESTON",
-  Range_Main: "CAMP JACKAL",
-  Savage_Main: "SANHOK",
-  Summerland_Main: "KARAKIN",
-  Tiger_Main: "TAEGO",
-};
-
 function formatTooltipLabel(point: PlayerTrendPoint | undefined) {
   if (!point) {
     return "";
   }
 
-  const date = new Intl.DateTimeFormat("ko-KR", {
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date(point.playedAt));
-  const mapName =
-    mapLabels[point.mapName] ??
-    point.mapName.replace(/_Main$/i, "").toUpperCase();
-  const gameMode = point.gameMode.replaceAll("-", " ").toUpperCase();
+  const date = formatKstMonthDay(new Date(point.playedAt));
+  const mapName = formatMapName(point.mapName);
+  const gameMode = formatGameMode(point.gameMode);
 
   return `${date} · ${mapName} · ${gameMode}`;
 }

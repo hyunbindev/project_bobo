@@ -1,4 +1,5 @@
-import { and, asc, desc, eq, gte, isNotNull, lt, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNotNull, lt, sql } from "drizzle-orm";
+import { STATISTICS_MATCH_TYPES } from "@/lib/matches/policies";
 
 import { db } from "@/lib/db";
 import {
@@ -34,7 +35,7 @@ export async function findDamageCarryRankings(
     )
     .where(
       and(
-        eq(matches.matchType, "official"),
+        inArray(matches.matchType, STATISTICS_MATCH_TYPES),
         gte(matches.playedAt, input.startAt),
         lt(matches.playedAt, input.endAt),
         isNotNull(matchParticipants.pubgRosterId),

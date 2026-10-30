@@ -1,3 +1,4 @@
+import { formatDateTime } from "@/lib/shared/date";
 import { Activity, Clock3, Crosshair, Map, Trophy } from "lucide-react";
 import Link from "next/link";
 import { Fragment, type ReactNode } from "react";
@@ -11,20 +12,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { MatchRosterListItem } from "@/lib/matches/types";
-
-const mapLabels: Record<string, string> = {
-  Baltic_Main: "ERANGEL",
-  Chimera_Main: "PARAMO",
-  Desert_Main: "MIRAMAR",
-  DihorOtok_Main: "VIKENDI",
-  Heaven_Main: "HAVEN",
-  Kiki_Main: "DESTON",
-  Neon_Main: "RONDO",
-  Range_Main: "CAMP JACKAL",
-  Savage_Main: "SANHOK",
-  Summerland_Main: "KARAKIN",
-  Tiger_Main: "TAEGO",
-};
+import { formatMapName } from "@/lib/pubg/maps";
+import { formatMatchMode } from "@/lib/pubg/game-modes";
 
 type MatchHistoryItem = Pick<
   MatchRosterListItem,
@@ -89,13 +78,13 @@ export function MatchHistoryTable({
                           </div>
                           <span className="flex shrink-0 items-center gap-1 text-[9px] font-semibold text-muted-foreground">
                             <Clock3 className="size-3" />
-                            {formatPlayedAt(match.playedAt)}
+                            {formatDateTime(match.playedAt)}
                           </span>
                         </div>
 
                         <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 text-[10px] font-semibold text-muted-foreground">
                           <span className="truncate">
-                            {formatMode(match.matchType, match.gameMode)}
+                            {formatMatchMode(match.matchType, match.gameMode)}
                           </span>
                           <span className="whitespace-nowrap">
                             {isClanSquad && "클랜원 합산 · "}
@@ -128,7 +117,7 @@ export function MatchHistoryTable({
                           {formatMapName(match.mapName)}
                         </p>
                         <p className="mt-1 truncate text-[10px] font-semibold text-muted-foreground">
-                          {formatMode(match.matchType, match.gameMode)}
+                          {formatMatchMode(match.matchType, match.gameMode)}
                         </p>
                       </Link>
                     </TableCell>
@@ -165,7 +154,7 @@ export function MatchHistoryTable({
                         href={href}
                       >
                         <Clock3 className="size-3" />
-                        {formatPlayedAt(match.playedAt)}
+                        {formatDateTime(match.playedAt)}
                       </Link>
                     </TableCell>
                   </TableRow>
@@ -268,26 +257,4 @@ function MetricCell({
       </Link>
     </TableCell>
   );
-}
-
-function formatMapName(mapName: string) {
-  return mapLabels[mapName] ?? mapName.replace(/_Main$/i, "").toUpperCase();
-}
-
-function formatMode(matchType: string, gameMode: string) {
-  const typeLabel = matchType === "competitive" ? "경쟁전" : "일반전";
-  const modeLabel = gameMode.replaceAll("-", " ").toUpperCase();
-
-  return `${typeLabel} · ${modeLabel}`;
-}
-
-function formatPlayedAt(playedAt: Date) {
-  return new Intl.DateTimeFormat("ko-KR", {
-    timeZone: "Asia/Seoul",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(playedAt);
 }

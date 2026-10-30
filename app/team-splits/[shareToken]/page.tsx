@@ -7,7 +7,7 @@ import {
 } from "@/components/team-split";
 import { getMainClanSummary } from "@/lib/clans/service";
 import { getActiveTeamSplitResult } from "@/lib/team-split/service";
-import { formatKstDateTime } from "@/lib/utils";
+import { formatKstDateTime } from "@/lib/shared/date";
 
 export const metadata: Metadata = {
   title: "팀 배분 결과 | BOBO CLAN",

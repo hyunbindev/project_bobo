@@ -1,5 +1,6 @@
 import type { RankingRepositoryInput, RankingMetricRow } from "@/lib/rankings/types";
-import { and, asc, desc, eq, gte, lt, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lt, sql, type SQL } from "drizzle-orm";
+import { STATISTICS_MATCH_TYPES } from "@/lib/matches/policies";
 
 import { db } from "@/lib/db";
 import {
@@ -45,7 +46,7 @@ export async function findMetricRankings(
     )
     .where(
       and(
-        eq(matches.matchType, "official"),
+        inArray(matches.matchType, STATISTICS_MATCH_TYPES),
         gte(matches.playedAt, input.startAt),
         lt(matches.playedAt, input.endAt),
         sql`(

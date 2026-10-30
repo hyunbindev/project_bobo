@@ -15,21 +15,10 @@ import {
 import { createDiscordAppUrl } from "@/lib/discord/discord-app-url";
 import type { WinMatchContext } from "@/lib/discord/messages/win-match-context";
 import type { RecentWonMatch } from "@/lib/matches/types";
+import { formatMapName } from "@/lib/pubg/maps";
+import { formatMatchMode } from "@/lib/pubg/game-modes";
 
 const numberFormatter = new Intl.NumberFormat("ko-KR");
-const mapLabels: Record<string, string> = {
-  Baltic_Main: "ERANGEL",
-  Chimera_Main: "PARAMO",
-  Desert_Main: "MIRAMAR",
-  DihorOtok_Main: "VIKENDI",
-  Heaven_Main: "HAVEN",
-  Kiki_Main: "DESTON",
-  Neon_Main: "RONDO",
-  Range_Main: "CAMP JACKAL",
-  Savage_Main: "SANHOK",
-  Summerland_Main: "KARAKIN",
-  Tiger_Main: "TAEGO",
-};
 
 /** 커맨드와 자동 알림이 함께 사용하는 치킨 경기 Components V2 메시지다. */
 export function createWinMatchMessage(
@@ -38,10 +27,16 @@ export function createWinMatchMessage(
 ) {
   const playedAt = Math.floor(match.playedAt.getTime() / 1_000);
   const mapName = formatMapName(match.mapName);
-  const mode = formatMode(match.matchType, match.gameMode);
+  const mode = formatMatchMode(match.matchType, match.gameMode);
   const path = `/matches/${encodeURIComponent(match.matchId)}/rosters/${encodeURIComponent(match.rosterId)}`;
-  const detailUrl = createDiscordAppUrl(`${path}#match-records`);
-  const historyUrl = createDiscordAppUrl(`${path}?squadHistory=open&squadPage=1#squad-summary`);
+  const detailUrl = createDiscordAppUrl(`${path}#match-records`, {
+    campaign: "match_win",
+    content: "match_details",
+  });
+  const historyUrl = createDiscordAppUrl(`${path}?squadHistory=open&squadPage=1#squad-summary`, {
+    campaign: "match_win",
+    content: "squad_comparison",
+  });
   const members = [...match.members].sort(
     (left, right) => right.damage - left.damage,
   );
@@ -93,13 +88,31 @@ export function createWinMatchMessage(
   if (members.length === 0) message.addTextDisplayComponents(new TextDisplayBuilder().setContent("클랜원 상세 기록이 없습니다."));
 
   if (detailUrl) {
-    const buttons = new ActionRowBuilder<ButtonBuilder>().addComponents(
-      new ButtonBuilder()
-          .setLabel("이번 경기 기록")
+    message
+      .addSeparatorComponents(createSeparator(SeparatorSpacingSize.Small))
+      .addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(
+          "아래 버튼을 눌러 이전 경기 평균과 이번 경기의 킬·딜·순위를 비교해 보세요.",
+        ),
+      );
+
+    const buttons = new ActionRowBuilder<ButtonBuilder>();
+    if (historyUrl) {
+      buttons.addComponents(
+        new ButtonBuilder()
+          .setEmoji("📈")
+          .setLabel("우리 조합 성적 비교 보기")
           .setStyle(ButtonStyle.Link)
-          .setURL(detailUrl),
+          .setURL(historyUrl),
+      );
+    }
+    buttons.addComponents(
+      new ButtonBuilder()
+        .setEmoji("📊")
+        .setLabel("경기 상세 기록 보기")
+        .setStyle(ButtonStyle.Link)
+        .setURL(detailUrl),
     );
-    if (historyUrl) buttons.addComponents(new ButtonBuilder().setLabel("함께한 전적").setStyle(ButtonStyle.Link).setURL(historyUrl));
     message.addActionRowComponents(buttons);
   }
 
@@ -112,19 +125,4 @@ export function createWinMatchMessage(
 
 function createSeparator(spacing: SeparatorSpacingSize) {
   return new SeparatorBuilder().setDivider(true).setSpacing(spacing);
-}
-
-function formatMapName(mapName: string) {
-  return mapLabels[mapName] ?? mapName.replace(/_Main$/i, "").toUpperCase();
-}
-
-function formatMode(matchType: string, gameMode: string) {
-  const matchTypeLabel =
-    matchType === "competitive"
-      ? "경쟁전"
-      : matchType === "custom"
-        ? "커스텀"
-        : "일반전";
-
-  return `${matchTypeLabel} · ${gameMode.replaceAll("-", " ").toUpperCase()}`;
 }

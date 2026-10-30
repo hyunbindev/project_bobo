@@ -34,7 +34,9 @@ import {
   type HighRecord,
 } from "@/lib/player-stats/service";
 
-import { formatDateTime } from "@/lib/utils";
+import { formatDateTime } from "@/lib/shared/date";
+import { formatMapName } from "@/lib/pubg/maps";
+import { formatGameMode } from "@/lib/pubg/game-modes";
 
 const MATCH_PAGE_SIZE = 10;
 
@@ -224,19 +226,6 @@ function parsePage(value: string | string[] | undefined) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
 }
 
-const mapLabels: Record<string, string> = {
-  Baltic_Main: "ERANGEL",
-  Chimera_Main: "PARAMO",
-  Desert_Main: "MIRAMAR",
-  DihorOtok_Main: "VIKENDI",
-  Heaven_Main: "HAVEN",
-  Kiki_Main: "DESTON",
-  Range_Main: "CAMP JACKAL",
-  Savage_Main: "SANHOK",
-  Summerland_Main: "KARAKIN",
-  Tiger_Main: "TAEGO",
-};
-
 function createHighRecordCards(highRecord: HighRecord | null): PlayerRecord[] {
   return [
     {
@@ -275,10 +264,8 @@ function formatRecordDetail(record: HighRecord["maxDamage"] | undefined) {
     return "NO MATCH DATA";
   }
 
-  const mapName =
-    mapLabels[record.mapName] ??
-    record.mapName.replace(/_Main$/i, "").toUpperCase();
-  const gameMode = record.gameMode.replaceAll("-", " ").toUpperCase();
+  const mapName = formatMapName(record.mapName);
+  const gameMode = formatGameMode(record.gameMode);
 
   return `${mapName} · ${gameMode}`;
 }

@@ -1,21 +1,10 @@
+import { formatDateTime } from "@/lib/shared/date";
 import { Clock3 } from "lucide-react";
 
 import type { RecentWonMatch } from "@/lib/matches/types";
 import Link from "next/link";
-
-const mapLabels: Record<string, string> = {
-  Baltic_Main: "ERANGEL",
-  Chimera_Main: "PARAMO",
-  Desert_Main: "MIRAMAR",
-  DihorOtok_Main: "VIKENDI",
-  Heaven_Main: "HAVEN",
-  Kiki_Main: "DESTON",
-  Neon_Main: "RONDO",
-  Range_Main: "CAMP JACKAL",
-  Savage_Main: "SANHOK",
-  Summerland_Main: "KARAKIN",
-  Tiger_Main: "TAEGO",
-};
+import { formatMapName } from "@/lib/pubg/maps";
+import { formatMatchMode } from "@/lib/pubg/game-modes";
 
 export function RecentClanMatches({
   matches,
@@ -39,7 +28,7 @@ export function RecentClanMatches({
               <div className="flex items-start justify-between">
                 <div>
                   <span className="text-[10px] font-black tracking-[0.2em] text-muted-foreground">
-                    {formatMode(match.matchType, match.gameMode)}
+                    {formatMatchMode(match.matchType, match.gameMode)}
                   </span>
                   <h3 className="mt-2 text-2xl font-black tracking-tight">
                     {formatMapName(match.mapName)}
@@ -84,7 +73,7 @@ export function RecentClanMatches({
                 <span className="status status-primary">WINNER WINNER</span>
                 <span className="flex items-center gap-1.5 text-muted-foreground">
                   <Clock3 className="size-3" />
-                  {formatPlayedAt(match.playedAt)}
+                  {formatDateTime(match.playedAt)}
                 </span>
               </div>
             </div>
@@ -104,30 +93,4 @@ function MiniStat({ label, value }: { label: string; value: string }) {
       </p>
     </div>
   );
-}
-
-function formatMapName(mapName: string) {
-  return mapLabels[mapName] ?? mapName.replace(/_Main$/i, "").toUpperCase();
-}
-
-function formatMode(matchType: string, gameMode: string) {
-  const matchTypeLabel =
-    matchType === "competitive"
-      ? "경쟁전"
-      : matchType === "custom"
-        ? "커스텀"
-        : "일반전";
-
-  return `${matchTypeLabel} · ${gameMode.replaceAll("-", " ").toUpperCase()}`;
-}
-
-function formatPlayedAt(playedAt: Date) {
-  return new Intl.DateTimeFormat("ko-KR", {
-    timeZone: "Asia/Seoul",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(playedAt);
 }

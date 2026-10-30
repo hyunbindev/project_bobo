@@ -29,7 +29,7 @@ import { BoboKingCard } from "@/components/clan-rankings/bobo-king-card";
 import type { RegularRankingCode } from "@/lib/rankings/types";
 import { getMainClanSummary } from "@/lib/clans/service";
 import { getWeeklyRankingPageData } from "@/lib/rankings/weekly-ranking-service";
-import { formatKstDate } from "@/lib/utils";
+import { formatKstDate } from "@/lib/shared/date";
 
 export const metadata: Metadata = {
   title: "최근 일주일 랭킹 | BOBO",

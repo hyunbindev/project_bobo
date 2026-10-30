@@ -1,5 +1,6 @@
 import type { HighRecord, PlayerTrendMatch } from "@/lib/player-stats/types";
-import { and, desc, eq, gte, isNotNull, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNotNull, sql } from "drizzle-orm";
+import { STATISTICS_MATCH_TYPES } from "@/lib/matches/policies";
 
 import { db } from "@/lib/db";
 import { matchParticipants, matches } from "@/lib/db/schema";
@@ -123,7 +124,7 @@ export async function findPlayerHighRecord(
       matches,
       and(
         eq(matchParticipants.matchId, matches.id),
-        eq(matches.matchType, "official"),
+        inArray(matches.matchType, STATISTICS_MATCH_TYPES),
       ),
     )
     .where(eq(matchParticipants.playerId, playerId));
