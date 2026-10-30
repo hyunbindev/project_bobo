@@ -4,7 +4,7 @@ import { MessageFlags, SlashCommandBuilder } from "discord.js";
 
 import { ApiError } from "@/lib/api/errors";
 import type { DiscordCommand } from "@/lib/discord/discord-command";
-import { registerDiscordAccount } from "@/lib/services/discord-account-service";
+import { registerDiscordAccount } from "@/lib/discord-accounts/service";
 
 export const registerPlayerCommand: DiscordCommand = {
   definition: new SlashCommandBuilder()

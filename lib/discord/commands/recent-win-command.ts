@@ -5,7 +5,7 @@ import { SlashCommandBuilder } from "discord.js";
 import type { DiscordCommand } from "@/lib/discord/discord-command";
 import { createWinMatchMessage } from "@/lib/discord/messages/create-win-match-message";
 import { loadWinMatchProfiles, loadWinMatchSummary } from "@/lib/discord/messages/win-match-context";
-import { getRecentWonMatches } from "@/lib/services/match-service";
+import { getRecentWonMatches } from "@/lib/matches/service";
 
 export const recentWinCommand: DiscordCommand = {
   definition: new SlashCommandBuilder()

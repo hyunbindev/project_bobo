@@ -1,28 +1,24 @@
+import { formatDateTime } from "@/lib/shared/date";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, Clock3, MapPin, Trophy } from "lucide-react";
 import { notFound } from "next/navigation";
 
-import { RosterParticipantsTable } from "@/components/clan-dashboard/roster-participants-table";
-import { SiteHeader } from "@/components/clan-dashboard/site-header";
-import { SquadHistoryAccordion } from "@/components/clan-dashboard/squad-history-accordion";
-import { SquadHistorySection } from "@/components/clan-dashboard/squad-history";
-import { getSquadHistoryNavigation } from "@/lib/match-detail-navigation";
-import { getMainClanSummary } from "@/lib/services/clan-service";
-import { getMatchRosterDetail } from "@/lib/services/match-service";
-import { getSquadHistorySummary } from "@/lib/services/squad-history-service";
+import { RosterParticipantsTable } from "@/components/matches/roster-participants-table";
+import { SiteHeader } from "@/components/layout/site-header";
+import { SquadHistoryAccordion } from "@/components/squad-history/squad-history-accordion";
+import { SquadHistorySection } from "@/components/squad-history/squad-history";
+import { getSquadHistoryNavigation } from "@/lib/matches/navigation";
+import { getMainClanSummary } from "@/lib/clans/service";
+import { getMatchRosterDetail } from "@/lib/matches/service";
+import { getSquadHistorySummary } from "@/lib/squad-history/service";
 import { MatchDetailScroll } from "./match-detail-scroll";
+import { formatMapName } from "@/lib/pubg/maps";
+import { formatMatchMode } from "@/lib/pubg/game-modes";
 
 type PageProps = {
   params: Promise<{ matchId: string; rosterId: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
-};
-
-const mapLabels: Record<string, string> = {
-  Baltic_Main: "ERANGEL", Chimera_Main: "PARAMO", Desert_Main: "MIRAMAR",
-  DihorOtok_Main: "VIKENDI", Heaven_Main: "HAVEN", Kiki_Main: "DESTON",
-  Neon_Main: "RONDO", Range_Main: "CAMP JACKAL", Savage_Main: "SANHOK",
-  Summerland_Main: "KARAKIN", Tiger_Main: "TAEGO",
 };
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -30,7 +26,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const detail = await getMatchRosterDetail(matchId, rosterId);
   if (!detail) return { title: "경기를 찾을 수 없음" };
   const title = `${formatMapName(detail.match.mapName)} #${detail.roster.rank} 로스터 전적 | BOBO`;
-  const description = `${formatMode(detail.match.matchType, detail.match.gameMode)} · ${detail.totals.kills}킬 · ${Math.round(detail.totals.damage).toLocaleString("ko-KR")} 대미지`;
+  const description = `${formatMatchMode(detail.match.matchType, detail.match.gameMode)} · ${detail.totals.kills}킬 · ${Math.round(detail.totals.damage).toLocaleString("ko-KR")} 대미지`;
   
   return { 
     title,
@@ -50,7 +46,7 @@ export default async function RosterMatchDetailPage({ params, searchParams }: Pa
 
   const squadHistory = clan ? await getSquadHistorySummary({ matchId, rosterId, clanId: clan.id }) : null;
   const navigation = getSquadHistoryNavigation(query);
-  const mode = formatMode(detail.match.matchType, detail.match.gameMode);
+  const mode = formatMatchMode(detail.match.matchType, detail.match.gameMode);
   const squadMemberIds = new Set(squadHistory?.members.map((member) => member.id));
   const currentSquad = detail.participants.reduce((totals, member) => {
     if (squadMemberIds.has(member.playerId)) {
@@ -85,7 +81,7 @@ export default async function RosterMatchDetailPage({ params, searchParams }: Pa
           <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
               <Clock3 aria-hidden="true" className="size-3.5" />
-              {formatPlayedAt(detail.match.playedAt)}
+              {formatDateTime(detail.match.playedAt, { includeYear: true })}
             </span>
             <span>경기 시간 {formatDuration(detail.match.duration)}</span>
           </div>
@@ -133,16 +129,8 @@ export default async function RosterMatchDetailPage({ params, searchParams }: Pa
     </main>
   );
 }
-
-function formatMapName(name: string) { return mapLabels[name] ?? name.replace(/_Main$/i, "").toUpperCase(); }
-function formatMode(type: string, mode: string) {
-  return `${type === "competitive" ? "경쟁전" : type === "custom" ? "커스텀" : "일반전"} · ${mode.replaceAll("-", " ").toUpperCase()}`;
-}
 function formatRankStatus(rank: number) {
   return rank === 1 ? "WINNER WINNER" : rank <= 3 ? "TOP 3" : rank <= 10 ? "TOP 10" : "MATCH RESULT";
-}
-function formatPlayedAt(date: Date) {
-  return new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false }).format(date);
 }
 function formatDuration(value: number) {
   const seconds = Math.max(Math.round(value), 0);

@@ -4,8 +4,8 @@ import Module, { createRequire } from "node:module";
 import type { Guild } from "discord.js";
 import { Client } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
-import type { RecentWonMatch } from "../lib/services/match-service";
-import type { SquadSummary } from "../lib/services/squad-history-service";
+import type { RecentWonMatch } from "../lib/matches/types";
+import type { SquadSummary } from "../lib/squad-history/types";
 
 const match: RecentWonMatch = {
   id: "match:roster", matchId: "00000000-0000-4000-8000-000000000001", rosterId: "roster",
@@ -35,13 +35,14 @@ async function modules(context: TestContext) {
     return {
       ...await import("../lib/discord/messages/create-win-match-message"),
       ...await import("../lib/discord/messages/win-match-context"),
+      ...await import("../lib/discord/discord-app-url"),
       ...await import("../lib/db"),
     };
   } finally { alias.mock.restore(); }
 }
 
-test("우승 메시지는 프로필·조합 기록·두 상세 링크를 포함하고 알림 멘션을 억제한다", async (context) => {
-  const { createWinMatchMessage } = await modules(context);
+test("우승 메시지는 클릭 안내·버튼별 유입 태그를 포함하고 상세 이동과 멘션 억제를 유지한다", async (context) => {
+  const { createWinMatchMessage, createDiscordAppUrl } = await modules(context);
   const previousUrl = process.env.APP_BASE_URL;
   process.env.APP_BASE_URL = "https://example.com";
   try {
@@ -62,8 +63,27 @@ test("우승 메시지는 프로필·조합 기록·두 상세 링크를 포함�
     const sections = payload.components.filter((component) => component.type === 9);
     assert.equal(sections.length, 0);
     assert.ok(!text.includes('"type":11'));
-    assert.ok(text.includes("#match-records"));
-    assert.ok(text.includes("?squadHistory=open&squadPage=1#squad-summary"));
+    assert.ok(text.includes("아래 버튼을 눌러"));
+    const row = payload.components.find((component) => component.type === 1);
+    assert.ok(row);
+    const buttons = row.components.filter((component) => component.type === 2 && "url" in component);
+    assert.deepEqual(buttons.map((button) => button.label), ["우리 조합 성적 비교 보기", "경기 상세 기록 보기"]);
+    const [historyUrl, detailUrl] = buttons.map((button) => new URL(button.url));
+    for (const url of [historyUrl, detailUrl]) {
+      assert.equal(url.pathname, `/matches/${match.matchId}/rosters/${match.rosterId}`);
+      assert.equal(url.searchParams.get("utm_source"), "discord");
+      assert.equal(url.searchParams.get("utm_medium"), "bot");
+      assert.equal(url.searchParams.get("utm_campaign"), "match_win");
+    }
+    assert.equal(historyUrl.searchParams.get("utm_content"), "squad_comparison");
+    assert.equal(historyUrl.searchParams.get("squadHistory"), "open");
+    assert.equal(historyUrl.searchParams.get("squadPage"), "1");
+    assert.equal(historyUrl.hash, "#squad-summary");
+    assert.equal(detailUrl.searchParams.get("utm_content"), "match_details");
+    assert.equal(detailUrl.hash, "#match-records");
+    const untrackedUrl = new URL(createDiscordAppUrl("/ranking#top")!);
+    assert.equal(untrackedUrl.search, "");
+    assert.equal(untrackedUrl.hash, "#top");
     assert.ok(!text.includes("자동 경기 알림"));
     assert.ok(!text.includes("-# Match"));
     const fallback = JSON.stringify(createWinMatchMessage(match).components[0].toJSON());

@@ -56,16 +56,37 @@ PUBG API로 경기 데이터를 수집하고, Discord 봇을 통해 우승 소�
 
 ```text
 app/                 페이지와 API 라우트
-components/          화면 컴포넌트와 공통 UI
+components/layout/   공통 헤더·뒤로 가기
+components/home/     홈 화면 구성
+components/members/  클랜원 목록·클랜장·가입 폼
+components/player-stats/ 개인 전적·추이 차트·최고 기록
+components/matches/  경기 목록·참가자 기록·페이지 이동
+components/squad-history/ 조합 전적·비동기 조회 화면
+components/rankings/ 랭킹 카드·순위 추이 차트
+components/team-split/ 팀 배분 결과 화면
+components/ui/       공통 UI 요소
 lib/db/              데이터베이스 연결과 스키마
-lib/repositories/    데이터 조회·저장
-lib/services/        전적·클랜·랭킹 처리
+lib/clans/           클랜 조회·초기화
+lib/members/         클랜원 조회·등록
+lib/matches/         경기 기록·상세·이동 처리
+lib/player-stats/    개인 전적·추이·최고 기록
+lib/squad-history/   조합 전적·클라이언트 조회·페이지 계산
+lib/rankings/        주간 랭킹과 부문별 집계
+lib/team-split/      팀 배분·결과 공유
+lib/discord-accounts/ Discord 계정과 PUBG 계정 연동
+lib/api/             API 오류·공통 처리
 lib/pubg/            PUBG API 연동
 lib/discord/         봇 명령, 메시지 구성과 전송
 lib/sync/            경기 자동 수집과 스케줄링
 tests/               기능 검증
 docs/                개발 문서
 ```
+
+기능별 폴더에서 `service.ts`는 처리 흐름을, `repository.ts`는 DB 조회·저장을 담당합니다.
+서비스와 화면에서 공유하는 타입은 해당 기능의 `types.ts`에서 관리하고, 한 파일에서만 쓰는 타입은 구현 옆에 둡니다.
+랭킹은 부문이 많아 `services/`와 `repositories/` 하위 폴더로 나눕니다.
+화면 컴포넌트도 기능별 폴더에 두고, 여러 페이지에서 사용하는 경기 목록은 `components/matches/`에서 공유합니다.
+특정 페이지에서만 사용하는 경로 의존 코드(`match-detail-scroll.tsx` 등)는 해당 `app/` 경로 옆에 둡니다.
 
 ## 데이터 범위
 

@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-import { getMatchDetailScrollTarget } from "@/lib/match-detail-navigation";
+import { getMatchDetailScrollTarget } from "@/lib/matches/navigation";
 
 /** Resolve fragment navigation after async content and accordion motion settle. */
 export function MatchDetailScroll({ historyAvailable }: { historyAvailable: boolean }) {

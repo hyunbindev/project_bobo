@@ -1,10 +1,10 @@
 import { Clock3 } from "lucide-react";
 
-import { MatchHistoryTable } from "@/components/clan-dashboard/match-history-table";
-import { MatchPagination } from "@/components/clan-dashboard/match-pagination";
-import { SiteHeader } from "@/components/clan-dashboard/site-header";
-import { getMainClanSummary } from "@/lib/services/clan-service";
-import { getMatchRosterHistoryPage } from "@/lib/services/match-service";
+import { MatchHistoryTable } from "@/components/matches/match-history-table";
+import { MatchPagination } from "@/components/matches/match-pagination";
+import { SiteHeader } from "@/components/layout/site-header";
+import { getMainClanSummary } from "@/lib/clans/service";
+import { getMatchRosterHistoryPage } from "@/lib/matches/service";
 
 const PAGE_SIZE = 20;
 

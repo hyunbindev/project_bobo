@@ -1,4 +1,4 @@
-import { findStoredMatchIds } from "@/lib/repositories/match-repository";
+import { findStoredMatchIds } from "@/lib/matches/repository";
 import type { MatchIdPartition } from "@/lib/sync/match/match-sync-types";
 
 /**

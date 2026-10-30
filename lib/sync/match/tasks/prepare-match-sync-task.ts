@@ -1,6 +1,6 @@
 import type { PubgClan } from "@/lib/pubg/clan-types";
-import { findStoredClanMember } from "@/lib/repositories/clan-member-repository";
-import { ensureMainClanSummary } from "@/lib/services/clan-service";
+import { findStoredClanMember } from "@/lib/members/repository";
+import { ensureMainClanSummary } from "@/lib/clans/service";
 import {
   MATCH_SYNC_PLATFORM,
   PLAYER_BATCH_SIZE,

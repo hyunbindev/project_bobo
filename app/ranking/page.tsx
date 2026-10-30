@@ -20,16 +20,16 @@ import {
 } from "lucide-react";
 import { connection } from "next/server";
 
-import { SiteHeader } from "@/components/clan-dashboard/site-header";
+import { SiteHeader } from "@/components/layout/site-header";
 import {
   RankingCard,
   type RankingTheme,
-} from "@/components/clan-rankings/ranking-card";
-import { BoboKingCard } from "@/components/clan-rankings/bobo-king-card";
+} from "@/components/rankings/ranking-card";
+import { BoboKingCard } from "@/components/rankings/bobo-king-card";
 import type { RegularRankingCode } from "@/lib/rankings/types";
-import { getMainClanSummary } from "@/lib/services/clan-service";
-import { getWeeklyRankingPageData } from "@/lib/services/weekly-ranking-service";
-import { formatKstDate } from "@/lib/utils";
+import { getMainClanSummary } from "@/lib/clans/service";
+import { getWeeklyRankingPageData } from "@/lib/rankings/weekly-ranking-service";
+import { formatKstDate } from "@/lib/shared/date";
 
 export const metadata: Metadata = {
   title: "최근 일주일 랭킹 | BOBO",

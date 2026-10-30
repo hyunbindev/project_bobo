@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 
-import { SiteHeader } from "@/components/clan-dashboard/site-header";
+import { SiteHeader } from "@/components/layout/site-header";
 import {
   TeamSplitResult,
   TeamSplitUnavailable,
 } from "@/components/team-split";
-import { getMainClanSummary } from "@/lib/services/clan-service";
-import { getActiveTeamSplitResult } from "@/lib/services/team-split-service";
-import { formatKstDateTime } from "@/lib/utils";
+import { getMainClanSummary } from "@/lib/clans/service";
+import { getActiveTeamSplitResult } from "@/lib/team-split/service";
+import { formatKstDateTime } from "@/lib/shared/date";
 
 export const metadata: Metadata = {
   title: "팀 배분 결과 | BOBO CLAN",

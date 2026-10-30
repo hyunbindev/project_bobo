@@ -4,13 +4,13 @@ import { Client } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { SquadHistorySection, SquadMatchHistorySection, SquadMatchHistorySkeleton } from "../components/clan-dashboard/squad-history";
-import { SquadHistoryAccordion } from "../components/clan-dashboard/squad-history-accordion";
-import { getMatchDetailScrollTarget, getSquadHistoryNavigation, squadHistoryHref } from "../lib/match-detail-navigation";
-import type { SquadHistory } from "../lib/services/squad-history-service";
-import { MatchHistoryTable } from "../components/clan-dashboard/match-history-table";
-import { fetchSquadHistory } from "../lib/squad-history-client";
-import { getSquadHistoryPagination } from "../lib/squad-history-pagination";
+import { SquadHistorySection, SquadMatchHistorySection, SquadMatchHistorySkeleton } from "../components/squad-history/squad-history";
+import { SquadHistoryAccordion } from "../components/squad-history/squad-history-accordion";
+import { getMatchDetailScrollTarget, getSquadHistoryNavigation, squadHistoryHref } from "../lib/matches/navigation";
+import type { SquadHistory } from "../lib/squad-history/types";
+import { MatchHistoryTable } from "../components/matches/match-history-table";
+import { fetchSquadHistory } from "../lib/squad-history/client";
+import { getSquadHistoryPagination } from "../lib/squad-history/pagination";
 
 test("조합 비교는 동일 멤버의 이전 평균과 승률을 표시하고 목록의 여백을 예약하지 않는다", () => {
   const history: SquadHistory = {
@@ -170,7 +170,7 @@ test("대상 조합을 포함한 경기로 요약과 목록을 집계하고 이�
 }, async (context) => {
   process.env.DATABASE_URL ??= process.env.TEST_DATABASE_URL;
   const { findSquadHistorySummary, findSquadHistoryMatches } = await import(
-    "../lib/repositories/squad-history-repository"
+    "../lib/squad-history/repository"
   );
   const client = new Client({ connectionString: process.env.TEST_DATABASE_URL });
   await client.connect();
@@ -279,7 +279,7 @@ test("대상 조합을 포함한 경기로 요약과 목록을 집계하고 이�
     // Service도 같은 임시 테이블에서 조회해 페이지 보정과 승률을 검증한다.
     const { db } = await import("../lib/db");
     context.mock.method(db, "execute", database.execute.bind(database));
-    const { getSquadHistory } = await import("../lib/services/squad-history-service");
+    const { getSquadHistory } = await import("../lib/squad-history/service");
     const lastPage = await getSquadHistory(target, 999);
     assert.ok(lastPage);
     assert.equal(lastPage.page, 2);

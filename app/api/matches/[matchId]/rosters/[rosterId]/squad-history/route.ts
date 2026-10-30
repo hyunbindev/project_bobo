@@ -1,7 +1,7 @@
 import { BadRequestError } from "@/lib/api/errors";
 import { withApiErrorHandler } from "@/lib/api/route-handler";
-import { getMainClanSummary } from "@/lib/services/clan-service";
-import { getSquadHistory } from "@/lib/services/squad-history-service";
+import { getMainClanSummary } from "@/lib/clans/service";
+import { getSquadHistory } from "@/lib/squad-history/service";
 
 type RouteContext = {
   params: Promise<{ matchId: string; rosterId: string }>;

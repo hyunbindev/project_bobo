@@ -1,4 +1,4 @@
-import { findStoredMatchResponses } from "@/lib/repositories/match-repository";
+import { findStoredMatchResponses } from "@/lib/matches/repository";
 import type { CandidateDiscoveryStrategy } from "@/lib/sync/match/strategies/candidate-discovery-strategy";
 import { collectClanMemberCandidateIds } from "@/lib/sync/match/match-sync-utils";
 
