@@ -128,10 +128,10 @@ export function DiscordRegistrationForm({ currentYear, discordParams = null }: {
         role="status"
       >
         <CircleCheck aria-hidden="true" className="mx-auto size-10 text-primary" />
-        <h2 className="mt-5 text-2xl font-black tracking-tight">등록이 완료되었습니다</h2>
+        <h2 className="mt-5 text-2xl font-black tracking-tight">BOBO 클랜에 오신 것을 환영합니다!</h2>
         <p className="mt-3 break-all text-lg font-black text-primary">{registeredPlayer.name}</p>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          클랜원 정보가 저장되었습니다. 이제 전적을 확인해 보세요.
+          등록이 완료되었습니다. 함께 즐거운 배틀그라운드를 만들어 가요.
         </p>
         {nicknameUpdate?.status === "updated" && (
           <p className="mt-4 break-all text-sm leading-6 text-muted-foreground">
@@ -145,9 +145,9 @@ export function DiscordRegistrationForm({ currentYear, discordParams = null }: {
         )}
         <Link
           className="mt-7 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-sm bg-primary px-4 py-3 text-sm font-black text-primary-foreground transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
-          href={`/members/${registeredPlayer.id}`}
+          href="/"
         >
-          내 전적 보기 <ArrowRight aria-hidden="true" className="size-4" />
+          메인으로 가기 <ArrowRight aria-hidden="true" className="size-4" />
         </Link>
       </section>
     );

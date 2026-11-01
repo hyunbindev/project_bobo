@@ -4,6 +4,7 @@ import { boboKingCommand } from "@/lib/discord/commands/bobo-king-command";
 import { pingCommand } from "@/lib/discord/commands/ping-command";
 import { recentWinCommand } from "@/lib/discord/commands/recent-win-command";
 import { registerPlayerCommand } from "@/lib/discord/commands/register-player-command";
+import { registrationLinkCommand } from "@/lib/discord/commands/registration-link-command";
 import { teamSplitCommand } from "@/lib/discord/commands/team-split-command";
 import type { DiscordCommand } from "@/lib/discord/discord-command";
 
@@ -14,4 +15,5 @@ export const discordCommands: readonly DiscordCommand[] = [
   teamSplitCommand,
   recentWinCommand,
   registerPlayerCommand,
+  registrationLinkCommand,
 ];
