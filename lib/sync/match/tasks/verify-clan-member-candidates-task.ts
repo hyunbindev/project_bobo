@@ -73,11 +73,6 @@ export async function verifyClanMemberCandidatesTask(
         await saveClanMember({
           clan: context.targetClan,
           player,
-          member: {
-            displayName: null,
-            birthYear: null,
-            profileRegistered: false,
-          },
         });
       } catch (error) {
         failedClanMemberSaveCount += 1;

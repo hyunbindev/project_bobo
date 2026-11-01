@@ -37,7 +37,7 @@ export function ClanJoinModal() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           nickname: formData.get("nickname"),
-          displayName: formData.get("displayName"),
+          name: formData.get("name"),
           birthYear: Number(formData.get("birthYear")),
           // BOBO는 Kakao 서버 클랜이므로 현재 가입 폼에서는 플랫폼을 고정한다.
           platform: "kakao",
@@ -120,7 +120,7 @@ export function ClanJoinModal() {
               <Field>
                 <FieldLabel
                   className="text-[11px] font-black tracking-[0.12em]"
-                  htmlFor="displayName"
+                  htmlFor="name"
                 >
                   이름 <b className="text-primary">*</b>
                 </FieldLabel>
@@ -128,8 +128,8 @@ export function ClanJoinModal() {
                   autoComplete="off"
                   className={fieldClassName}
                   disabled={isSubmitting}
-                  id="displayName"
-                  name="displayName"
+                  id="name"
+                  name="name"
                   placeholder="클랜에서 부를 이름"
                   required
                 />
@@ -186,7 +186,7 @@ export function ClanJoinModal() {
             {submitError && <FieldError>{submitError}</FieldError>}
 
             <p className="text-center text-[10px] leading-5 text-muted-foreground/70">
-              등록 시 Battle Ground 닉네임과 클랜 소속 여부를 확인합니다.
+              등록 시 Battle Ground 닉네임의 존재 여부를 확인합니다.
             </p>
           </FieldGroup>
         </form>

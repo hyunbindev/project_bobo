@@ -19,10 +19,13 @@ import {
   saveClanMember,
 } from "@/lib/members/repository";
 import { getMainClanSummary } from "@/lib/clans/service";
+import { registerDiscordAccount } from "@/lib/discord-accounts/service";
+import type { DiscordRegistrationIdentity } from "@/lib/discord-accounts/types";
+import { getDiscordRegistrationParams } from "@/lib/discord-accounts/registration-params";
 
 type RegisterClanMemberInput = {
   nickname: string;
-  displayName: string;
+  name: string;
   birthYear: number;
   platform: PubgPlatform;
 };
@@ -53,20 +56,23 @@ function parseRegisterInput(value: unknown): RegisterClanMemberInput {
 
   if (
     typeof input.nickname !== "string" ||
-    typeof input.displayName !== "string" ||
+    typeof input.name !== "string" ||
     typeof input.birthYear !== "number" ||
     typeof input.platform !== "string"
   ) {
     throw new BadRequestError(
-      "nickname, displayName, birthYear, and platform are required.",
+      "nickname, name, birthYear, and platform are required.",
     );
   }
 
-  const nickname = validateNickname(input.nickname);
-  const displayName = input.displayName.trim();
+  if (!input.nickname.trim() || input.nickname.trim().length > 64 || input.nickname.includes(",")) {
+    throw new ApiError(400, "INVALID_PUBG_NICKNAME", "올바른 PUBG 아이디를 입력해 주세요.");
+  }
+  const nickname = input.nickname.trim();
+  const name = input.name.trim();
 
-  if (!displayName || displayName.length > 30) {
-    throw new BadRequestError("displayName must contain 1 to 30 characters.");
+  if (!name || name.length > 30) {
+    throw new BadRequestError("name must contain 1 to 30 characters.");
   }
 
   const currentYear = new Date().getFullYear();
@@ -89,7 +95,7 @@ function parseRegisterInput(value: unknown): RegisterClanMemberInput {
 
   return {
     nickname,
-    displayName,
+    name,
     birthYear: input.birthYear,
     platform: input.platform,
   };
@@ -119,8 +125,11 @@ function convertPubgApiError(error: PubgApiError): ApiError {
 async function resolvePlayer(
   nickname: string,
   platform: PubgPlatform,
+  { refresh = false }: { refresh?: boolean } = {},
 ): Promise<PubgPlayer> {
-  const storedPlayer = await findStoredPlayerByName(nickname, platform);
+  const storedPlayer = refresh
+    ? null
+    : await findStoredPlayerByName(nickname, platform);
 
   // DB에 클랜 정보까지 있는 플레이어면 PUBG 요청을 소비하지 않고 재사용한다.
   if (storedPlayer?.pubgClanId) {
@@ -162,7 +171,10 @@ async function resolveClan(
   return getClanById(pubgClanId, platform);
 }
 
-async function resolvePlayerAndClan(nickname: string, platform: PubgPlatform) {
+async function resolvePlayerAndClan(
+  nickname: string,
+  platform: PubgPlatform,
+) {
   const player = await resolvePlayer(nickname, platform);
   const clanId = player.clanId;
 
@@ -170,7 +182,8 @@ async function resolvePlayerAndClan(nickname: string, platform: PubgPlatform) {
     throw new BadRequestError("The PUBG player does not belong to a clan.");
   }
 
-  if (process.env.PUBG_CLAN_ID && clanId !== process.env.PUBG_CLAN_ID) {
+  const configuredClanId = process.env.PUBG_CLAN_ID?.trim();
+  if (configuredClanId && clanId !== configuredClanId) {
     throw new BadRequestError("The PUBG player does not belong to this clan.");
   }
 
@@ -178,31 +191,21 @@ async function resolvePlayerAndClan(nickname: string, platform: PubgPlatform) {
   return { player, clan };
 }
 
-export async function registerClanMember(input: unknown) {
+export async function registerClanMember(input: unknown, discordIdentity?: DiscordRegistrationIdentity) {
   const data = parseRegisterInput(input);
-
-  try {
-    const { player, clan } = await resolvePlayerAndClan(
-      data.nickname,
-      data.platform,
-    );
-
-    return saveClanMember({
-      clan,
-      player,
-      member: {
-        displayName: data.displayName,
-        birthYear: data.birthYear,
-        profileRegistered: true,
-      },
-    });
-  } catch (error) {
-    if (error instanceof PubgApiError) {
-      throw convertPubgApiError(error);
+  // TODO: 서명된 링크/세션 연결 후 본인 확인 조건을 다시 활성화한다.
+  // if (!discordIdentity) {
+  //   throw new ApiError(401, "DISCORD_LINK_REQUIRED", "Discord 등록 링크를 통해 접속해 주세요.");
+  // }
+  if (!discordIdentity) {
+    const params = getDiscordRegistrationParams(input);
+    if (!params) {
+      throw new BadRequestError("Discord 사용자 ID와 서버 ID를 확인해 주세요.");
     }
-
-    throw error;
+    // 임시로 URL에서 받은 ID를 사용한다. Discord 이름은 아직 조회하지 않는다.
+    discordIdentity = { ...params, discordDisplayName: "", discordUsername: "" };
   }
+  return registerDiscordAccount({ ...data, ...discordIdentity });
 }
 
 export async function getClanMemberList() {
@@ -255,11 +258,6 @@ export async function discoverClanMember(
     return saveClanMember({
       clan,
       player,
-      member: {
-        displayName: null,
-        birthYear: null,
-        profileRegistered: false,
-      },
     });
   } catch (error) {
     if (error instanceof PubgApiError) {

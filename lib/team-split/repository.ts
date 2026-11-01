@@ -3,8 +3,7 @@ import { and, eq, gt, inArray, lte, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import {
-  clanMemberDiscordAccounts,
-  clanMembers,
+  playerDiscordAccounts,
   matchParticipants,
   players,
   teamSplitResults,
@@ -25,7 +24,7 @@ export async function findPlayerStatsByDiscordUserIds(
 
   return database
     .select({
-      discordUserId: clanMemberDiscordAccounts.discordUserId,
+      discordUserId: playerDiscordAccounts.discordUserId,
       playerId: players.id,
       pubgName: players.name,
       averageDamage: sql<number | null>`
@@ -35,25 +34,20 @@ export async function findPlayerStatsByDiscordUserIds(
         cast(avg(${matchParticipants.teamRank}) as double precision)
       `,
     })
-    .from(clanMemberDiscordAccounts)
-    .innerJoin(
-      clanMembers,
-      eq(clanMemberDiscordAccounts.clanMemberId, clanMembers.id),
-    )
-    .innerJoin(players, eq(clanMembers.playerId, players.id))
+    .from(playerDiscordAccounts)
+    .innerJoin(players, eq(playerDiscordAccounts.playerId, players.id))
     .leftJoin(
       matchParticipants,
       eq(matchParticipants.playerId, players.id),
     )
     .where(
       and(
-        eq(clanMemberDiscordAccounts.discordGuildId, discordGuildId),
-        inArray(clanMemberDiscordAccounts.discordUserId, uniqueUserIds),
-        eq(clanMembers.status, "active"),
+        eq(playerDiscordAccounts.discordGuildId, discordGuildId),
+        inArray(playerDiscordAccounts.discordUserId, uniqueUserIds),
       ),
     )
     .groupBy(
-      clanMemberDiscordAccounts.discordUserId,
+      playerDiscordAccounts.discordUserId,
       players.id,
       players.name,
     );

@@ -3,14 +3,16 @@ import { and, asc, desc, eq, exists, inArray, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { clanMembers, clans, players } from "@/lib/db/schema";
+import { playerRegistrationProfiles } from "@/lib/discord-accounts/profile-query";
 import type { PubgPlatform, PubgPlayer } from "@/lib/pubg/types";
 
-type DatabaseClient = typeof db;
+type DatabaseClient = Omit<typeof db, "$client">;
 
 export async function findActiveClanMembersByClanId(
   pubgClanId: string,
   database: DatabaseClient = db,
 ) {
+  const profiles = playerRegistrationProfiles(database);
   return database
     .select({
       memberId: clanMembers.id,
@@ -18,9 +20,9 @@ export async function findActiveClanMembersByClanId(
       pubgAccountId: players.pubgAccountId,
       nickname: players.name,
       platform: players.platform,
-      displayName: clanMembers.displayName,
-      birthYear: clanMembers.birthYear,
-      profileRegistered: clanMembers.profileRegistered,
+      name: profiles.name,
+      birthYear: profiles.birthYear,
+      profileRegistered: sql<boolean>`${profiles.playerId} is not null`,
       status: clanMembers.status,
       joinedAt: clanMembers.joinedAt,
       lastSyncedAt: players.lastSyncedAt,
@@ -28,6 +30,7 @@ export async function findActiveClanMembersByClanId(
     .from(clanMembers)
     .innerJoin(clans, eq(clanMembers.clanId, clans.id))
     .innerJoin(players, eq(clanMembers.playerId, players.id))
+    .leftJoin(profiles, eq(profiles.playerId, players.id))
     .where(
       and(eq(clans.pubgClanId, pubgClanId), eq(clanMembers.status, "active")),
     )
@@ -38,6 +41,7 @@ export async function findClanMemberDetailByPlayerId(
   playerId: string,
   database: DatabaseClient = db,
 ) {
+  const profiles = playerRegistrationProfiles(database);
   const [member] = await database
     .select({
       playerId: players.id,
@@ -48,10 +52,10 @@ export async function findClanMemberDetailByPlayerId(
       lastSyncedAt: players.lastSyncedAt,
 
       memberId: clanMembers.id,
-      displayName: clanMembers.displayName,
-      birthYear: clanMembers.birthYear,
+      name: profiles.name,
+      birthYear: profiles.birthYear,
       status: clanMembers.status,
-      profileRegistered: clanMembers.profileRegistered,
+      profileRegistered: sql<boolean>`${profiles.playerId} is not null`,
       joinedAt: clanMembers.joinedAt,
       lastUpdateAt: clanMembers.updatedAt,
 
@@ -64,6 +68,7 @@ export async function findClanMemberDetailByPlayerId(
     .from(players)
     .innerJoin(clanMembers, eq(clanMembers.playerId, players.id))
     .innerJoin(clans, eq(clanMembers.clanId, clans.id))
+    .leftJoin(profiles, eq(profiles.playerId, players.id))
     .where(and(eq(players.id, playerId), eq(clanMembers.status, "active")))
     .orderBy(desc(clanMembers.joinedAt))
     .limit(1);
@@ -252,33 +257,15 @@ export async function saveClanMember(
       })
       .returning();
 
-    const memberUpdate = input.member.profileRegistered
-      ? {
-          displayName: input.member.displayName,
-          birthYear: input.member.birthYear,
-          profileRegistered: true,
-          status: "active" as const,
-          leftAt: null,
-          updatedAt: now,
-        }
-      : {
-          status: "active" as const,
-          leftAt: null,
-          updatedAt: now,
-        };
-
     const [savedMember] = await tx
       .insert(clanMembers)
       .values({
         clanId: savedClan.id,
         playerId: savedPlayer.id,
-        displayName: input.member.displayName,
-        birthYear: input.member.birthYear,
-        profileRegistered: input.member.profileRegistered,
       })
       .onConflictDoUpdate({
         target: [clanMembers.clanId, clanMembers.playerId],
-        set: memberUpdate,
+        set: { status: "active", leftAt: null, updatedAt: now },
       })
       .returning();
 

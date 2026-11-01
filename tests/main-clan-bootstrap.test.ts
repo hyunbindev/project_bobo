@@ -69,12 +69,14 @@ test("main clan bootstrap initializes once, validates upstream data, and rolls b
       );
       create temp table clan_members (
         id uuid primary key default gen_random_uuid(), clan_id uuid not null references clans(id),
-        player_id uuid not null references players(id), display_name text, birth_year integer,
-        status text not null default 'active', profile_registered boolean not null default false,
+        player_id uuid not null references players(id),
+        status text not null default 'active',
         joined_at timestamptz not null default now(), left_at timestamptz,
         created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
-        unique(clan_id, player_id),
-        check (not profile_registered or (display_name is not null and birth_year is not null))
+        unique(clan_id, player_id)
+      );
+      create temp table player_discord_accounts (
+        id uuid, player_id uuid, discord_guild_id text
       );
     `);
 
@@ -98,8 +100,9 @@ test("main clan bootstrap initializes once, validates upstream data, and rolls b
       assert.equal(requests[0].pathname, "/shards/kakao/players");
       assert.equal(requests[0].searchParams.get("filter[playerIds]"), accountId);
       assert.equal(requests[1].pathname, `/shards/kakao/clans/${clanId}`);
-      const member = (await client.query("select status, profile_registered, display_name, birth_year from clan_members")).rows[0];
-      assert.deepEqual(member, { status: "active", profile_registered: false, display_name: null, birth_year: null });
+      const member = (await client.query("select status from clan_members")).rows[0];
+      assert.deepEqual(member, { status: "active" });
+      assert.equal((await client.query("select count(*)::int as count from player_discord_accounts")).rows[0].count, 0);
 
       delete process.env.PUBG_CLAN_MASTER_ID;
       delete process.env.PUBG_API_KEY;

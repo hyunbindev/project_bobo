@@ -57,6 +57,13 @@
       "when": 1788072851145,
       "tag": "0007_optimal_jackpot",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793537866316,
+      "tag": "0008_move_clan_profiles_to_discord",
+      "breakpoints": true
     }
   ]
 }

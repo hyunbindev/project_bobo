@@ -16,7 +16,7 @@ export type ClanMembersTableItem = {
   memberId: string;
   playerId: string;
   nickname: string;
-  displayName: string | null;
+  name: string | null;
   platform: string;
   profileRegistered: boolean;
   status: string;
@@ -77,7 +77,7 @@ export function ClanMembersTable({
                       {member.nickname}
                     </p>
                     <p className="mt-1 truncate text-[10px] font-bold tracking-[0.12em] text-muted-foreground">
-                      {member.displayName ?? "UNREGISTERED"}
+                      {member.name ?? "UNREGISTERED"}
                     </p>
                 </TableCell>
 

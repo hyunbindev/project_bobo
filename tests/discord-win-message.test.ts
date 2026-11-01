@@ -143,19 +143,19 @@ test("연동 정보는 고정 PUBG ID·플랫폼·발송 서버로 조회한다"
     await client.query(`
       create temp table players (id uuid, pubg_account_id text, platform text) on commit drop;
       create temp table clan_members (id uuid, player_id uuid, status text) on commit drop;
-      create temp table clan_member_discord_accounts (clan_member_id uuid, discord_guild_id text, discord_user_id text, discord_display_name text) on commit drop;
+      create temp table player_discord_accounts (player_id uuid, discord_guild_id text, discord_user_id text, discord_display_name text) on commit drop;
     `);
     const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
     for (const [n, account, platform, status, guild] of [
       [1, "account.a", "kakao", "active", "guild-a"],
       [2, "account.b", "kakao", "active", "guild-a"],
       [3, "account.a", "steam", "active", "guild-a"],
-      [4, "account.a", "kakao", "left", "guild-a"],
+      [4, "account.left", "kakao", "left", "guild-a"],
       [5, "account.a", "kakao", "active", "guild-b"],
     ] as const) {
       await client.query("insert into players values ($1,$2,$3)", [uuid(n), account, platform]);
       await client.query("insert into clan_members values ($1,$1,$2)", [uuid(n), status]);
-      await client.query("insert into clan_member_discord_accounts values ($1,$2,$3,$4)", [uuid(n), guild, `user${n}`, `Stored${n}`]);
+      await client.query("insert into player_discord_accounts values ($1,$2,$3,$4)", [uuid(n), guild, `user${n}`, `Stored${n}`]);
     }
     const fetched: string[] = [];
     const guild = { id: "guild-a", members: { fetch: async (id: string) => {
@@ -170,6 +170,10 @@ test("연동 정보는 고정 PUBG ID·플랫폼·발송 서버로 조회한다"
     assert.equal(profiles.get("account.b")?.displayName, "Stored2");
     assert.equal(profiles.get("account.b")?.userId, "user2");
     assert.equal(profiles.get("participant-a"), undefined);
+    const departed = await loadWinMatchProfiles({ ...match, members: [
+      { ...match.members[0], pubgAccountId: "account.left" },
+    ] }, guild);
+    assert.equal(departed.get("account.left")?.userId, "user4");
   } finally {
     await client.query("rollback");
     await client.end();

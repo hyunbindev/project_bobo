@@ -117,7 +117,7 @@ export default async function MemberDetailPage({
                 </h1>
               </div>
               <p className="mt-4 text-sm font-semibold text-muted-foreground">
-                {member.displayName ?? "미등록"} · [{member.clanTag}] ·{" "}
+                {member.name ?? "미등록"} · [{member.clanTag}] ·{" "}
                 {member.platform.toUpperCase()}
               </p>
               <p className="mt-2 max-w-xl truncate text-[10px] text-muted-foreground/60">
