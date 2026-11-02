@@ -18,9 +18,8 @@ export function DiscordRegistration({ currentYear, discordParams }: {
   if (result) {
     return (
       <DiscordRegistrationComplete
-        playerName={result.player.name}
+        name={result.name}
         nicknameUpdate={result.nicknameUpdate}
-        discordGuildId={discordParams?.discordGuildId ?? null}
       />
     );
   }
