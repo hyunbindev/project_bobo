@@ -40,11 +40,11 @@ export const registrationLinkCommand: DiscordCommand = {
 
     const button = new ButtonBuilder()
       .setStyle(ButtonStyle.Link)
-      .setLabel("BOBO 클랜과 함께하기")
+      .setLabel("내 닉네임 등록하기")
       .setURL(url);
 
     await interaction.reply({
-      content: "아래 버튼을 눌러 BOBO 클랜과 함께해주세요!",
+      content: "**BOBO에 오신 걸 환영해요 👋**\n\n함께 게임할 때 서로 알아볼 수 있도록\n배그 닉네임과 이름을 알려주세요.",
       components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button)],
       flags: MessageFlags.Ephemeral,
     });

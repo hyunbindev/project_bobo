@@ -26,6 +26,11 @@ export const playerDiscordAccounts = pgTable(
     // 사용자가 등록한 이름과 Discord에서 조회한 현재 표시 이름은 별도로 관리한다.
     name: text("name").notNull(),
     birthYear: integer("birth_year").notNull(),
+    nicknameStatus: text("nickname_status", { enum: ["pending", "completed", "failed"] })
+      .default("pending")
+      .notNull(),
+    lastAppliedNickname: text("last_applied_nickname"),
+    nicknameError: text("nickname_error"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -53,6 +58,7 @@ export const playerDiscordAccounts = pgTable(
     ),
     check("player_discord_name_not_blank", sql`length(trim(${table.name})) > 0`),
     check("player_discord_birth_year_range", sql`${table.birthYear} BETWEEN 1900 AND 2100`),
+    check("player_discord_nickname_status", sql`${table.nicknameStatus} IN ('pending', 'completed', 'failed')`),
   ],
 );
 

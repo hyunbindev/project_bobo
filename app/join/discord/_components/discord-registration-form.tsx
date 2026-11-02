@@ -1,8 +1,7 @@
 "use client";
 
 import { useRef, useState, type FormEvent } from "react";
-import { ArrowRight, CalendarDays, CircleCheck, Gamepad2, LoaderCircle } from "lucide-react";
-import Link from "next/link";
+import { ArrowRight, CalendarDays, Gamepad2, LoaderCircle } from "lucide-react";
 import type { DiscordNicknameUpdate, DiscordRegistrationParams } from "@/lib/discord-accounts/types";
 
 import {
@@ -18,6 +17,11 @@ const inputClassName =
 
 type RegisteredPlayer = { id: string; name: string };
 
+export type DiscordRegistrationResult = {
+  player: RegisteredPlayer;
+  nicknameUpdate: DiscordNicknameUpdate | null;
+};
+
 type RegistrationResponse = {
   data?: { player?: RegisteredPlayer; discordNicknameUpdate?: DiscordNicknameUpdate };
   error?: { code?: string; message?: string };
@@ -32,15 +36,14 @@ const registrationErrorMessages: Record<string, string> = {
   BAD_REQUEST: "입력한 닉네임, 이름과 출생연도를 확인해 주세요.",
 };
 
-export function DiscordRegistrationForm({ currentYear, discordParams = null }: {
+export function DiscordRegistrationForm({ currentYear, discordParams = null, onComplete }: {
   currentYear: number;
+  onComplete: (result: DiscordRegistrationResult) => void;
   discordParams?: DiscordRegistrationParams | null;
 }) {
   const [birthYear, setBirthYear] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [registeredPlayer, setRegisteredPlayer] = useState<RegisteredPlayer | null>(null);
-  const [nicknameUpdate, setNicknameUpdate] = useState<DiscordNicknameUpdate | null>(null);
   const submissionInFlight = useRef(false);
   const birthYears = Array.from({ length: currentYear - 1900 + 1 }, (_, index) => {
     const year = currentYear - index;
@@ -110,47 +113,13 @@ export function DiscordRegistrationForm({ currentYear, discordParams = null }: {
         return;
       }
 
-      setNicknameUpdate(result.data?.discordNicknameUpdate ?? null);
-      setRegisteredPlayer(player);
+      onComplete({ player, nicknameUpdate: result.data?.discordNicknameUpdate ?? null });
     } catch {
       setSubmitError("등록 결과를 확인하지 못했습니다. 관리자에게 문의주세요.");
     } finally {
       submissionInFlight.current = false;
       setIsSubmitting(false);
     }
-  }
-
-  if (registeredPlayer) {
-    return (
-      <section
-        aria-label="클랜원 등록 완료"
-        className="rounded-sm border border-border border-t-2 border-t-primary bg-surface-elevated px-5 py-8 text-center shadow-[0_24px_80px_rgba(0,0,0,.35)] sm:px-7"
-        role="status"
-      >
-        <CircleCheck aria-hidden="true" className="mx-auto size-10 text-primary" />
-        <h2 className="mt-5 text-2xl font-black tracking-tight">BOBO 클랜에 오신 것을 환영합니다!</h2>
-        <p className="mt-3 break-all text-lg font-black text-primary">{registeredPlayer.name}</p>
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          등록이 완료되었습니다. 함께 즐거운 배틀그라운드를 만들어 가요.
-        </p>
-        {nicknameUpdate?.status === "updated" && (
-          <p className="mt-4 break-all text-sm leading-6 text-muted-foreground">
-            Discord 서버 닉네임이 <strong className="text-primary">{nicknameUpdate.nickname}</strong>(으)로 변경되었습니다.
-          </p>
-        )}
-        {nicknameUpdate?.status === "failed" && (
-          <p role="alert" className="mt-4 rounded-sm border border-destructive/25 bg-destructive/5 px-3 py-2.5 text-left text-xs leading-6 text-destructive">
-            닉네임 변경에 실패했습니다. 관리자에게 문의해 주세요.
-          </p>
-        )}
-        <Link
-          className="mt-7 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-sm bg-primary px-4 py-3 text-sm font-black text-primary-foreground transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
-          href="/"
-        >
-          메인으로 가기 <ArrowRight aria-hidden="true" className="size-4" />
-        </Link>
-      </section>
-    );
   }
 
   return (
@@ -164,6 +133,17 @@ export function DiscordRegistrationForm({ currentYear, discordParams = null }: {
         className="px-5 py-6 sm:px-7 sm:py-7"
         onSubmit={handleSubmit}
       >
+        <div className="mb-7">
+          <h2 className="text-xl font-black tracking-tight">
+            BOBO에 오신 걸 환영해요 👋
+          </h2>
+          <p className="mt-3 text-sm leading-6 text-muted-foreground">
+            함께 게임할 때 서로 알아볼 수 있도록
+            <br />
+            배그 닉네임과 이름을 알려주세요.
+          </p>
+        </div>
+
         <fieldset className="min-w-0 space-y-5" disabled={isSubmitting}>
           <legend className="sr-only">클랜원 등록 정보</legend>
 
@@ -197,7 +177,7 @@ export function DiscordRegistrationForm({ currentYear, discordParams = null }: {
               className="text-[11px] leading-5 text-muted-foreground"
               id="registration-pubg-hint"
             >
-              카카오 서버에서 사용하는 PUBG 닉네임을 입력해 주세요.
+              배틀그라운드 닉네임을 입력해 주세요.
             </p>
           </div>
 
@@ -262,6 +242,10 @@ export function DiscordRegistrationForm({ currentYear, discordParams = null }: {
           </div>
         </fieldset>
 
+        <p className="mt-5 text-xs leading-6 text-muted-foreground">
+          입력한 이름·출생연도 및 계정 연동 정보는 해당 Discord 서버 탈퇴 시 삭제됩니다.
+        </p>
+
         {submitError && (
           <p
             className="mt-5 rounded-sm border border-destructive/25 bg-destructive/5 px-3 py-2.5 text-xs leading-6 text-destructive"
@@ -284,7 +268,7 @@ export function DiscordRegistrationForm({ currentYear, discordParams = null }: {
             <ArrowRight aria-hidden="true" className="size-4" />
           )}
           <span aria-live="polite">
-            {isSubmitting ? "계정 확인 및 등록 중…" : "클랜원 등록"}
+            {isSubmitting ? "계정 확인 및 등록 중…" : "내 닉네임 등록하기"}
           </span>
         </button>
       </form>

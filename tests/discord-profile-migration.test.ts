@@ -20,7 +20,9 @@ test("Discord 프로필 이관은 데이터와 연동을 보존하고 불명확�
   const { syncPlayersFromPubg, findActiveClanMembersByClanId, findClanMemberDetailByPlayerId } = await import("../lib/members/repository");
   const { findDiscordAccountsForPlayers, linkDiscordAccount } = await import("../lib/discord-accounts/repository");
   alias.mock.restore();
-  const statements = (await readFile("drizzle/0008_move_clan_profiles_to_discord.sql", "utf8"))
+  const statements = (await readFile("drizzle/0008_move_clan_profiles_to_discord.sql", "utf8")
+    + "\n--> statement-breakpoint\n"
+    + await readFile("drizzle/0009_discord_nickname_sync.sql", "utf8"))
     .split("--> statement-breakpoint").filter((statement) => statement.trim());
   const client = new Client({ connectionString: process.env.TEST_DATABASE_URL });
   await client.connect();
@@ -94,6 +96,9 @@ test("Discord 프로필 이관은 데이터와 연동을 보존하고 불명확�
         assert.equal(row.name, "Human Name");
         assert.equal(row.discord_display_name, "Server Nick");
         assert.equal(row.birth_year, 1998);
+        assert.equal(row.nickname_status, "pending");
+        assert.equal(row.last_applied_nickname, null);
+        assert.equal(row.nickname_error, null);
         assert.equal(row.created_at.toISOString(), "2025-01-01T00:00:00.000Z");
         assert.equal(row.updated_at.toISOString(), "2025-02-01T00:00:00.000Z");
         const columns = (await client.query("select attname from pg_attribute where attrelid='clan_members'::regclass and attnum>0 and not attisdropped")).rows.map((row) => row.attname);

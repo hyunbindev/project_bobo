@@ -1,6 +1,7 @@
 import type { Logger } from "pino";
 
 import { syncPlayersFromPubg } from "@/lib/members/repository";
+import { syncDiscordNicknames } from "@/lib/discord-accounts/service";
 import { MATCH_SYNC_PLATFORM } from "@/lib/sync/match/match-sync-config";
 import type {
   MatchSyncContext,
@@ -25,6 +26,13 @@ export async function discoverMemberMatchIdsTask(
   );
 
   await syncPlayersFromPubg(players);
+
+  // 플레이어 저장이 완료된 뒤 실행하며 Discord 장애가 경기 수집을 막지 않게 한다.
+  try {
+    await syncDiscordNicknames(players.map((player) => player.accountId), MATCH_SYNC_PLATFORM);
+  } catch (error) {
+    log.error({ err: error, event: "match_sync.discord_nickname_sync_failed" }, "Failed to sync Discord nicknames");
+  }
 
   const matchIds = new Set<string>();
 

@@ -3,7 +3,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { ConflictError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
 import { playerDiscordAccounts, players } from "@/lib/db/schema";
-import type { LinkDiscordAccountInput } from "@/lib/discord-accounts/types";
+import type { DiscordNicknameTarget, LinkDiscordAccountInput } from "@/lib/discord-accounts/types";
 import type { PubgPlatform } from "@/lib/pubg/types";
 
 type DatabaseClient = Omit<typeof db, "$client">;
@@ -14,11 +14,53 @@ export async function updateDiscordAccountNames(
   names: { discordDisplayName: string; discordUsername: string },
 ) {
   const [account] = await db.update(playerDiscordAccounts)
-    .set({ ...names, updatedAt: new Date() })
+    .set({
+      ...names,
+      nicknameStatus: "completed",
+      lastAppliedNickname: names.discordDisplayName,
+      nicknameError: null,
+      updatedAt: new Date(),
+    })
     .where(eq(playerDiscordAccounts.id, accountId))
     .returning();
   if (!account) throw new Error("Registered Discord account no longer exists.");
   return account;
+}
+
+export async function updateDiscordNicknameStatus(
+  accountId: string,
+  status: "pending" | "failed",
+  error: string | null = null,
+) {
+  const [account] = await db.update(playerDiscordAccounts)
+    .set({ nicknameStatus: status, nicknameError: error, updatedAt: new Date() })
+    .where(eq(playerDiscordAccounts.id, accountId))
+    .returning();
+  if (!account) throw new Error("Registered Discord account no longer exists.");
+}
+
+/** 이번에 조회한 플레이어에 연결된 각 Discord 서버의 등록 정보를 가져온다. */
+export async function findDiscordNicknameTargets(
+  accountIds: string[],
+  platform: PubgPlatform,
+  database: DatabaseClient = db,
+): Promise<DiscordNicknameTarget[]> {
+  if (accountIds.length === 0) return [];
+  return database.select({
+    id: playerDiscordAccounts.id,
+    discordGuildId: playerDiscordAccounts.discordGuildId,
+    discordUserId: playerDiscordAccounts.discordUserId,
+    name: playerDiscordAccounts.name,
+    birthYear: playerDiscordAccounts.birthYear,
+    nicknameStatus: playerDiscordAccounts.nicknameStatus,
+    lastAppliedNickname: playerDiscordAccounts.lastAppliedNickname,
+    pubgName: players.name,
+  }).from(playerDiscordAccounts)
+    .innerJoin(players, eq(players.id, playerDiscordAccounts.playerId))
+    .where(and(
+      inArray(players.pubgAccountId, [...new Set(accountIds)]),
+      eq(players.platform, platform),
+    ));
 }
 
 /** 클랜 소속과 관계없이 플레이어·서버 기준으로 연동 계정을 찾는다. */

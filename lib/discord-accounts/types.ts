@@ -1,4 +1,10 @@
 import type { PubgPlatform, PubgPlayer } from "@/lib/pubg/types";
+import type { PlayerDiscordAccount } from "@/lib/db/schema/discord";
+
+export type DiscordNicknameTarget = Pick<PlayerDiscordAccount,
+  "id" | "discordGuildId" | "discordUserId" | "name" | "birthYear" |
+  "nicknameStatus" | "lastAppliedNickname"
+> & { pubgName: string };
 
 export type DiscordNicknameUpdate =
   | { status: "updated"; nickname: string }

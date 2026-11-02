@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { ArrowLeft, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 
-import { DiscordRegistrationForm } from "@/components/members/discord-registration-form";
+import { DiscordRegistration } from "./_components/discord-registration";
 import { getDiscordRegistrationParams } from "@/lib/discord-accounts/registration-params";
 
 export const metadata: Metadata = {
@@ -59,7 +59,7 @@ export default async function DiscordRegistrationPage({ searchParams }: {
           </h1>
         </div>
 
-        <DiscordRegistrationForm
+        <DiscordRegistration
           currentYear={new Date().getFullYear()}
           discordParams={discordParams}
         />

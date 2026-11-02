@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import Module, { createRequire } from "node:module";
 import { test } from "node:test";
+import { PgDialect } from "drizzle-orm/pg-core";
+import type { SQL } from "drizzle-orm";
 
 test("Discord 등록은 클랜 가입 행을 만들지 않고 프로필을 저장한다", async (context) => {
   const envKeys = ["DATABASE_URL", "PUBG_API_KEY", "PUBG_CLAN_ID", "DISCORD_BOT_TOKEN"] as const;
@@ -83,7 +85,15 @@ test("Discord 등록은 클랜 가입 행을 만들지 않고 프로필을 저�
       assert.equal(fetchMock.mock.calls.length, 0);
     });
 
-    await context.test("존재하지 않는 계정은 저장하지 않는다", async (subtest) => {
+    // 이후 등록 테스트는 별도 지정하지 않으면 DB에 플레이어가 없는 상태로 실행한다.
+    const missingPlayerQuery = {
+      from: () => missingPlayerQuery,
+      where: () => missingPlayerQuery,
+      limit: async () => [],
+    };
+    context.mock.method(db, "select", () => missingPlayerQuery);
+
+    await context.test("DB와 API 모두에 없는 계정은 저장하지 않는다", async (subtest) => {
       const fetchMock = subtest.mock.method(globalThis, "fetch", async () => Response.json({ data: [] }));
       const response = await request();
       assert.equal(response.status, 404);
@@ -123,15 +133,16 @@ test("Discord 등록은 클랜 가입 행을 만들지 않고 프로필을 저�
       assert.equal((await unavailable.json()).error.code, "PUBG_API_ERROR");
     });
 
-    for (const scenario of [
+    for (const source of ["db", "api"] as const) for (const scenario of [
       { name: "메인 클랜 소속", clanId: "clan.bobo", nicknameDenied: false },
       { name: "다른 클랜 소속", clanId: "clan.other", nicknameDenied: false },
       { name: "클랜 미가입", clanId: null, nicknameDenied: false },
       { name: "닉네임 변경 권한 없음", clanId: null, nicknameDenied: true },
-    ]) await context.test(`${scenario.name} 계정도 등록하고 실제 소속은 보존한다`, async (subtest) => {
+    ]) await context.test(`${source}: ${scenario.name} 계정도 등록하고 실제 소속은 보존한다`, async (subtest) => {
       const fetchMock = subtest.mock.method(globalThis, "fetch", async (
         url: string | URL | Request, options?: RequestInit,
       ) => {
+        assert.equal(source, "api", "DB에 있는 계정은 PUBG API를 호출하지 않는다");
         const requested = new URL(String(url));
         assert.equal(requested.pathname, "/shards/kakao/players");
         assert.equal(requested.searchParams.get("filter[playerNames]"), "PUBG_NAME");
@@ -143,6 +154,23 @@ test("Discord 등록은 클랜 가입 행을 만들지 않고 프로필을 저�
       };
 
       const { players, clanMembers, playerDiscordAccounts } = await import("../lib/db/schema");
+      const lookupQuery = {
+        from(table: unknown) {
+          assert.equal(table, players);
+          return lookupQuery;
+        },
+        where(condition: SQL) {
+          assert.deepEqual(new PgDialect().sqlToQuery(condition).params, ["PUBG_NAME", "kakao"]);
+          return lookupQuery;
+        },
+        limit: async () => source === "db" ? [{
+          pubgAccountId: "account.pubg-test",
+          name: "PUBG_NAME",
+          platform: "kakao",
+          pubgClanId: scenario.clanId,
+        }] : [],
+      };
+      const lookupMock = subtest.mock.method(db, "select", () => lookupQuery);
       const inserted = new Map<unknown, Record<string, unknown>>();
       const tx = {
         select: () => query,
@@ -193,16 +221,22 @@ test("Discord 등록은 클랜 가입 행을 만들지 않고 프로필을 저�
       assert.equal(inserted.get(playerDiscordAccounts)?.name, "Member");
       assert.equal(inserted.get(playerDiscordAccounts)?.discordDisplayName, "Discord Member");
       assert.equal(inserted.get(playerDiscordAccounts)?.birthYear, 1998);
-      assert.equal(fetchMock.mock.calls.length, 1);
+      assert.equal(lookupMock.mock.calls.length, 1);
+      assert.equal(fetchMock.mock.calls.length, source === "db" ? 0 : 1);
       assert.equal(saveMock.mock.calls.length, 1);
       assert.equal(nicknameMock.mock.calls.length, 1);
       assert.equal(data.discordNicknameUpdate.status, scenario.nicknameDenied ? "failed" : "updated");
       if (scenario.nicknameDenied) {
         assert.match(data.discordNicknameUpdate.message, /권한/);
-        assert.equal(updatedNames, undefined);
+        assert.equal(updatedNames?.nicknameStatus, "failed");
+        assert.match(String(updatedNames?.nicknameError), /권한/);
+        assert.equal(updatedNames?.lastAppliedNickname, undefined);
       } else {
         assert.equal(updatedNames?.discordDisplayName, "Member 98 / PUBG_NAME");
         assert.equal(updatedNames?.discordUsername, "discord_member");
+        assert.equal(updatedNames?.nicknameStatus, "completed");
+        assert.equal(updatedNames?.lastAppliedNickname, "Member 98 / PUBG_NAME");
+        assert.equal(updatedNames?.nicknameError, null);
       }
     });
   } finally {
