@@ -1,17 +1,10 @@
 -- Run with the Drizzle migrator: all statements must share one transaction.
--- Refuse ambiguous or unlinked profiles rather than discard personal data.
+-- Transfer linked profiles only. Unlinked name/birth-year data is intentionally discarded.
+-- Keep rejecting incomplete or ambiguous Discord links.
 LOCK TABLE "clan_members", "clan_member_discord_accounts" IN ACCESS EXCLUSIVE MODE;
 --> statement-breakpoint
 DO $$
 BEGIN
-  IF EXISTS (
-    SELECT 1 FROM "clan_members" m
-    WHERE (m."profile_registered" OR m."display_name" IS NOT NULL OR m."birth_year" IS NOT NULL)
-      AND NOT EXISTS (SELECT 1 FROM "clan_member_discord_accounts" d WHERE d."clan_member_id" = m."id")
-  ) THEN
-    RAISE EXCEPTION 'Unlinked clan member profiles exist. Link or export these profiles before migration.';
-  END IF;
-
   IF EXISTS (
     SELECT 1 FROM "clan_member_discord_accounts" d
     LEFT JOIN "clan_members" m ON m."id" = d."clan_member_id"

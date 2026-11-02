@@ -144,8 +144,31 @@ test("Discord 프로필 이관은 데이터와 연동을 보존하고 불명확�
       });
     });
 
+    for (const allUnlinked of [false, true]) await context.test(
+      `${allUnlinked ? "전체" : "일부"} 미연동 회원의 프로필만 버리고 회원·플레이어 행은 유지한다`, async () => {
+        await withFixture(async (transaction) => {
+          await client.query("update clan_members set display_name='Unlinked Name', birth_year=2001, profile_registered=true where id=$1", [uuid(11)]);
+          if (allUnlinked) await client.query("delete from clan_member_discord_accounts");
+          const membersBefore = (await client.query("select id, clan_id, player_id, status from clan_members order by id")).rows;
+          const playersBefore = (await client.query("select * from players order by id")).rows;
+          await migrate();
+          assert.deepEqual((await client.query("select id, clan_id, player_id, status from clan_members order by id")).rows, membersBefore);
+          assert.deepEqual((await client.query("select * from players order by id")).rows, playersBefore);
+          const accounts = (await client.query("select player_id, name, birth_year from player_discord_accounts")).rows;
+          assert.deepEqual(accounts, allUnlinked ? [] : [{ player_id: uuid(1), name: "Human Name", birth_year: 1998 }]);
+          const columns = (await client.query("select attname from pg_attribute where attrelid='clan_members'::regclass and attnum>0 and not attisdropped")).rows.map((row) => row.attname);
+          for (const removed of ["display_name", "birth_year", "profile_registered"]) assert.ok(!columns.includes(removed));
+          const members = await findActiveClanMembersByClanId("clan.bobo", transaction);
+          assert.equal(members.length, 2);
+          const unlinked = members.find((member) => member.playerId === uuid(2));
+          assert.equal(unlinked?.name, null);
+          assert.equal(unlinked?.birthYear, null);
+          assert.equal(unlinked?.profileRegistered, false);
+        });
+      },
+    );
+
     for (const scenario of [
-      { name: "미연동 프로필", prepare: "delete from clan_member_discord_accounts", error: /Unlinked clan member profiles/ },
       { name: "불완전한 프로필", prepare: "update clan_members set profile_registered=false, birth_year=null", error: /missing or invalid/ },
       { name: "플레이어·서버 중복 연동", prepare: `
         insert into clan_members(id,clan_id,player_id,display_name,birth_year,profile_registered)
