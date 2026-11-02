@@ -20,6 +20,7 @@ export function DiscordRegistration({ currentYear, discordParams }: {
       <DiscordRegistrationComplete
         playerName={result.player.name}
         nicknameUpdate={result.nicknameUpdate}
+        discordGuildId={discordParams?.discordGuildId ?? null}
       />
     );
   }

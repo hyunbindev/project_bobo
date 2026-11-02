@@ -3,9 +3,10 @@ import Link from "next/link";
 
 import type { DiscordNicknameUpdate } from "@/lib/discord-accounts/types";
 
-export function DiscordRegistrationComplete({ playerName, nicknameUpdate }: {
+export function DiscordRegistrationComplete({ playerName, nicknameUpdate, discordGuildId }: {
   playerName: string;
   nicknameUpdate: DiscordNicknameUpdate | null;
+  discordGuildId: string | null;
 }) {
   return (
     <section
@@ -26,12 +27,22 @@ export function DiscordRegistrationComplete({ playerName, nicknameUpdate }: {
           별명 변경에 실패했습니다. 관리자에게 문의해 주세요.
         </p>
       )}
-      <Link
-        className="mt-7 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-sm bg-primary px-4 py-3 text-sm font-black text-primary-foreground transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
-        href="/"
-      >
-        메인으로 가기 <ArrowRight aria-hidden="true" className="size-4" />
-      </Link>
+      <div className="mt-7 flex flex-col gap-3">
+        {discordGuildId && (
+          <a
+            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-sm bg-primary px-4 py-3 text-sm font-black text-primary-foreground transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+            href={`https://discord.com/channels/${discordGuildId}`}
+          >
+            Discord로 돌아가기 <ArrowRight aria-hidden="true" className="size-4" />
+          </a>
+        )}
+        <Link
+          className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-sm border border-border px-4 py-3 text-sm font-bold transition-colors hover:border-primary/50 hover:bg-primary/10 hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+          href="/"
+        >
+          홈페이지 둘러보기 <ArrowRight aria-hidden="true" className="size-4" />
+        </Link>
+      </div>
     </section>
   );
 }
