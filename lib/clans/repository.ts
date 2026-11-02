@@ -1,9 +1,10 @@
-import { and, count, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq, exists } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { clanMembers, clans } from "@/lib/db/schema";
+import { clanMembers, clans, playerDiscordAccounts } from "@/lib/db/schema";
 
 export async function findMainClanSummary(pubgClanId?: string) {
+  const guildId = process.env.DISCORD_GUILD_ID?.trim();
   const [clan] = await db
     .select({
       id: clans.id,
@@ -22,7 +23,10 @@ export async function findMainClanSummary(pubgClanId?: string) {
       and(
         eq(clanMembers.clanId, clans.id),
         eq(clanMembers.status, "active"),
-        eq(clanMembers.profileRegistered, true),
+        exists(db.select({ id: playerDiscordAccounts.id }).from(playerDiscordAccounts).where(and(
+          eq(playerDiscordAccounts.playerId, clanMembers.playerId),
+          guildId ? eq(playerDiscordAccounts.discordGuildId, guildId) : undefined,
+        ))),
       ),
     )
     .where(pubgClanId ? eq(clans.pubgClanId, pubgClanId) : undefined)

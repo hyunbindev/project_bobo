@@ -23,6 +23,14 @@ export const registerPlayerCommand: DiscordCommand = {
         .setMaxLength(64)
         .setRequired(true),
     )
+    .addStringOption((option) =>
+      option.setName("name")
+        .setNameLocalizations({ ko: "이름" })
+        .setDescription("Name to use in the clan")
+        .setDescriptionLocalizations({ ko: "클랜에서 부를 이름" })
+        .setMaxLength(30)
+        .setRequired(true),
+    )
     .addIntegerOption((option) =>
       option
         .setName("birth-year")
@@ -54,6 +62,7 @@ export const registerPlayerCommand: DiscordCommand = {
     try {
       const result = await registerDiscordAccount({
         nickname,
+        name: interaction.options.getString("name", true),
         birthYear,
         platform: "kakao",
         discordGuildId: guild.id,
@@ -65,6 +74,9 @@ export const registerPlayerCommand: DiscordCommand = {
       await interaction.editReply({
         content: [
           ` **${result.pubgName}** 등록이 완료되었습니다.`,
+          result.discordNicknameUpdate.status === "updated"
+            ? `서버 닉네임: ${result.discordNicknameUpdate.nickname}`
+            : `닉네임은 적용하지 못했습니다. ${result.discordNicknameUpdate.message}`,
         ].join("\n"),
       });
     } catch (error) {

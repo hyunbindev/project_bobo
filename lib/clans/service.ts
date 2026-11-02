@@ -38,7 +38,6 @@ export async function ensureMainClanSummary(platform: PubgPlatform) {
   await saveClanMember({
     clan,
     player: master,
-    member: { displayName: null, birthYear: null, profileRegistered: false },
   });
 
   const summary = await findMainClanSummary(clan.id);
