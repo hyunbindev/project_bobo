@@ -18,6 +18,7 @@ const inputClassName =
 type RegisteredPlayer = { id: string; name: string };
 
 export type DiscordRegistrationResult = {
+  name: string;
   player: RegisteredPlayer;
   nicknameUpdate: DiscordNicknameUpdate | null;
 };
@@ -113,7 +114,7 @@ export function DiscordRegistrationForm({ currentYear, discordParams = null, onC
         return;
       }
 
-      onComplete({ player, nicknameUpdate: result.data?.discordNicknameUpdate ?? null });
+      onComplete({ name: input.name, player, nicknameUpdate: result.data?.discordNicknameUpdate ?? null });
     } catch {
       setSubmitError("등록 결과를 확인하지 못했습니다. 관리자에게 문의주세요.");
     } finally {
