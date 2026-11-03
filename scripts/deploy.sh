@@ -28,7 +28,9 @@ deploy_observability() {
   compose pull loki alloy grafana
   compose run --rm --no-deps loki -config.file=/etc/loki/config.yaml -verify-config=true
   compose run --rm --no-deps alloy validate /etc/alloy/config.alloy
-  if ! compose up -d --no-deps --wait --wait-timeout 120 loki alloy grafana; then
+  # Bind-mounted config content is not part of Compose's container config hash.
+  # Recreate collectors so config-only deployments also reopen the current files.
+  if ! compose up -d --no-deps --force-recreate --wait --wait-timeout 120 loki alloy grafana; then
     compose logs --tail=100 loki alloy grafana
     return 1
   fi

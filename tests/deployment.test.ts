@@ -84,7 +84,7 @@ test("observability deployment validates its configuration without touching app 
     "pull loki alloy grafana",
     "run --rm --no-deps loki -config.file=/etc/loki/config.yaml -verify-config=true",
     "run --rm --no-deps alloy validate /etc/alloy/config.alloy",
-    "up -d --no-deps --wait --wait-timeout 120 loki alloy grafana",
+    "up -d --no-deps --force-recreate --wait --wait-timeout 120 loki alloy grafana",
     "exec -T grafana wget -q -O /dev/null http://loki:3100/ready",
   ]);
 });
