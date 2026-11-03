@@ -39,7 +39,8 @@ const loggerOptions: pino.LoggerOptions = {
 };
 
 function createLogger() {
-  if (process.env.LOG_PRETTY?.toLowerCase() !== "true") {
+  // Docker/Alloy는 한 이벤트를 한 JSON 행으로 수집한다. 운영에서는 pretty 출력을 금지한다.
+  if (process.env.NODE_ENV === "production" || process.env.LOG_PRETTY?.toLowerCase() !== "true") {
     return pino(loggerOptions);
   }
 

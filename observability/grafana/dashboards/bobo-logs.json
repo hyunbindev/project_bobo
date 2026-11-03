@@ -1,13 +1,14 @@
 {
   "uid": "bobo-logs",
   "title": "BOBO 운영 로그",
-  "description": "기존 컨테이너 로그와 Pino 이벤트 기반. HTTP 요청 계측은 아직 포함하지 않습니다.",
+  "description": "Docker → Alloy → Loki. 카테고리/등급별 검색과 동기화·Discord 운영 현황. 로그 기반 지표이며 HTTP 요청 계측은 포함하지 않습니다.",
   "schemaVersion": 39,
-  "version": 1,
+  "version": 2,
   "editable": false,
   "tags": [
     "bobo",
-    "logs"
+    "logs",
+    "operations"
   ],
   "timezone": "browser",
   "refresh": "30s",
@@ -19,22 +20,80 @@
     "list": [
       {
         "name": "project",
-        "label": "Compose project",
+        "label": "프로젝트",
         "type": "textbox",
         "query": "project-bobo",
         "current": {
           "text": "project-bobo",
           "value": "project-bobo"
+        }
+      },
+      {
+        "name": "service",
+        "label": "서비스",
+        "type": "query",
+        "datasource": {
+          "type": "loki",
+          "uid": "bobo-loki"
         },
-        "hide": 0
+        "query": "label_values({project=\"$project\"}, service_name)",
+        "definition": "label_values({project=\"$project\"}, service_name)",
+        "refresh": 1,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "sort": 1
+      },
+      {
+        "name": "category",
+        "label": "카테고리",
+        "type": "custom",
+        "query": "web,scheduler,discord",
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "options": []
+      },
+      {
+        "name": "severity",
+        "label": "등급",
+        "type": "custom",
+        "query": "trace,debug,info,warn,error,fatal,unknown",
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "options": []
+      },
+      {
+        "name": "search",
+        "label": "로그 검색 (정규식)",
+        "type": "textbox",
+        "query": "",
+        "current": {
+          "text": "",
+          "value": ""
+        }
       }
     ]
   },
   "panels": [
     {
       "id": 1,
-      "title": "서비스별 로그 수 / 5분",
-      "type": "timeseries",
+      "title": "수집된 로그",
+      "type": "stat",
+      "description": "선택한 시간·서비스·카테고리·등급에 해당하는 수집 로그 행 수입니다. HTTP 요청 수가 아닙니다.",
       "datasource": {
         "type": "loki",
         "uid": "bobo-loki"
@@ -42,8 +101,8 @@
       "gridPos": {
         "x": 0,
         "y": 0,
-        "w": 12,
-        "h": 8
+        "w": 6,
+        "h": 4
       },
       "targets": [
         {
@@ -52,96 +111,100 @@
             "type": "loki",
             "uid": "bobo-loki"
           },
-          "expr": "sum by (service_name) (count_over_time({project=\"$project\"}[5m]))",
-          "queryType": "range",
-          "legendFormat": "{{service_name}}"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": []
-      },
-      "options": {}
-    },
-    {
-      "id": 2,
-      "title": "앱 오류 로그 수 / 5분",
-      "type": "timeseries",
-      "datasource": {
-        "type": "loki",
-        "uid": "bobo-loki"
-      },
-      "gridPos": {
-        "x": 12,
-        "y": 0,
-        "w": 12,
-        "h": 8
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "loki",
-            "uid": "bobo-loki"
-          },
-          "expr": "sum(count_over_time({project=\"$project\", service_name=\"app\"} | json | __error__=\"\" | level >= 50 [5m]))",
-          "queryType": "range",
-          "legendFormat": "{{service_name}}"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": []
-      },
-      "options": {}
-    },
-    {
-      "id": 3,
-      "title": "경기 동기화 평균 처리 시간",
-      "type": "timeseries",
-      "datasource": {
-        "type": "loki",
-        "uid": "bobo-loki"
-      },
-      "gridPos": {
-        "x": 0,
-        "y": 8,
-        "w": 12,
-        "h": 8
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "loki",
-            "uid": "bobo-loki"
-          },
-          "expr": "avg_over_time({project=\"$project\", service_name=\"app\"} | json | event=\"match_sync.completed\" | unwrap durationMs | __error__=\"\" [5m])",
-          "queryType": "range",
-          "legendFormat": "{{service_name}}"
+          "expr": "sum(count_over_time({project=\"$project\", service_name=~\"$service\", category=~\"$category\", severity=~\"$severity\"}[$__range])) or vector(0)",
+          "queryType": "instant",
+          "legendFormat": "{{service_name}} {{category}} {{severity}}"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ms"
+          "unit": "short",
+          "noValue": "0",
+          "color": {
+            "mode": "palette-classic"
+          }
         },
         "overrides": []
       },
-      "options": {}
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      }
     },
     {
-      "id": 4,
-      "title": "치킨 알림 발송 건수 / 5분 (채널별 발송 기준)",
-      "type": "timeseries",
+      "id": 2,
+      "title": "오류 · 경고",
+      "type": "stat",
+      "description": "등급 라벨이 있는 앱 로그 기준입니다. 변경 전 이미 저장된 pretty 로그에는 라벨이 없을 수 있습니다.",
+      "datasource": {
+        "type": "loki",
+        "uid": "bobo-loki"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "bobo-loki"
+          },
+          "expr": "sum(count_over_time({project=\"$project\", service_name=~\"$service\", category=~\"$category\", severity=~\"$severity\"} | severity=~\"warn|error|fatal\" [$__range])) or vector(0)",
+          "queryType": "instant",
+          "legendFormat": "{{service_name}} {{category}} {{severity}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "0",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      }
+    },
+    {
+      "id": 3,
+      "title": "치킨 알림 발송",
+      "type": "stat",
+      "description": "채널별 성공 발송 건수입니다. 한 경기를 여러 채널로 전송하면 여러 건으로 집계합니다.",
       "datasource": {
         "type": "loki",
         "uid": "bobo-loki"
       },
       "gridPos": {
         "x": 12,
-        "y": 8,
-        "w": 12,
-        "h": 8
+        "y": 0,
+        "w": 6,
+        "h": 4
       },
       "targets": [
         {
@@ -150,30 +213,100 @@
             "type": "loki",
             "uid": "bobo-loki"
           },
-          "expr": "sum(count_over_time({project=\"$project\", service_name=\"app\"} | json | __error__=\"\" | event=\"discord.match_win_notification_sent\" [5m]))",
-          "queryType": "range",
-          "legendFormat": "{{service_name}}"
+          "expr": "sum(count_over_time({project=\"$project\", service_name=\"app\", category=~\"$category\", severity=~\"$severity\"} | json | __error__=\"\" | event=\"discord.match_win_notification_sent\" [$__range])) or vector(0)",
+          "queryType": "instant",
+          "legendFormat": "{{service_name}} {{category}} {{severity}}"
         }
       ],
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "unit": "short",
+          "noValue": "0",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
         "overrides": []
       },
-      "options": {}
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      }
+    },
+    {
+      "id": 4,
+      "title": "별명 변경 실패",
+      "type": "stat",
+      "description": "재시도에 따른 반복 실패도 각각 집계합니다.",
+      "datasource": {
+        "type": "loki",
+        "uid": "bobo-loki"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "bobo-loki"
+          },
+          "expr": "sum(count_over_time({project=\"$project\", service_name=\"app\", category=~\"$category\", severity=~\"$severity\"} | json | __error__=\"\" | event=\"discord.member_nickname_update_failed\" [$__range])) or vector(0)",
+          "queryType": "instant",
+          "legendFormat": "{{service_name}} {{category}} {{severity}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "0",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      }
     },
     {
       "id": 5,
-      "title": "앱 오류 상세",
-      "type": "logs",
+      "title": "서비스별 로그 흐름 · 최근 5분",
+      "type": "timeseries",
+      "description": "",
       "datasource": {
         "type": "loki",
         "uid": "bobo-loki"
       },
       "gridPos": {
         "x": 0,
-        "y": 16,
-        "w": 24,
-        "h": 8
+        "y": 4,
+        "w": 12,
+        "h": 7
       },
       "targets": [
         {
@@ -182,36 +315,54 @@
             "type": "loki",
             "uid": "bobo-loki"
           },
-          "expr": "{project=\"$project\", service_name=\"app\"} | json | __error__=\"\" | level >= 50",
+          "expr": "sum by (service_name) (count_over_time({project=\"$project\", service_name=~\"$service\", category=~\"$category\", severity=~\"$severity\"}[5m]))",
           "queryType": "range",
-          "legendFormat": "{{service_name}}"
+          "legendFormat": "{{service_name}} {{category}} {{severity}}"
         }
       ],
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "unit": "short",
+          "noValue": "0",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 12,
+            "lineWidth": 2,
+            "showPoints": "never"
+          }
+        },
         "overrides": []
       },
       "options": {
-        "showTime": true,
-        "showLabels": false,
-        "wrapLogMessage": true,
-        "sortOrder": "Descending",
-        "enableLogDetails": true
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       }
     },
     {
       "id": 6,
-      "title": "전체 컨테이너 로그",
-      "type": "logs",
+      "title": "앱 카테고리별 로그 · 최근 5분",
+      "type": "timeseries",
+      "description": "",
       "datasource": {
         "type": "loki",
         "uid": "bobo-loki"
       },
       "gridPos": {
-        "x": 0,
-        "y": 24,
-        "w": 24,
-        "h": 10
+        "x": 12,
+        "y": 4,
+        "w": 12,
+        "h": 7
       },
       "targets": [
         {
@@ -220,21 +371,455 @@
             "type": "loki",
             "uid": "bobo-loki"
           },
-          "expr": "{project=\"$project\"}",
+          "expr": "sum by (category, severity) (count_over_time({project=\"$project\", service_name=\"app\", category=~\"$category\", severity=~\"$severity\"}[5m]))",
           "queryType": "range",
-          "legendFormat": "{{service_name}}"
+          "legendFormat": "{{service_name}} {{category}} {{severity}}"
         }
       ],
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "unit": "short",
+          "noValue": "0",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 12,
+            "lineWidth": 2,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "경기 동기화 평균 처리 시간",
+      "type": "timeseries",
+      "description": "완료 이벤트의 durationMs 기준입니다. HTTP 지연 시간이 아닙니다.",
+      "datasource": {
+        "type": "loki",
+        "uid": "bobo-loki"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 11,
+        "w": 12,
+        "h": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "bobo-loki"
+          },
+          "expr": "avg(avg_over_time({project=\"$project\", service_name=\"app\", category=~\"$category\", severity=~\"$severity\"} | json | __error__=\"\" | event=\"match_sync.completed\" | unwrap durationMs | __error__=\"\" [5m]))",
+          "queryType": "range",
+          "legendFormat": "{{service_name}} {{category}} {{severity}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "decimals": 0,
+          "noValue": "0",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 12,
+            "lineWidth": 2,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 8,
+      "title": "동기화한 경기 · 최근 5분",
+      "type": "timeseries",
+      "description": "동기화 완료 이벤트에 기록된 경기 수의 합입니다.",
+      "datasource": {
+        "type": "loki",
+        "uid": "bobo-loki"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 11,
+        "w": 12,
+        "h": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "bobo-loki"
+          },
+          "expr": "sum(sum_over_time({project=\"$project\", service_name=\"app\", category=~\"$category\", severity=~\"$severity\"} | json | __error__=\"\" | event=\"match_sync.completed\" | unwrap syncedMatchCount | __error__=\"\" [5m]))",
+          "queryType": "range",
+          "legendFormat": "{{service_name}} {{category}} {{severity}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "0",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 12,
+            "lineWidth": 2,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 9,
+      "title": "PUBG API 호출 제한 · 최근 5분",
+      "type": "timeseries",
+      "description": "",
+      "datasource": {
+        "type": "loki",
+        "uid": "bobo-loki"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 18,
+        "w": 12,
+        "h": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "bobo-loki"
+          },
+          "expr": "sum(count_over_time({project=\"$project\", service_name=\"app\", category=~\"$category\", severity=~\"$severity\"} | json | __error__=\"\" | event=\"match_sync.player_api_rate_limited\" [5m])) or vector(0)",
+          "queryType": "range",
+          "legendFormat": "{{service_name}} {{category}} {{severity}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "0",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 12,
+            "lineWidth": 2,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 10,
+      "title": "실패 이벤트별 발생 · 최근 5분",
+      "type": "timeseries",
+      "description": "구조화된 event 이름 기준입니다.",
+      "datasource": {
+        "type": "loki",
+        "uid": "bobo-loki"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 18,
+        "w": 12,
+        "h": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "bobo-loki"
+          },
+          "expr": "sum by (event) (count_over_time({project=\"$project\", service_name=\"app\", category=~\"$category\", severity=~\"$severity\"} | json | __error__=\"\" | event=~\".*(failed|error).*\" [5m]))",
+          "queryType": "range",
+          "legendFormat": "{{event}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "0",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 12,
+            "lineWidth": 2,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 11,
+      "title": "오류·경고 상세",
+      "type": "logs",
+      "description": "요약과 오류 스택을 한 항목에서 표시합니다. 항목을 펼치면 원본 필드를 확인할 수 있습니다.",
+      "datasource": {
+        "type": "loki",
+        "uid": "bobo-loki"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 25,
+        "w": 24,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "bobo-loki"
+          },
+          "expr": "{project=\"$project\", service_name=~\"$service\", category=~\"$category\", severity=~\"$severity\"} |~ \"${search:raw}\" | severity=~\"warn|error|fatal\" | json | line_format `{{ if .event }}[{{ .event }}] {{ end }}{{ if .msg }}{{ .msg }}{{ else }}{{ __line__ }}{{ end }}{{ if .code }} (code={{ .code }}){{ end }}{{ if .err_message }} | {{ .err_message }}{{ end }}{{ if .err_stack }}\n{{ .err_stack }}{{ end }}`",
+          "queryType": "range",
+          "legendFormat": "{{service_name}} {{category}} {{severity}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "0",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
         "overrides": []
       },
       "options": {
         "showTime": true,
         "showLabels": false,
+        "showCommonLabels": false,
         "wrapLogMessage": true,
+        "prettifyLogMessage": false,
         "sortOrder": "Descending",
-        "enableLogDetails": true
+        "enableLogDetails": true,
+        "dedupStrategy": "none"
+      }
+    },
+    {
+      "id": 12,
+      "title": "Discord · 명령어 / 별명 / 치킨 알림",
+      "type": "logs",
+      "description": "카테고리는 Discord로 고정합니다. 검색 및 등급 필터를 적용합니다.",
+      "datasource": {
+        "type": "loki",
+        "uid": "bobo-loki"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 34,
+        "w": 24,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "bobo-loki"
+          },
+          "expr": "{project=\"$project\", service_name=\"app\", category=\"discord\", severity=~\"$severity\"} |~ \"${search:raw}\" | json | line_format `{{ if .event }}[{{ .event }}] {{ end }}{{ if .msg }}{{ .msg }}{{ else }}{{ __line__ }}{{ end }}{{ if .code }} (code={{ .code }}){{ end }}{{ if .err_message }} | {{ .err_message }}{{ end }}{{ if .err_stack }}\n{{ .err_stack }}{{ end }}`",
+          "queryType": "range",
+          "legendFormat": "{{service_name}} {{category}} {{severity}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "0",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": false,
+        "sortOrder": "Descending",
+        "enableLogDetails": true,
+        "dedupStrategy": "none"
+      }
+    },
+    {
+      "id": 13,
+      "title": "경기 동기화 · 스케줄러",
+      "type": "logs",
+      "description": "",
+      "datasource": {
+        "type": "loki",
+        "uid": "bobo-loki"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 43,
+        "w": 24,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "bobo-loki"
+          },
+          "expr": "{project=\"$project\", service_name=\"app\", category=\"scheduler\", severity=~\"$severity\"} |~ \"${search:raw}\" | json | line_format `{{ if .event }}[{{ .event }}] {{ end }}{{ if .msg }}{{ .msg }}{{ else }}{{ __line__ }}{{ end }}{{ if .code }} (code={{ .code }}){{ end }}{{ if .err_message }} | {{ .err_message }}{{ end }}{{ if .err_stack }}\n{{ .err_stack }}{{ end }}`",
+          "queryType": "range",
+          "legendFormat": "{{service_name}} {{category}} {{severity}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "0",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": false,
+        "sortOrder": "Descending",
+        "enableLogDetails": true,
+        "dedupStrategy": "none"
+      }
+    },
+    {
+      "id": 14,
+      "title": "전체 로그 검색",
+      "type": "logs",
+      "description": "서비스·카테고리·등급·정규식으로 검색합니다. 비 JSON 로그도 보존합니다.",
+      "datasource": {
+        "type": "loki",
+        "uid": "bobo-loki"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 52,
+        "w": 24,
+        "h": 11
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "bobo-loki"
+          },
+          "expr": "{project=\"$project\", service_name=~\"$service\", category=~\"$category\", severity=~\"$severity\"} |~ \"${search:raw}\" | json | line_format `{{ if .event }}[{{ .event }}] {{ end }}{{ if .msg }}{{ .msg }}{{ else }}{{ __line__ }}{{ end }}{{ if .code }} (code={{ .code }}){{ end }}{{ if .err_message }} | {{ .err_message }}{{ end }}{{ if .err_stack }}\n{{ .err_stack }}{{ end }}`",
+          "queryType": "range",
+          "legendFormat": "{{service_name}} {{category}} {{severity}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "0",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": false,
+        "sortOrder": "Descending",
+        "enableLogDetails": true,
+        "dedupStrategy": "none"
       }
     }
   ],
