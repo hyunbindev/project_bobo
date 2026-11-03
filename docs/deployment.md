@@ -64,6 +64,7 @@ bash scripts/deploy.sh observability
 ```
 
 관제 이미지 pull → Loki/Alloy 설정 검증 → 관제 서비스만 갱신 → Grafana와 Loki 준비 확인 순서다.
+설정 파일 내용만 바뀐 배포도 반영되도록 관제 컨테이너는 `--force-recreate`로 재생성한다.
 앱 빌드, 앱 교체, DB 마이그레이션은 실행하지 않는다.
 Alloy는 같은 프로젝트의 앱/DB/Tunnel 로그를 수집하고 수집기 자신의 로그는 제외한다.
 
