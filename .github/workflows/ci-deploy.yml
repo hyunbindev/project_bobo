@@ -48,6 +48,8 @@ jobs:
         with:
           node-version: 24
           cache: npm
+      # Dockerfile 및 로컬 검증과 동일한 npm 버전을 사용한다.
+      - run: npm install --global npm@11.6.2
       - run: npm ci
       - run: npm run lint
       - run: npx next typegen
