@@ -3,7 +3,7 @@ logging {
   format = "json"
 }
 
-// Only collect the existing application project, not this logging stack.
+// Collect this Compose project. Exclude the collectors to avoid collecting their own logs.
 discovery.docker "bobo" {
   host             = "unix:///var/run/docker.sock"
   refresh_interval = "15s"
@@ -16,6 +16,12 @@ discovery.docker "bobo" {
 
 discovery.relabel "bobo" {
   targets = discovery.docker.bobo.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    regex         = "(loki|alloy|grafana)"
+    action        = "drop"
+  }
 
   rule {
     source_labels = ["__meta_docker_container_label_com_docker_compose_project"]

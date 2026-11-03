@@ -34,7 +34,6 @@ yarn-error.log*
 .env*
 !.env.example
 !.env.production.example
-!.env.observability.example
 
 # local deployment secrets
 /secrets/

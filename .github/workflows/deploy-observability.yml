@@ -1,0 +1,93 @@
+name: Observability CD
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'compose.observability.yaml'
+      - 'compose.yaml'
+      - 'observability/**'
+      - '.env.production.example'
+      - 'scripts/compose.sh'
+      - 'scripts/deploy.sh'
+      - '.github/workflows/deploy-observability.yml'
+  pull_request:
+    branches: [master]
+    paths:
+      - 'compose.observability.yaml'
+      - 'compose.yaml'
+      - 'observability/**'
+      - '.env.production.example'
+      - 'scripts/compose.sh'
+      - 'scripts/deploy.sh'
+      - '.github/workflows/deploy-observability.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate combined Compose configuration
+        run: |
+          sed 's/^GRAFANA_ADMIN_PASSWORD=$/GRAFANA_ADMIN_PASSWORD=ci-placeholder/' .env.production.example > .env.production
+          for script in scripts/compose.sh scripts/deploy.sh; do bash -n "$script"; done
+          bash scripts/compose.sh config --quiet
+      - name: Validate Loki and Alloy configuration
+        run: |
+          bash scripts/compose.sh pull loki alloy
+          bash scripts/compose.sh run --rm --no-deps loki -config.file=/etc/loki/config.yaml -verify-config=true
+          bash scripts/compose.sh run --rm --no-deps alloy validate /etc/alloy/config.alloy
+
+  deploy:
+    needs: validate
+    if: >-
+      github.ref == 'refs/heads/master' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    # Serialize deployments to the same production project.
+    concurrency:
+      group: production
+      cancel-in-progress: false
+    env:
+      DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/srv/project-bobo' }}
+      DEPLOY_PORT: ${{ secrets.DEPLOY_PORT || '22' }}
+    steps:
+      - name: Install SSH password helper
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes sshpass
+      - name: Deploy over SSH
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          SSHPASS: ${{ secrets.DEPLOY_PASSWORD }}
+          DEPLOY_SHA: ${{ github.sha }}
+        run: |
+          : "${DEPLOY_HOST:?Set the DEPLOY_HOST secret}"
+          : "${DEPLOY_USER:?Set the DEPLOY_USER secret}"
+          : "${SSHPASS:?Set the DEPLOY_PASSWORD secret}"
+
+          sshpass -e ssh \
+            -p "$DEPLOY_PORT" \
+            -o PubkeyAuthentication=no \
+            -o PreferredAuthentications=password,keyboard-interactive \
+            -o StrictHostKeyChecking=accept-new \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            bash -se -- "$DEPLOY_PATH" "$DEPLOY_SHA" <<'REMOTE_SCRIPT'
+          set -euo pipefail
+          cd "$1"
+          # Deploy the validated SHA without overwriting local tracked changes.
+          git diff --quiet
+          git diff --cached --quiet
+          git fetch origin master
+          git merge-base --is-ancestor "$2" origin/master
+          git checkout --detach "$2"
+          bash scripts/deploy.sh observability
+          REMOTE_SCRIPT

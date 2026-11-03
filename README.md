@@ -51,6 +51,9 @@ PUBG API로 경기 데이터를 수집하고, Discord 봇을 통해 우승 소�
 | 스케줄링·로그 | node-cron, Pino |
 | 배포 | Docker Compose, GitHub Actions, Cloudflare Tunnel |
 
+배포와 관제는 YAML 파일을 나누고 같은 Compose 프로젝트에서 관리합니다.
+앱과 관제의 배포 파이프라인은 분리하며, 운영 절차는 [배포 문서](docs/deployment.md)를 참고하세요.
+
 
 ## 프로젝트 구조
 

@@ -1,53 +1,96 @@
-name: Deploy
+name: App CI / CD
 
 on:
-  # master 브랜치에 코드가 반영되면 홈 서버에 배포한다.
   push:
     branches: [master]
-  # GitHub Actions 화면에서도 필요할 때 직접 실행할 수 있다.
+    paths-ignore:
+      - 'observability/**'
+      - 'compose.observability.yaml'
+      - '.github/workflows/deploy-observability.yml'
+      - 'docs/**'
+      - '**/*.md'
+  pull_request:
+    branches: [master]
+    paths-ignore:
+      - 'observability/**'
+      - 'compose.observability.yaml'
+      - '.github/workflows/deploy-observability.yml'
+      - 'docs/**'
+      - '**/*.md'
   workflow_dispatch:
 
-# 진행 중인 운영 배포는 새 커밋이 들어와도 중간에 취소하지 않는다.
-concurrency:
-  group: production
-  cancel-in-progress: false
-
-# checkout 외에는 저장소 권한이 필요하지 않다.
 permissions:
   contents: read
 
 jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: bobo_test
+          POSTGRES_USER: bobo_test
+          POSTGRES_PASSWORD: ci-test-password
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd="pg_isready -U bobo_test -d bobo_test"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      DATABASE_URL: postgresql://bobo_test:ci-test-password@127.0.0.1:5432/bobo_test
+      TEST_DATABASE_URL: postgresql://bobo_test:ci-test-password@127.0.0.1:5432/bobo_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npx next typegen
+      - run: npx tsc --noEmit
+      - run: npm test
+      - run: npm run db:migration-check
+      - name: Validate combined Compose configuration
+        run: |
+          sed 's/^GRAFANA_ADMIN_PASSWORD=$/GRAFANA_ADMIN_PASSWORD=ci-placeholder/' .env.production.example > .env.production
+          for script in scripts/compose.sh scripts/deploy.sh; do bash -n "$script"; done
+          bash scripts/compose.sh config --quiet
+
   deploy:
-    name: Deploy production
-    # master push 또는 master 브랜치에서의 수동 실행만 허용한다.
+    needs: validate
     if: >-
       github.ref == 'refs/heads/master' &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: production
-
+    # Serialize deployments to the same production project.
+    concurrency:
+      group: production
+      cancel-in-progress: false
+      queue: max
     env:
-      # Repository variable DEPLOY_PATH가 없으면 기본 경로를 사용한다.
       DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/srv/project-bobo' }}
       DEPLOY_PORT: ${{ secrets.DEPLOY_PORT || '22' }}
-
     steps:
       - name: Install SSH password helper
         run: |
           sudo apt-get update
           sudo apt-get install --yes sshpass
-
       - name: Deploy over SSH
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
           SSHPASS: ${{ secrets.DEPLOY_PASSWORD }}
+          DEPLOY_SHA: ${{ github.sha }}
         run: |
           : "${DEPLOY_HOST:?Set the DEPLOY_HOST secret}"
           : "${DEPLOY_USER:?Set the DEPLOY_USER secret}"
           : "${SSHPASS:?Set the DEPLOY_PASSWORD secret}"
-          : "${DEPLOY_PORT:?Set the DEPLOY_PORT secret or use its default}"
 
           sshpass -e ssh \
             -p "$DEPLOY_PORT" \
@@ -55,24 +98,14 @@ jobs:
             -o PreferredAuthentications=password,keyboard-interactive \
             -o StrictHostKeyChecking=accept-new \
             "$DEPLOY_USER@$DEPLOY_HOST" \
-            bash -se -- "$DEPLOY_PATH" <<'REMOTE_SCRIPT'
+            bash -se -- "$DEPLOY_PATH" "$DEPLOY_SHA" <<'REMOTE_SCRIPT'
           set -euo pipefail
-
           cd "$1"
-
-          # 서버의 master 브랜치는 fast-forward만 허용해 예기치 않은 덮어쓰기를 막는다.
-          git pull --ff-only origin master
-
-          # 비밀값은 서버에 저장된 파일을 사용하며 Actions 로그로 출력하지 않는다.
-          test -f .env.production
-          docker compose --env-file .env.production config --quiet
-          docker compose --env-file .env.production up -d --build --remove-orphans
-
-          # 앱이 준비되지 않으면 로그를 남기고 배포를 실패 처리한다.
-          if ! curl --fail --silent --show-error \
-            --retry 12 --retry-delay 5 --retry-all-errors \
-            http://127.0.0.1:3000/api/health; then
-            docker compose --env-file .env.production logs --tail=100 app migrate
-            exit 1
-          fi
+          # Deploy the validated SHA without overwriting local tracked changes.
+          git diff --quiet
+          git diff --cached --quiet
+          git fetch origin master
+          git merge-base --is-ancestor "$2" origin/master
+          git checkout --detach "$2"
+          bash scripts/deploy.sh app
           REMOTE_SCRIPT
