@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "node --import tsx --test tests/*.test.ts",
     "db:up": "docker compose --env-file .env.local -f compose.local.yaml up -d --wait",
     "db:stop": "docker compose --env-file .env.local -f compose.local.yaml stop",
     "db:logs": "docker compose --env-file .env.local -f compose.local.yaml logs -f postgres",
@@ -47,6 +48,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.1",
     "tailwindcss": "^4",
+    "tsx": "^4.23.12",
     "typescript": "^5"
   }
 }
