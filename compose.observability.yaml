@@ -12,7 +12,7 @@ services:
     volumes:
       - ./observability/loki/config.yaml:/etc/loki/config.yaml:ro
       - loki_data:/loki
-    networks: [bobo_frontend]
+    networks: [bobo_backend]
     mem_limit: 1536m
     cpus: 1.0
     security_opt: ["no-new-privileges:true"]
@@ -34,7 +34,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - alloy_data:/var/lib/alloy/data
     depends_on: [loki]
-    networks: [bobo_frontend]
+    networks: [bobo_backend]
     mem_limit: 384m
     cpus: 0.5
     security_opt: ["no-new-privileges:true"]
@@ -69,6 +69,7 @@ services:
     networks:
       bobo_frontend:
         aliases: [bobo-grafana]
+      bobo_backend:
     mem_limit: 512m
     cpus: 0.75
     security_opt: ["no-new-privileges:true"]

@@ -29,7 +29,8 @@ services:
       retries: 10
       start_period: 10s
     networks:
-      - bobo_frontend
+      - bobo_backend
+      - db_access
     logging: *default-logging
 
   migrate:
@@ -44,7 +45,7 @@ services:
       postgres:
         condition: service_healthy
     networks:
-      - bobo_frontend
+      - bobo_backend
     logging: *default-logging
 
   app:
@@ -94,6 +95,7 @@ services:
     stop_grace_period: 30s
     networks:
       - bobo_frontend
+      - bobo_backend
     logging: *default-logging
 
   cloudflared:
@@ -120,6 +122,9 @@ volumes:
 
 networks:
   bobo_frontend:
+  bobo_backend:
+    internal: true
+  db_access:
     driver: bridge
 
 secrets:

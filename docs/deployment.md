@@ -1,8 +1,19 @@
 # 배포와 관제 운영
 
-`compose.yaml`과 `compose.observability.yaml`은 파일만 분리하고, `project-bobo` 프로젝트와
-`bobo_frontend` 네트워크를 함께 사용한다. 외부 네트워크를 따로 생성할 필요는 없다.
-PostgreSQL, Loki, Grafana 등의 저장 볼륨은 서비스별로 유지한다.
+`compose.yaml`과 `compose.observability.yaml`은 파일만 분리하고 `project-bobo` 프로젝트에서 관리한다.
+기존 앱/DB 네트워크 구조는 유지하고 관제 서비스를 같은 네트워크에 연결한다.
+외부 네트워크를 따로 생성할 필요는 없으며 저장 볼륨은 서비스별로 유지한다.
+
+| 서비스 | 네트워크 |
+| --- | --- |
+| Cloudflare Tunnel | `bobo_frontend` |
+| Next.js, Grafana | `bobo_frontend`, `bobo_backend` |
+| 마이그레이션, Loki, Alloy | `bobo_backend` |
+| PostgreSQL | `bobo_backend`, `db_access` |
+
+`bobo_backend`는 `internal: true`로 유지한다. Grafana는 frontend에서 Tunnel 요청을 받고
+backend에서 Loki에 접근한다. Alloy는 Docker 소켓으로 로그를 읽으므로 외부 네트워크가 필요 없다.
+`db_access`는 기존 DB 연결을 위해 유지하며 마이그레이션 전용이 아니다.
 
 ## 서버 준비와 최초 실행
 
