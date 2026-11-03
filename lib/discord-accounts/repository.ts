@@ -3,10 +3,22 @@ import { and, eq, inArray } from "drizzle-orm";
 import { ConflictError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
 import { playerDiscordAccounts, players } from "@/lib/db/schema";
-import type { DiscordNicknameTarget, LinkDiscordAccountInput } from "@/lib/discord-accounts/types";
+import type { DiscordNicknameTarget, DiscordRegistrationParams, LinkDiscordAccountInput } from "@/lib/discord-accounts/types";
 import type { PubgPlatform } from "@/lib/pubg/types";
 
 type DatabaseClient = Omit<typeof db, "$client">;
+
+/** 요청한 서버·사용자에 연결된 기존 등록 정보로만 재시도한다. */
+export async function findDiscordNicknameTarget(params: DiscordRegistrationParams) {
+  const [row] = await db.select({ account: playerDiscordAccounts, pubgName: players.name })
+    .from(playerDiscordAccounts)
+    .innerJoin(players, eq(players.id, playerDiscordAccounts.playerId))
+    .where(and(
+      eq(playerDiscordAccounts.discordGuildId, params.discordGuildId),
+      eq(playerDiscordAccounts.discordUserId, params.discordUserId),
+    )).limit(1);
+  return row ? { ...row.account, pubgName: row.pubgName } : null;
+}
 
 /** Discord API가 반환한 실제 표시 이름과 사용자명을 반영한다. */
 export async function updateDiscordAccountNames(

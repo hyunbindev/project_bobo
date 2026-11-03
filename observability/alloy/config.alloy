@@ -49,17 +49,46 @@ loki.source.docker "bobo" {
 }
 
 loki.process "bobo" {
-  // Non-JSON PostgreSQL/cloudflared output is retained unchanged.
-  stage.json {
-    expressions = {
-      category = "logCategory",
-    }
-    drop_malformed = false
+  // Loki accepts 168h. Leave a margin so replaying old Docker logs cannot poison batches.
+  stage.drop {
+    older_than          = "167h"
+    drop_counter_reason = "outside_loki_retention"
   }
 
-  stage.labels {
-    values = {
-      category = "",
+  stage.match {
+    selector = "{service_name=\"app\"}"
+
+    stage.decolorize {}
+
+    // Join legacy pretty fields and indented stack traces; each JSON record starts a new entry.
+    stage.multiline {
+      firstline     = "^\\S"
+      max_wait_time = "2s"
+      max_lines     = 256
+    }
+
+    stage.regex {
+      expression = "^(?P<level>TRACE|DEBUG|INFO|WARN|ERROR|FATAL) \\["
+    }
+    stage.regex {
+      expression = `(?m)^\s+logCategory: "(?P<category>web|scheduler|discord)"`
+    }
+    stage.json {
+      expressions = {
+        category = "logCategory",
+        level    = "level",
+      }
+      drop_malformed = false
+    }
+    stage.template {
+      source   = "level"
+      template = "{{ if eq .Value \"10\" }}trace{{ else if eq .Value \"20\" }}debug{{ else if eq .Value \"30\" }}info{{ else if eq .Value \"40\" }}warn{{ else if eq .Value \"50\" }}error{{ else if eq .Value \"60\" }}fatal{{ else if .Value }}{{ ToLower .Value }}{{ else }}unknown{{ end }}"
+    }
+    stage.labels {
+      values = {
+        category = "",
+        severity = "level",
+      }
     }
   }
 
