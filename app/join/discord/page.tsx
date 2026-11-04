@@ -3,18 +3,20 @@ import { ArrowLeft, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 
 import { DiscordRegistration } from "./_components/discord-registration";
-import { getDiscordRegistrationParams } from "@/lib/discord-accounts/registration-params";
+import { decryptRegistrationToken } from "@/lib/discord-accounts/registration-token";
 
 export const metadata: Metadata = {
   title: "아이디 등록 | BOBO CLAN",
   description: "PUBG 계정을 확인하고 BOBO 클랜원 정보를 등록하세요.",
   robots: { index: false, follow: false },
+  referrer: "no-referrer",
 };
 
 export default async function DiscordRegistrationPage({ searchParams }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const discordParams = getDiscordRegistrationParams(await searchParams);
+  const { token } = await searchParams;
+  const registrationToken = typeof token === "string" && decryptRegistrationToken(token) ? token : null;
   return (
     <main className="relative isolate flex min-h-svh flex-col overflow-x-clip bg-background text-foreground">
       <div
@@ -61,7 +63,7 @@ export default async function DiscordRegistrationPage({ searchParams }: {
 
         <DiscordRegistration
           currentYear={new Date().getFullYear()}
-          discordParams={discordParams}
+          registrationToken={registrationToken}
         />
 
         <Link

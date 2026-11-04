@@ -14,9 +14,12 @@ test("시작하기 명령은 실행한 사용자에게만 해당 서버의 개�
   });
   const savedBaseUrl = process.env.APP_BASE_URL;
   const savedNodeEnv = process.env.NODE_ENV;
+  const savedKey = process.env.DISCORD_REGISTRATION_ENCRYPTION_KEY;
+  process.env.DISCORD_REGISTRATION_ENCRYPTION_KEY = Buffer.alloc(32, 17).toString("base64");
   Object.assign(process.env, { APP_BASE_URL: "https://bobo.example", NODE_ENV: "production" });
   try {
     const { registrationLinkCommand } = await import("../lib/discord/commands/registration-link-command");
+    const { decryptRegistrationToken } = await import("../lib/discord-accounts/registration-token");
     alias.mock.restore();
 
     async function execute(guildId: string | null, userId = "348806182779224065") {
@@ -41,8 +44,11 @@ test("시작하기 명령은 실행한 사용자에게만 해당 서버의 개�
       const url = new URL(button.url);
       assert.equal(url.origin, "https://bobo.example");
       assert.equal(url.pathname, "/join/discord");
-      assert.equal(url.searchParams.get("discordGuildId"), "1543197573429465188");
-      assert.equal(url.searchParams.get("discordUserId"), userId);
+      assert.equal(url.searchParams.has("discordGuildId"), false);
+      assert.equal(url.searchParams.has("discordUserId"), false);
+      assert.deepEqual(decryptRegistrationToken(url.searchParams.get("token")), {
+        discordGuildId: "1543197573429465188", discordUserId: userId,
+      });
     }
 
     const dmResponse = await execute(null);
@@ -56,6 +62,8 @@ test("시작하기 명령은 실행한 사용자에게만 해당 서버의 개�
     assert.equal(unavailable.components, undefined);
     assert.match(unavailable.content, /관리자/);
   } finally {
+    if (savedKey === undefined) delete process.env.DISCORD_REGISTRATION_ENCRYPTION_KEY;
+    else process.env.DISCORD_REGISTRATION_ENCRYPTION_KEY = savedKey;
     alias.mock.restore();
     if (savedBaseUrl === undefined) delete process.env.APP_BASE_URL;
     else process.env.APP_BASE_URL = savedBaseUrl;

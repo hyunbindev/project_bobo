@@ -2,16 +2,16 @@
 
 import { useRef, useState } from "react";
 
-import type { DiscordNicknameUpdate, DiscordRegistrationParams } from "@/lib/discord-accounts/types";
+import type { DiscordNicknameUpdate } from "@/lib/discord-accounts/types";
 import { DiscordRegistrationComplete } from "./discord-registration-complete";
 import {
   DiscordRegistrationForm,
   type DiscordRegistrationResult,
 } from "./discord-registration-form";
 
-export function DiscordRegistration({ currentYear, discordParams }: {
+export function DiscordRegistration({ currentYear, registrationToken }: {
   currentYear: number;
-  discordParams: DiscordRegistrationParams | null;
+  registrationToken: string | null;
 }) {
   const [result, setResult] = useState<DiscordRegistrationResult | null>(null);
   const [isRetrying, setIsRetrying] = useState(false);
@@ -19,7 +19,7 @@ export function DiscordRegistration({ currentYear, discordParams }: {
   const retryInFlight = useRef(false);
 
   async function handleRetryNickname() {
-    if (!discordParams || !result || retryInFlight.current) return;
+    if (!registrationToken || !result || retryInFlight.current) return;
     retryInFlight.current = true;
     setIsRetrying(true);
     setRetryError(null);
@@ -27,7 +27,7 @@ export function DiscordRegistration({ currentYear, discordParams }: {
       const response = await fetch("/api/discord-accounts/nickname/retry", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(discordParams),
+        body: JSON.stringify({ token: registrationToken }),
       });
       const body = await response.json() as {
         data?: { discordNicknameUpdate?: DiscordNicknameUpdate };
@@ -68,7 +68,7 @@ export function DiscordRegistration({ currentYear, discordParams }: {
   return (
     <DiscordRegistrationForm
       currentYear={currentYear}
-      discordParams={discordParams}
+      registrationToken={registrationToken}
       onComplete={setResult}
     />
   );
