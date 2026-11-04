@@ -21,6 +21,7 @@ PostHog의 Session Replay 설정에서 녹화를 활성화하고 샘플링·URL 
 ## 수집 설정
 
 - GA는 기존대로 사용하며 PostHog 자동 클릭·폼 이벤트, 페이지뷰·페이지 이탈 이벤트 수집은 끈다.
+- SDK 초기화 시 `replay_client_initialized` 이벤트를 한 번 보낸다. 자동 이벤트가 꺼져 있어도 설치 확인 화면과 Live events에서 연결 여부를 확인할 수 있다.
 - 세션 리플레이의 입력값 마스킹은 `maskAllInputs: false`, 일반 텍스트 마스킹은 `maskTextSelector: null`로 설정한다.
 - 등록 폼의 이름·출생연도·PUBG 닉네임과 완료 화면의 이름은 리플레이에 표시된다. 추가 URL 마스킹은 구성하지 않는다.
 - 비밀번호 입력의 SDK 기본 마스킹은 유지된다. 현재 등록 화면에는 비밀번호 입력이 없다.

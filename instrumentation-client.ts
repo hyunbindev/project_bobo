@@ -17,5 +17,9 @@ if (projectToken && apiHost) {
       maskAllInputs: false,
       maskTextSelector: null,
     },
+    loaded(client) {
+      // 자동 수집이 꺼져 있어도 설치 확인과 세션의 진입 시점을 기록한다.
+      client.capture("replay_client_initialized");
+    },
   });
 }
