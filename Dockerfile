@@ -13,6 +13,11 @@ RUN npm ci
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+# NEXT_PUBLIC 값은 클라이언트 번들에 포함되므로 빌드 전에 주입한다.
+ARG NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN=""
+ARG NEXT_PUBLIC_POSTHOG_HOST="https://us.i.posthog.com"
+ENV NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN=${NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN}
+ENV NEXT_PUBLIC_POSTHOG_HOST=${NEXT_PUBLIC_POSTHOG_HOST}
 # DB 모듈이 빌드 중 로드될 때 사용할 비밀 정보가 없는 placeholder다.
 ENV DATABASE_URL=postgresql://build:build@127.0.0.1:5432/build
 RUN npm run build
