@@ -21,7 +21,6 @@ import {
 import { getMainClanSummary } from "@/lib/clans/service";
 import { registerDiscordAccount } from "@/lib/discord-accounts/service";
 import type { DiscordRegistrationIdentity } from "@/lib/discord-accounts/types";
-import { getDiscordRegistrationParams } from "@/lib/discord-accounts/registration-params";
 
 type RegisterClanMemberInput = {
   nickname: string;
@@ -193,17 +192,8 @@ async function resolvePlayerAndClan(
 
 export async function registerClanMember(input: unknown, discordIdentity?: DiscordRegistrationIdentity) {
   const data = parseRegisterInput(input);
-  // TODO: 서명된 링크/세션 연결 후 본인 확인 조건을 다시 활성화한다.
-  // if (!discordIdentity) {
-  //   throw new ApiError(401, "DISCORD_LINK_REQUIRED", "Discord 등록 링크를 통해 접속해 주세요.");
-  // }
   if (!discordIdentity) {
-    const params = getDiscordRegistrationParams(input);
-    if (!params) {
-      throw new BadRequestError("Discord 사용자 ID와 서버 ID를 확인해 주세요.");
-    }
-    // 임시로 URL에서 받은 ID를 사용한다. Discord 이름은 아직 조회하지 않는다.
-    discordIdentity = { ...params, discordDisplayName: "", discordUsername: "" };
+    throw new ApiError(401, "DISCORD_LINK_REQUIRED", "Discord 등록 링크를 통해 접속해 주세요.");
   }
   return registerDiscordAccount({ ...data, ...discordIdentity });
 }

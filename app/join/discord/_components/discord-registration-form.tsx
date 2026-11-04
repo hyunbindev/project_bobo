@@ -2,7 +2,7 @@
 
 import { useRef, useState, type FormEvent } from "react";
 import { ArrowRight, CalendarDays, Gamepad2, LoaderCircle } from "lucide-react";
-import type { DiscordNicknameUpdate, DiscordRegistrationParams } from "@/lib/discord-accounts/types";
+import type { DiscordNicknameUpdate } from "@/lib/discord-accounts/types";
 
 import {
   Select,
@@ -37,10 +37,10 @@ const registrationErrorMessages: Record<string, string> = {
   BAD_REQUEST: "입력한 닉네임, 이름과 출생연도를 확인해 주세요.",
 };
 
-export function DiscordRegistrationForm({ currentYear, discordParams = null, onComplete }: {
+export function DiscordRegistrationForm({ currentYear, registrationToken = null, onComplete }: {
   currentYear: number;
   onComplete: (result: DiscordRegistrationResult) => void;
-  discordParams?: DiscordRegistrationParams | null;
+  registrationToken?: string | null;
 }) {
   const [birthYear, setBirthYear] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -57,7 +57,7 @@ export function DiscordRegistrationForm({ currentYear, discordParams = null, onC
 
     setSubmitError(null);
 
-    if (!discordParams) {
+    if (!registrationToken) {
       setSubmitError("Discord에서 받은 등록 링크를 통해 접속해 주세요.");
       return;
     }
@@ -73,7 +73,7 @@ export function DiscordRegistrationForm({ currentYear, discordParams = null, onC
       name: String(formData.get("name") ?? "").trim(),
       birthYear: Number(birthYear),
       platform: "kakao",
-      ...discordParams,
+      token: registrationToken,
     };
 
     if (!input.nickname || !input.name) {

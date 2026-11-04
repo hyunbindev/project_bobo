@@ -5,12 +5,13 @@ import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 
 test("Discord 등록은 클랜 가입 행을 만들지 않고 프로필을 저장한다", async (context) => {
-  const envKeys = ["DATABASE_URL", "PUBG_API_KEY", "PUBG_CLAN_ID", "DISCORD_BOT_TOKEN"] as const;
+  const envKeys = ["DATABASE_URL", "PUBG_API_KEY", "PUBG_CLAN_ID", "DISCORD_BOT_TOKEN", "DISCORD_REGISTRATION_ENCRYPTION_KEY"] as const;
   const savedEnv = Object.fromEntries(envKeys.map((key) => [key, process.env[key]]));
   process.env.DATABASE_URL = "postgres://test:test@127.0.0.1:1/registration_test";
   process.env.PUBG_API_KEY = "test-api-key";
   process.env.PUBG_CLAN_ID = " clan.bobo ";
   process.env.DISCORD_BOT_TOKEN = "test-bot-token";
+  process.env.DISCORD_REGISTRATION_ENCRYPTION_KEY = Buffer.alloc(32, 19).toString("base64");
 
   const resolver = Module as unknown as {
     _resolveFilename(request: string, ...args: unknown[]): string;
@@ -26,6 +27,7 @@ test("Discord 등록은 클랜 가입 행을 만들지 않고 프로필을 저�
 
   try {
     const { POST } = await import("../app/api/clan-members/route");
+    const { createRegistrationToken } = await import("../lib/discord-accounts/registration-token");
     const { registerClanMember } = await import("../lib/members/service");
     const { withApiErrorHandler } = await import("../lib/api/route-handler");
     const { db } = await import("../lib/db");
@@ -63,9 +65,9 @@ test("Discord 등록은 클랜 가입 행을 만들지 않고 프로필을 저�
     await context.test("Discord ID가 없거나 잘못되면 저장하지 않는다", async (subtest) => {
       const fetchMock = subtest.mock.method(globalThis, "fetch", async () => { throw new Error("Unexpected API request"); });
       const response = await POST(makeRequest({ ...input, ...identity }), {});
-      assert.equal(response.status, 400);
-      assert.equal((await response.json()).error.code, "BAD_REQUEST");
-      assert.equal((await POST(makeRequest(input), {})).status, 400);
+      assert.equal(response.status, 401);
+      assert.equal((await response.json()).error.code, "DISCORD_LINK_REQUIRED");
+      assert.equal((await POST(makeRequest(input), {})).status, 401);
       assert.equal(fetchMock.mock.calls.length, 0);
     });
 
@@ -101,11 +103,20 @@ test("Discord 등록은 클랜 가입 행을 만들지 않고 프로필을 저�
       assert.equal(fetchMock.mock.calls.length, 1);
     });
 
-    await context.test("URL의 Discord ID만으로도 PUBG 계정 검증을 진행한다", async (subtest) => {
+    await context.test("평문 Discord ID만으로는 외부 API나 저장에 접근하지 못한다", async (subtest) => {
       const fetchMock = subtest.mock.method(globalThis, "fetch", async () => Response.json({ data: [] }));
       const response = await POST(makeRequest({
         ...input, discordUserId: "348806182779224065", discordGuildId: "1543197573429465188",
       }), {});
+      assert.equal(response.status, 401);
+      assert.equal((await response.json()).error.code, "DISCORD_LINK_REQUIRED");
+      assert.equal(fetchMock.mock.calls.length, 0);
+    });
+
+    await context.test("유효한 토큰의 계정으로 PUBG 계정 검증을 진행한다", async (subtest) => {
+      const fetchMock = subtest.mock.method(globalThis, "fetch", async () => Response.json({ data: [] }));
+      const token = createRegistrationToken({ discordUserId: "348806182779224065", discordGuildId: "1543197573429465188" });
+      const response = await POST(makeRequest({ ...input, token }), {});
       assert.equal(response.status, 404);
       assert.equal((await response.json()).error.code, "PUBG_PLAYER_NOT_FOUND");
       assert.equal(fetchMock.mock.calls.length, 1);

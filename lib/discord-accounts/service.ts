@@ -6,20 +6,17 @@ import {
   updateDiscordAccountNames,
   updateDiscordNicknameStatus,
 } from "@/lib/discord-accounts/repository";
-import type { DiscordNicknameTarget, DiscordNicknameUpdate, RegisterDiscordAccountInput } from "@/lib/discord-accounts/types";
+import type { DiscordNicknameTarget, DiscordNicknameUpdate, DiscordRegistrationIdentity, RegisterDiscordAccountInput } from "@/lib/discord-accounts/types";
 import { updateDiscordMemberNickname } from "@/lib/discord/members/update-member-nickname";
 import { discordLogger } from "@/lib/logger";
 import { findStoredPlayerByName } from "@/lib/members/repository";
 import { PubgApiError } from "@/lib/pubg/client";
 import { getPlayerByName } from "@/lib/pubg/players";
-import { getDiscordRegistrationParams } from "@/lib/discord-accounts/registration-params";
 import type { PubgPlatform } from "@/lib/pubg/types";
 
-/** 현재 등록과 동일하게 전달된 ID를 사용한다. 본인 확인 도입 시 이 경로도 함께 연결한다. */
-export async function retryDiscordNickname(input: unknown) {
-  const params = getDiscordRegistrationParams(input);
-  if (!params) throw new BadRequestError("Discord 사용자 ID와 서버 ID를 확인해 주세요.");
-  const target = await findDiscordNicknameTarget(params);
+/** API가 토큰에서 검증한 계정으로만 재시도한다. */
+export async function retryDiscordNickname(identity: DiscordRegistrationIdentity) {
+  const target = await findDiscordNicknameTarget(identity);
   if (!target) throw new NotFoundError("등록된 계정을 찾을 수 없습니다. 계정을 먼저 등록해 주세요.");
   return applyDiscordNickname(target);
 }
