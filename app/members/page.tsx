@@ -11,6 +11,15 @@ export default async function MembersPage() {
     (member) => member.profileRegistered,
   ).length;
   const discoveredMemberCount = members.length - registeredMemberCount;
+  // 클라이언트 컴포넌트에는 공개 표시에 필요한 필드만 전달한다.
+  const tableMembers = members.map((member) => ({
+    memberId: member.memberId,
+    playerId: member.playerId,
+    nickname: member.nickname,
+    platform: member.platform,
+    profileRegistered: member.profileRegistered,
+    status: member.status,
+  }));
 
   return (
     <main className="min-h-screen bg-background pt-18 text-foreground">
@@ -46,7 +55,7 @@ export default async function MembersPage() {
               <span className="text-primary">[{clan.tag}]</span>
               <span>CLAN LEVEL {clan.level}</span>
               <span>{clan.platform.toUpperCase()}</span>
-              <span>API ROSTER {clan.memberCount}명</span>
+              <span>클랜원 {clan.memberCount}명</span>
             </div>
           )}
         </div>
@@ -94,12 +103,11 @@ export default async function MembersPage() {
           </div>
         </div>
 
-        <ClanMembersTable members={members} />
+        <ClanMembersTable members={tableMembers} />
 
         <p className="mt-5 flex items-center gap-2 text-[9px] leading-5 text-muted-foreground">
-          <ShieldCheck className="size-3.5 shrink-0 text-primary" /> 현재 활성
-          상태의 클랜원만 표시하며, 자동 탐색 멤버는 프로필 등록 전까지 PUBG
-          닉네임으로 표시
+          <ShieldCheck className="size-3.5 shrink-0 text-primary" /> 클랜원을
+          선택하면 개인 전적을 확인할 수 있습니다.
         </p>
       </section>
     </main>

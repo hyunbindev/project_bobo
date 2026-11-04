@@ -22,6 +22,19 @@ backend에서 Loki에 접근한다. Alloy는 Docker 소켓으로 로그를 읽�
 복사한 뒤 실제 값을 입력한다. Grafana 설정도 이 파일에 넣으며 `GRAFANA_ADMIN_PASSWORD`는 필수다.
 `secrets/cloudflare-tunnel-token`에는 기존처럼 Tunnel 토큰 한 줄을 저장한다.
 
+웹 등록 링크에는 만료 없는 AES-256-GCM 토큰을 사용한다.
+`DISCORD_REGISTRATION_ENCRYPTION_KEY`에는 아래 명령으로 생성한 32바이트 Base64 키를 설정한다.
+예시 파일의 placeholder를 그대로 사용하면 등록 링크를 발급·복호화할 수 없다.
+
+```bash
+node -e "console.log(require('node:crypto').randomBytes(32).toString('base64'))"
+```
+
+생성한 키는 서버 환경파일에만 저장하고 재배포 때 같은 값을 유지한다.
+키를 교체하면 기존 등록 링크는 무효화되며 Discord에서 새 링크를 받아야 한다.
+기존 평문 ID 링크는 더 이상 허용하지 않는다. DB 마이그레이션은 필요 없다.
+링크를 가진 사람이 등록할 수 있으며 링크 발급 출처 검증이 Discord OAuth 본인 인증을 대신하지는 않는다.
+
 ```bash
 bash scripts/deploy.sh bootstrap
 ```

@@ -37,16 +37,22 @@ test("봇이 만드는 URL을 페이지 파라미터로 그대로 읽을 수 있
     return request === "server-only" ? require.resolve("next/dist/compiled/server-only/empty.js") : original.call(this, request, ...args);
   });
   const savedBaseUrl = process.env.APP_BASE_URL;
+  const savedKey = process.env.DISCORD_REGISTRATION_ENCRYPTION_KEY;
+  process.env.DISCORD_REGISTRATION_ENCRYPTION_KEY = Buffer.alloc(32, 18).toString("base64");
   process.env.APP_BASE_URL = "https://example.com";
   try {
     const { createDiscordRegistrationUrl } = await import("../lib/discord/discord-registration-url");
+    const { decryptRegistrationToken } = await import("../lib/discord-accounts/registration-token");
     const value = createDiscordRegistrationUrl(params.discordUserId, params.discordGuildId);
     assert.ok(value);
     const url = new URL(value);
     assert.equal(url.pathname, "/join/discord");
-    assert.deepEqual(getDiscordRegistrationParams(Object.fromEntries(url.searchParams)), params);
+    assert.deepEqual([...url.searchParams.keys()], ["token"]);
+    assert.deepEqual(decryptRegistrationToken(url.searchParams.get("token")), params);
     assert.equal(createDiscordRegistrationUrl("invalid", params.discordGuildId), null);
   } finally {
+    if (savedKey === undefined) delete process.env.DISCORD_REGISTRATION_ENCRYPTION_KEY;
+    else process.env.DISCORD_REGISTRATION_ENCRYPTION_KEY = savedKey;
     alias.mock.restore();
     if (savedBaseUrl === undefined) delete process.env.APP_BASE_URL;
     else process.env.APP_BASE_URL = savedBaseUrl;

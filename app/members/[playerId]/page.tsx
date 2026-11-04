@@ -34,7 +34,6 @@ import {
   type HighRecord,
 } from "@/lib/player-stats/service";
 
-import { formatDateTime } from "@/lib/shared/date";
 import { formatMapName } from "@/lib/pubg/maps";
 import { formatGameMode } from "@/lib/pubg/game-modes";
 
@@ -117,11 +116,8 @@ export default async function MemberDetailPage({
                 </h1>
               </div>
               <p className="mt-4 text-sm font-semibold text-muted-foreground">
-                {member.name ?? "미등록"} · [{member.clanTag}] ·{" "}
+                [{member.clanTag}] ·{" "}
                 {member.platform.toUpperCase()}
-              </p>
-              <p className="mt-2 max-w-xl truncate text-[10px] text-muted-foreground/60">
-                LAST UPDATED · {formatDateTime(member.lastUpdateAt)}
               </p>
             </div>
           </div>

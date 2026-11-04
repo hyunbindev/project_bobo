@@ -10,7 +10,7 @@ export type DiscordNicknameUpdate =
   | { status: "updated"; nickname: string }
   | { status: "failed"; message: string };
 
-/** URL로 전달받는 미검증 계정 식별자. 본인 확인 결과와 구분한다. */
+/** Discord 식별자 쌍. 형식 검사는 발급 출처나 방문자의 본인 여부를 증명하지 않는다. */
 export type DiscordRegistrationParams = {
   discordUserId: string;
   discordGuildId: string;
