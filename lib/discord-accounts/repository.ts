@@ -8,6 +8,17 @@ import type { PubgPlatform } from "@/lib/pubg/types";
 
 type DatabaseClient = Omit<typeof db, "$client">;
 
+/** 입장한 서버의 등록 여부만 확인한다. 다른 서버의 등록 정보는 사용하지 않는다. */
+export async function hasDiscordRegistration(params: DiscordRegistrationParams) {
+  const [account] = await db.select({ id: playerDiscordAccounts.id })
+    .from(playerDiscordAccounts)
+    .where(and(
+      eq(playerDiscordAccounts.discordGuildId, params.discordGuildId),
+      eq(playerDiscordAccounts.discordUserId, params.discordUserId),
+    )).limit(1);
+  return Boolean(account);
+}
+
 /** 요청한 서버·사용자에 연결된 기존 등록 정보로만 재시도한다. */
 export async function findDiscordNicknameTarget(params: DiscordRegistrationParams) {
   const [row] = await db.select({ account: playerDiscordAccounts, pubgName: players.name })

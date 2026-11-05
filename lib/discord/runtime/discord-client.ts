@@ -3,6 +3,7 @@ import "server-only";
 import { Client, Events, GatewayIntentBits } from "discord.js";
 
 import { handleDiscordInteraction } from "@/lib/discord/commands/command-registry";
+import { handleGuildMemberAdd } from "@/lib/discord/members/handle-guild-member-add";
 import { discordLogger } from "@/lib/logger";
 
 type DiscordRuntimeState = {
@@ -89,6 +90,8 @@ function createDiscordClient() {
   const client = new Client({
     intents: [
       GatewayIntentBits.Guilds,
+      // Developer Portal > Bot > Server Members Intent도 활성화해야 한다.
+      GatewayIntentBits.GuildMembers,
       GatewayIntentBits.GuildVoiceStates,
     ],
   });
@@ -102,6 +105,10 @@ function createDiscordClient() {
       },
       "Discord bot connected",
     );
+  });
+
+  client.on(Events.GuildMemberAdd, (member) => {
+    void handleGuildMemberAdd(member);
   });
 
   client.on(Events.InteractionCreate, (interaction) => {
