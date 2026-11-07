@@ -20,9 +20,11 @@ test("Discord 프로필 이관은 데이터와 연동을 보존하고 불명확�
   const { syncPlayersFromPubg, findActiveClanMembersByClanId, findClanMemberDetailByPlayerId } = await import("../lib/members/repository");
   const { findDiscordAccountsForPlayers, linkDiscordAccount } = await import("../lib/discord-accounts/repository");
   alias.mock.restore();
-  const statements = (await readFile("drizzle/0008_move_clan_profiles_to_discord.sql", "utf8")
-    + "\n--> statement-breakpoint\n"
-    + await readFile("drizzle/0009_discord_nickname_sync.sql", "utf8"))
+  const statements = (await Promise.all([
+    "0008_move_clan_profiles_to_discord", "0009_discord_nickname_sync",
+    "0010_discord_auto_sync", "0011_discord_collected_accounts",
+  ].map((name) => readFile(`drizzle/${name}.sql`, "utf8"))))
+    .join("\n--> statement-breakpoint\n")
     .split("--> statement-breakpoint").filter((statement) => statement.trim());
   const client = new Client({ connectionString: process.env.TEST_DATABASE_URL });
   await client.connect();
@@ -99,6 +101,7 @@ test("Discord 프로필 이관은 데이터와 연동을 보존하고 불명확�
         assert.equal(row.nickname_status, "pending");
         assert.equal(row.last_applied_nickname, null);
         assert.equal(row.nickname_error, null);
+        assert.equal(row.is_auto_sync, true);
         assert.equal(row.created_at.toISOString(), "2025-01-01T00:00:00.000Z");
         assert.equal(row.updated_at.toISOString(), "2025-02-01T00:00:00.000Z");
         const columns = (await client.query("select attname from pg_attribute where attrelid='clan_members'::regclass and attnum>0 and not attisdropped")).rows.map((row) => row.attname);
@@ -141,6 +144,29 @@ test("Discord 프로필 이관은 데이터와 연동을 보존하고 불명확�
         assert.equal(linked[0].discordUserId, "discord-one");
         await client.query("delete from clan_members where id=$1", [uuid(10)]);
         assert.equal((await client.query("select count(*)::int as count from player_discord_accounts where id=$1", [uuid(20)])).rows[0].count, 1);
+      });
+    });
+
+    await context.test("Discord 정보만 수집한 행은 같은 ID로 검증된 계정에 연결하고 자동 동기화를 끈다", async () => {
+      await withFixture(async (transaction) => {
+        await migrate();
+        await client.query(`insert into player_discord_accounts
+          (id, discord_guild_id, discord_user_id, discord_display_name, discord_username)
+          values ($1, 'guild-a', 'collected-user', 'Server Display', 'username')`, [uuid(50)]);
+        const partial = (await client.query("select * from player_discord_accounts where id=$1", [uuid(50)])).rows[0];
+        assert.equal(partial.player_id, null);
+        assert.equal(partial.name, null);
+        assert.equal(partial.birth_year, null);
+        const linked = await linkDiscordAccount({
+          discordGuildId: "guild-a", discordUserId: "collected-user", discordDisplayName: "Server Display",
+          discordUsername: "username", name: "Member", birthYear: 1998, isAutoSync: false,
+          player: { accountId: "account.collected", name: "COLLECTED", platform: "kakao", clanId: null, matchIds: [] },
+        }, transaction);
+        assert.equal(linked.account.id, uuid(50));
+        assert.equal(linked.account.playerId, linked.player.id);
+        assert.equal(linked.account.name, "Member");
+        assert.equal(linked.account.birthYear, 1998);
+        assert.equal(linked.account.isAutoSync, false);
       });
     });
 

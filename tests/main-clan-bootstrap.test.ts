@@ -76,7 +76,7 @@ test("main clan bootstrap initializes once, validates upstream data, and rolls b
         unique(clan_id, player_id)
       );
       create temp table player_discord_accounts (
-        id uuid, player_id uuid, discord_guild_id text
+        id uuid, player_id uuid, discord_guild_id text, name text, birth_year integer
       );
     `);
 

@@ -2,9 +2,9 @@ import type { PubgPlatform, PubgPlayer } from "@/lib/pubg/types";
 import type { PlayerDiscordAccount } from "@/lib/db/schema/discord";
 
 export type DiscordNicknameTarget = Pick<PlayerDiscordAccount,
-  "id" | "discordGuildId" | "discordUserId" | "name" | "birthYear" |
+  "id" | "discordGuildId" | "discordUserId" |
   "nicknameStatus" | "lastAppliedNickname"
-> & { pubgName: string };
+> & { name: string; birthYear: number; pubgName: string };
 
 export type DiscordNicknameUpdate =
   | { status: "updated"; nickname: string }
@@ -34,4 +34,5 @@ export type LinkDiscordAccountInput = DiscordRegistrationIdentity & {
   player: PubgPlayer;
   name: string;
   birthYear: number;
+  isAutoSync?: boolean;
 };

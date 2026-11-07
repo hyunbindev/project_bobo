@@ -3,8 +3,8 @@ import posthog from "posthog-js";
 const projectToken = process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN?.trim();
 const apiHost = process.env.NEXT_PUBLIC_POSTHOG_HOST?.trim();
 
-// 연결값이 없으면 로컬·CI 및 미설정 배포에서는 수집을 시작하지 않는다.
-if (projectToken && apiHost) {
+// 개발·테스트 모드에서는 토큰이 설정되어 있어도 이벤트와 리플레이 수집을 시작하지 않는다.
+if (process.env.NODE_ENV === "production" && projectToken && apiHost) {
   posthog.init(projectToken, {
     api_host: apiHost,
     defaults: "2026-08-30",

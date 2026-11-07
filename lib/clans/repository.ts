@@ -1,4 +1,4 @@
-import { and, count, desc, eq, exists } from "drizzle-orm";
+import { and, count, desc, eq, exists, isNotNull } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { clanMembers, clans, playerDiscordAccounts } from "@/lib/db/schema";
@@ -25,6 +25,8 @@ export async function findMainClanSummary(pubgClanId?: string) {
         eq(clanMembers.status, "active"),
         exists(db.select({ id: playerDiscordAccounts.id }).from(playerDiscordAccounts).where(and(
           eq(playerDiscordAccounts.playerId, clanMembers.playerId),
+          isNotNull(playerDiscordAccounts.name),
+          isNotNull(playerDiscordAccounts.birthYear),
           guildId ? eq(playerDiscordAccounts.discordGuildId, guildId) : undefined,
         ))),
       ),

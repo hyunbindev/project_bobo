@@ -27,7 +27,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
-      <GoogleAnalytics gaId="G-ZJRJ94RH4M"/>
+      {process.env.NODE_ENV === "production" && (<GoogleAnalytics gaId="G-ZJRJ94RH4M" />)}
     </html>
   );
 }

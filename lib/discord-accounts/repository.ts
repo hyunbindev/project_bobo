@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, or } from "drizzle-orm";
 
 import { ConflictError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
@@ -15,12 +15,15 @@ export async function hasDiscordRegistration(params: DiscordRegistrationParams) 
     .where(and(
       eq(playerDiscordAccounts.discordGuildId, params.discordGuildId),
       eq(playerDiscordAccounts.discordUserId, params.discordUserId),
+      isNotNull(playerDiscordAccounts.playerId),
+      isNotNull(playerDiscordAccounts.name),
+      isNotNull(playerDiscordAccounts.birthYear),
     )).limit(1);
   return Boolean(account);
 }
 
 /** 요청한 서버·사용자에 연결된 기존 등록 정보로만 재시도한다. */
-export async function findDiscordNicknameTarget(params: DiscordRegistrationParams) {
+export async function findDiscordNicknameTarget(params: DiscordRegistrationParams): Promise<DiscordNicknameTarget | null> {
   const [row] = await db.select({ account: playerDiscordAccounts, pubgName: players.name })
     .from(playerDiscordAccounts)
     .innerJoin(players, eq(players.id, playerDiscordAccounts.playerId))
@@ -28,7 +31,8 @@ export async function findDiscordNicknameTarget(params: DiscordRegistrationParam
       eq(playerDiscordAccounts.discordGuildId, params.discordGuildId),
       eq(playerDiscordAccounts.discordUserId, params.discordUserId),
     )).limit(1);
-  return row ? { ...row.account, pubgName: row.pubgName } : null;
+  if (!row || row.account.name === null || row.account.birthYear === null) return null;
+  return { ...row.account, name: row.account.name, birthYear: row.account.birthYear, pubgName: row.pubgName };
 }
 
 /** Discord API가 반환한 실제 표시 이름과 사용자명을 반영한다. */
@@ -62,14 +66,14 @@ export async function updateDiscordNicknameStatus(
   if (!account) throw new Error("Registered Discord account no longer exists.");
 }
 
-/** 이번에 조회한 플레이어에 연결된 각 Discord 서버의 등록 정보를 가져온다. */
+/** 이번에 조회한 플레이어의 자동 동기화가 켜진 Discord 계정만 가져온다. */
 export async function findDiscordNicknameTargets(
   accountIds: string[],
   platform: PubgPlatform,
   database: DatabaseClient = db,
 ): Promise<DiscordNicknameTarget[]> {
   if (accountIds.length === 0) return [];
-  return database.select({
+  const rows = await database.select({
     id: playerDiscordAccounts.id,
     discordGuildId: playerDiscordAccounts.discordGuildId,
     discordUserId: playerDiscordAccounts.discordUserId,
@@ -83,7 +87,11 @@ export async function findDiscordNicknameTargets(
     .where(and(
       inArray(players.pubgAccountId, [...new Set(accountIds)]),
       eq(players.platform, platform),
+      eq(playerDiscordAccounts.isAutoSync, true),
+      isNotNull(playerDiscordAccounts.name),
+      isNotNull(playerDiscordAccounts.birthYear),
     ));
+  return rows.filter((row): row is DiscordNicknameTarget => row.name !== null && row.birthYear !== null);
 }
 
 /** 클랜 소속과 관계없이 플레이어·서버 기준으로 연동 계정을 찾는다. */
@@ -129,7 +137,7 @@ export async function linkDiscordAccount(input: LinkDiscordAccountInput, databas
           eq(playerDiscordAccounts.discordGuildId, input.discordGuildId),
           eq(playerDiscordAccounts.discordUserId, input.discordUserId),
         )).limit(1);
-      if (discordLink && discordLink.playerId !== player.id) {
+      if (discordLink?.playerId && discordLink.playerId !== player.id) {
         throw new ConflictError("이 Discord 계정은 이미 등록되어있습니다.");
       }
 
@@ -150,17 +158,20 @@ export async function linkDiscordAccount(input: LinkDiscordAccountInput, databas
         discordUsername: input.discordUsername,
         name: input.name,
         birthYear: input.birthYear,
+        isAutoSync: input.isAutoSync ?? true,
       }).onConflictDoUpdate({
         target: [playerDiscordAccounts.discordGuildId, playerDiscordAccounts.discordUserId],
         set: {
+          playerId: player.id,
           ...(input.discordDisplayName ? { discordDisplayName: input.discordDisplayName } : {}),
           ...(input.discordUsername ? { discordUsername: input.discordUsername } : {}),
           name: input.name,
           birthYear: input.birthYear,
+          ...(input.isAutoSync === undefined ? {} : { isAutoSync: input.isAutoSync }),
           updatedAt: now,
         },
         // 동시 요청에서도 기존 계정 연결을 다른 플레이어로 바꾸지 않는다.
-        setWhere: eq(playerDiscordAccounts.playerId, player.id),
+        setWhere: or(isNull(playerDiscordAccounts.playerId), eq(playerDiscordAccounts.playerId, player.id)),
       }).returning();
       if (!account) throw new ConflictError("Discord 계정의 연결 정보를 다시 확인해 주세요.");
       return { account, player };

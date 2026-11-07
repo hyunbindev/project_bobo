@@ -4,6 +4,7 @@ import { Client, Events, GatewayIntentBits } from "discord.js";
 
 import { handleDiscordInteraction } from "@/lib/discord/commands/command-registry";
 import { handleGuildMemberAdd } from "@/lib/discord/members/handle-guild-member-add";
+import { handleVoiceStateUpdate } from "@/lib/discord/members/handle-voice-state-update";
 import { discordLogger } from "@/lib/logger";
 
 type DiscordRuntimeState = {
@@ -109,6 +110,10 @@ function createDiscordClient() {
 
   client.on(Events.GuildMemberAdd, (member) => {
     void handleGuildMemberAdd(member);
+  });
+
+  client.on(Events.VoiceStateUpdate, (oldState, newState) => {
+    void handleVoiceStateUpdate(oldState, newState);
   });
 
   client.on(Events.InteractionCreate, (interaction) => {
