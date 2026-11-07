@@ -71,6 +71,13 @@
       "when": 1793595398011,
       "tag": "0009_discord_nickname_sync",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794017420675,
+      "tag": "0010_discord_auto_sync",
+      "breakpoints": true
     }
   ]
 }

@@ -1,0 +1,1 @@
+ALTER TABLE "player_discord_accounts" ADD COLUMN "is_auto_sync" boolean DEFAULT true NOT NULL;

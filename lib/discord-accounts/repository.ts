@@ -62,7 +62,7 @@ export async function updateDiscordNicknameStatus(
   if (!account) throw new Error("Registered Discord account no longer exists.");
 }
 
-/** 이번에 조회한 플레이어에 연결된 각 Discord 서버의 등록 정보를 가져온다. */
+/** 이번에 조회한 플레이어의 자동 동기화가 켜진 Discord 계정만 가져온다. */
 export async function findDiscordNicknameTargets(
   accountIds: string[],
   platform: PubgPlatform,
@@ -83,6 +83,7 @@ export async function findDiscordNicknameTargets(
     .where(and(
       inArray(players.pubgAccountId, [...new Set(accountIds)]),
       eq(players.platform, platform),
+      eq(playerDiscordAccounts.isAutoSync, true),
     ));
 }
 

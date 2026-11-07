@@ -32,15 +32,17 @@ test("닉네임 동기화는 변경·실패 건만 적용하고 결과를 저장
       nicknameStatus: "completed", lastAppliedNickname: "Member 98 / OLD_NAME",
     };
 
-    function setup(subtest: TestContext, targets: DiscordNicknameTarget[], deniedUsers: string[] = []) {
-      const rows = targets.map((target) => ({ ...target, nicknameError: null as string | null }));
+    function setup(subtest: TestContext, targets: (DiscordNicknameTarget & { isAutoSync?: boolean })[], deniedUsers: string[] = []) {
+      const rows = targets.map((target) => ({ isAutoSync: true, ...target, nicknameError: null as string | null }));
       const writes: Array<Record<string, unknown>> = [];
       const query = {
         from: () => query,
         innerJoin: () => query,
         where: async (condition: SQL) => {
-          assert.deepEqual(new PgDialect().sqlToQuery(condition).params, ["account.pubg", "kakao"]);
-          return rows;
+          const query = new PgDialect().sqlToQuery(condition);
+          assert.deepEqual(query.params, ["account.pubg", "kakao", true]);
+          assert.match(query.sql, /"player_discord_accounts"\."is_auto_sync" = \$3/);
+          return rows.filter((row) => row.isAutoSync);
         },
       };
       const selectMock = subtest.mock.method(db, "select", () => query);
@@ -77,6 +79,19 @@ test("닉네임 동기화는 변경·실패 건만 적용하고 결과를 저장
       assert.deepEqual(state.writes.map((write) => write.nicknameStatus), ["pending", "completed"]);
       assert.equal(state.rows[0].lastAppliedNickname, "Member 98 / NEW_NAME");
       assert.equal(state.rows[0].nicknameError, null);
+    });
+
+    await context.test("자동 동기화가 꺼진 계정은 실패·변경 상태여도 닉네임과 상태를 변경하지 않는다", async (subtest) => {
+      const state = setup(subtest, [
+        { ...base, isAutoSync: false, nicknameStatus: "failed" },
+        { ...base, id: "enabled-account", discordUserId: "user-b", isAutoSync: true },
+      ]);
+      await syncDiscordNicknames(["account.pubg"], "kakao");
+      assert.equal(state.patchMock.mock.calls.length, 1);
+      assert.equal(state.patchMock.mock.calls[0].arguments[0], "/guilds/guild-a/members/user-b");
+      assert.equal(state.rows[0].nicknameStatus, "failed");
+      assert.equal(state.rows[0].lastAppliedNickname, base.lastAppliedNickname);
+      assert.ok(state.writes.every((write) => write.id === "enabled-account"));
     });
 
     await context.test("이미 적용한 이름과 같으면 Discord 요청과 상태 갱신을 생략한다", async (subtest) => {

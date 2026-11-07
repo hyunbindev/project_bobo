@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  boolean,
   check,
   index,
   integer,
@@ -26,6 +27,8 @@ export const playerDiscordAccounts = pgTable(
     // 사용자가 등록한 이름과 Discord에서 조회한 현재 표시 이름은 별도로 관리한다.
     name: text("name").notNull(),
     birthYear: integer("birth_year").notNull(),
+    // 주기적 닉네임 자동 변경만 제어한다. 직접 등록·수동 재시도는 별도로 허용한다.
+    isAutoSync: boolean("is_auto_sync").default(true).notNull(),
     nicknameStatus: text("nickname_status", { enum: ["pending", "completed", "failed"] })
       .default("pending")
       .notNull(),
