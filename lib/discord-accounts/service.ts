@@ -1,4 +1,4 @@
-import { ApiError, BadRequestError, NotFoundError } from "@/lib/api/errors";
+import { BadRequestError, NotFoundError } from "@/lib/api/errors";
 import {
   findDiscordNicknameTargets,
   findDiscordNicknameTarget,
@@ -9,9 +9,7 @@ import {
 import type { DiscordNicknameTarget, DiscordNicknameUpdate, DiscordRegistrationIdentity, RegisterDiscordAccountInput } from "@/lib/discord-accounts/types";
 import { updateDiscordMemberNickname } from "@/lib/discord/members/update-member-nickname";
 import { discordLogger } from "@/lib/logger";
-import { findStoredPlayerByName } from "@/lib/members/repository";
-import { PubgApiError } from "@/lib/pubg/client";
-import { getPlayerByName } from "@/lib/pubg/players";
+import { resolvePubgPlayer } from "@/lib/members/player-service";
 import type { PubgPlatform } from "@/lib/pubg/types";
 
 /** API가 토큰에서 검증한 계정으로만 재시도한다. */
@@ -21,13 +19,14 @@ export async function retryDiscordNickname(identity: DiscordRegistrationIdentity
   return applyDiscordNickname(target);
 }
 
-export async function registerDiscordAccount(input: RegisterDiscordAccountInput) {
+/** 검증한 계정·프로필만 저장한다. 음성채널 수집에서도 닉네임 변경 없이 사용한다. */
+export async function collectDiscordAccount(
+  input: RegisterDiscordAccountInput,
+  options: { isAutoSync?: boolean } = {},
+) {
   const nickname = input.nickname.trim();
   const name = input.name.trim();
   const currentYear = new Date().getFullYear();
-  if (!nickname || nickname.length > 64 || nickname.includes(",")) {
-    throw new ApiError(400, "INVALID_PUBG_NICKNAME", "올바른 PUBG 아이디를 입력해 주세요.");
-  }
   if (!name || name.length > 30) {
     throw new BadRequestError("이름은 1자 이상 30자 이하로 입력해 주세요.");
   }
@@ -38,37 +37,16 @@ export async function registerDiscordAccount(input: RegisterDiscordAccountInput)
     throw new BadRequestError("Discord 계정과 서버 정보가 필요합니다.");
   }
 
-  try {
-    const storedPlayer = await findStoredPlayerByName(nickname, input.platform);
-    const player = storedPlayer
-      ? {
-        accountId: storedPlayer.pubgAccountId,
-        name: storedPlayer.name,
-        platform: storedPlayer.platform,
-        clanId: storedPlayer.pubgClanId,
-        matchIds: [],
-      }
-      : await getPlayerByName(nickname, input.platform);
+  const player = await resolvePubgPlayer(nickname, input.platform);
+  return linkDiscordAccount({ ...input, player, name, isAutoSync: options.isAutoSync });
+}
 
-    if (!player) throw new ApiError(404, "PUBG_PLAYER_NOT_FOUND", "PUBG 계정을 찾을 수 없습니다.");
-
-    const result = await linkDiscordAccount({ ...input, player, name });
-
-    const discordNicknameUpdate = await applyDiscordNickname({ ...result.account, pubgName: player.name });
-
-    return { ...result, pubgName: player.name, discordNicknameUpdate };
-  } catch (error) {
-    if (error instanceof PubgApiError) {
-      if (error.status === 404) throw new ApiError(404, "PUBG_PLAYER_NOT_FOUND", "PUBG 계정을 찾을 수 없습니다.");
-      throw new ApiError(
-        error.status === 429 ? 429 : 502,
-        error.status === 429 ? "PUBG_RATE_LIMITED" : "PUBG_API_ERROR",
-        "PUBG 계정 조회에 실패했습니다. 잠시 후 다시 시도해 주세요.",
-        error.retryAfter ? { "Retry-After": error.retryAfter } : undefined,
-      );
-    }
-    throw error;
-  }
+export async function registerDiscordAccount(input: RegisterDiscordAccountInput) {
+  const result = await collectDiscordAccount(input);
+  const discordNicknameUpdate = await applyDiscordNickname({
+    ...result.account, name: input.name.trim(), birthYear: input.birthYear, pubgName: result.player.name,
+  });
+  return { ...result, pubgName: result.player.name, discordNicknameUpdate };
 }
 
 /** 등록과 주기적 동기화에서 동일한 닉네임 적용·재시도 규칙을 사용한다. */

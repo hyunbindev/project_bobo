@@ -32,7 +32,9 @@ test("닉네임 동기화는 변경·실패 건만 적용하고 결과를 저장
       nicknameStatus: "completed", lastAppliedNickname: "Member 98 / OLD_NAME",
     };
 
-    function setup(subtest: TestContext, targets: (DiscordNicknameTarget & { isAutoSync?: boolean })[], deniedUsers: string[] = []) {
+    function setup(subtest: TestContext, targets: (Omit<DiscordNicknameTarget, "name" | "birthYear"> & {
+      name: string | null; birthYear: number | null; isAutoSync?: boolean;
+    })[], deniedUsers: string[] = []) {
       const rows = targets.map((target) => ({ isAutoSync: true, ...target, nicknameError: null as string | null }));
       const writes: Array<Record<string, unknown>> = [];
       const query = {
@@ -92,6 +94,13 @@ test("닉네임 동기화는 변경·실패 건만 적용하고 결과를 저장
       assert.equal(state.rows[0].nicknameStatus, "failed");
       assert.equal(state.rows[0].lastAppliedNickname, base.lastAppliedNickname);
       assert.ok(state.writes.every((write) => write.id === "enabled-account"));
+    });
+
+    await context.test("이름·출생연도가 없는 수집 행은 자동 닉네임 변경에서 제외한다", async (subtest) => {
+      const state = setup(subtest, [{ ...base, name: null }, { ...base, id: "missing-year", birthYear: null }]);
+      await syncDiscordNicknames(["account.pubg"], "kakao");
+      assert.equal(state.patchMock.mock.calls.length, 0);
+      assert.equal(state.writes.length, 0);
     });
 
     await context.test("이미 적용한 이름과 같으면 Discord 요청과 상태 갱신을 생략한다", async (subtest) => {

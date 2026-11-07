@@ -78,6 +78,13 @@
       "when": 1794017420675,
       "tag": "0010_discord_auto_sync",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794018578501,
+      "tag": "0011_discord_collected_accounts",
+      "breakpoints": true
     }
   ]
 }

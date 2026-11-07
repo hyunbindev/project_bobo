@@ -28,6 +28,34 @@
 
 ## 확인
 
+### 음성채널의 기존 회원 수집
+
+`voiceStateUpdate`에서 음성채널 입장·이동이 발생하면, 해당 서버의 `player_discord_accounts`에
+연동되지 않은 회원의 표시 이름을 `현빈 98 / Nopanty_B_cup` 형식으로 파싱한다. 띄어쓰기는 선택 사항이며
+이름·출생연도 두 자리·배그 닉네임이 있어야 한다. 연도 뒤 두 자리가 50보다 크면 1900년대, 나머지는
+2000년대로 변환하며 미래 연도는 제외한다. 서버 ID는 이벤트에서 받는다.
+
+`lib/members/player-service.ts`의 `resolvePubgPlayer`로 카카오 계정을 확인한다. 기존 Discord 등록 명령과
+같은 플랫폼이며, DB에 계정이 있으면 재사용하고 없으면 PUBG API를 조회한다. 계정 없음·호출 제한·API 오류를
+기존 등록 흐름과 동일한 오류 코드로 구분한다. 이 공통 함수는 조회·검증만 하고 저장이나 Discord 수정은 하지 않는다.
+
+검증 성공 시 기존 `player_discord_accounts`에 서버 ID·사용자 ID·사용자명·표시 이름·이름·출생연도와
+검증한 PUBG 계정을 저장한다. 수집만 된 기존 행도 같은 ID로 갱신하지만 다른 계정의 기존 연결은 덮어쓰지 않는다.
+
+`0011_discord_collected_accounts.sql`까지 마이그레이션을 적용하고 봇을 완전히 재시작해야 한다.
+이 마이그레이션은 기존 테이블의 세 컬럼만 nullable로 변경하며 별도 테이블을 생성하지 않는다.
+전체 회원을 봇 시작 시 수집하거나 DM을 발송하지 않는다. 음성채널 퇴장·음소거 변경·봇 계정은 제외한다.
+연동 완료된 같은 서버·사용자는 다시 수집하지 않는다. 수집 행은 최신 서버 재적·온라인 상태를 나타내지 않는다.
+정식 등록 여부는 배그 계정·이름·출생연도가 모두 있는지로 판단한다. 음성 수집으로 신규 생성하거나 미등록 행을
+완성할 때는 `is_auto_sync=false`로 저장한다. 이미 등록 완료된 계정은 수집 대상에서 제외해 설정을 유지한다.
+직접 등록은 신규 계정의 기본값 `true`를 사용하고, 기존 계정의 설정은 변경하지 않는다.
+
+형식 오류나 계정 검증 실패 시 저장하지 않으며 다음 음성채널 입장·이동에서 다시 시도한다.
+수집 과정에서 DM 발송·서버 닉네임 변경은 실행하지 않는다. 직접 등록은 같은 검증·저장 함수 호출 후 닉네임을 적용한다.
+기존 신규 서버 가입자 환영 DM 흐름과는 별도 처리다.
+
+수집 성공은 `discord.voice_member_collected`, 실패는 `discord.voice_member_collection_failed` 로그로 확인한다.
+
 등록하지 않은 테스트 계정으로 지정 서버에 입장해 DM 버튼의 등록 페이지를 확인한다. 해당 계정 등록 후 재입장하면 DM이 생략되는지, DM을 차단한 계정에서는 실패 로그만 남고 `/시작하기`로 등록 가능한지 확인한다.
 
 참고: [Gateway privileged intents](https://discord.com/developers/docs/events/gateway#privileged-intents), [Discord 오류 코드](https://discord.com/developers/docs/topics/opcodes-and-status-codes#json-json-error-codes).

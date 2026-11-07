@@ -1,4 +1,4 @@
-import { asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, isNotNull } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { playerDiscordAccounts } from "@/lib/db/schema";
@@ -11,7 +11,12 @@ export function playerRegistrationProfiles(database: Omit<typeof db, "$client"> 
     name: playerDiscordAccounts.name,
     birthYear: playerDiscordAccounts.birthYear,
   }).from(playerDiscordAccounts)
-    .where(guildId ? eq(playerDiscordAccounts.discordGuildId, guildId) : undefined)
+    .where(and(
+      guildId ? eq(playerDiscordAccounts.discordGuildId, guildId) : undefined,
+      isNotNull(playerDiscordAccounts.playerId),
+      isNotNull(playerDiscordAccounts.name),
+      isNotNull(playerDiscordAccounts.birthYear),
+    ))
     .orderBy(playerDiscordAccounts.playerId, desc(playerDiscordAccounts.updatedAt), asc(playerDiscordAccounts.id))
     .as("registration_profiles");
 }
