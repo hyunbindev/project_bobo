@@ -47,7 +47,9 @@ test("전적 API는 입력 검증·페이지 보정·JSON 날짜·빈 조합을 
       create temp table clan_members (
         id uuid, clan_id uuid, player_id uuid, status text, profile_registered boolean
       ) on commit drop;
-      create temp table player_discord_accounts (id uuid, player_id uuid, discord_guild_id text) on commit drop;
+      create temp table player_discord_accounts (
+        id uuid, player_id uuid, discord_guild_id text, name text, birth_year integer
+      ) on commit drop;
       create temp table players (id uuid primary key, name text) on commit drop;
       create temp table matches (
         id uuid primary key, platform text, match_type text, game_mode text,
