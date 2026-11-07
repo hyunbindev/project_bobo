@@ -14,6 +14,9 @@ NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com
 토큰은 PostHog 프로젝트 설정의 공개 Project token을 사용한다. Personal API key는 사용하지 않는다.
 호스트는 프로젝트 설치 안내에 표시된 주소를 그대로 사용한다. EU 프로젝트는 `https://eu.i.posthog.com`이다.
 토큰 또는 호스트가 비어 있으면 SDK 초기화를 생략한다.
+GA와 PostHog는 `NODE_ENV=production`에서만 활성화된다. `npm run dev`에서는 환경변수가 있어도
+GA 스크립트를 삽입하지 않고 PostHog 초기화·이벤트·세션 리플레이 수집을 실행하지 않는다.
+로컬에서 `npm run build` 후 `npm run start`로 실행하면 production 모드이므로 수집이 활성화된다.
 
 PostHog의 Session Replay 설정에서 녹화를 활성화하고 샘플링·URL 트리거를 지정한다.
 코드의 `disable_session_recording: false`는 녹화를 허용하며, 실제 녹화 여부는 Cloud 프로젝트의 녹화 규칙도 적용받는다.
