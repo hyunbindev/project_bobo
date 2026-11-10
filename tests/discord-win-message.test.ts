@@ -53,7 +53,7 @@ test("우승 메시지는 클릭 안내·버튼별 유입 태그를 포함하고
     const payload = message.components[0].toJSON();
     const text = JSON.stringify(payload);
     assert.deepEqual(message.allowedMentions, { parse: [] });
-    assert.ok(text.includes("<@123456789012345678>"));
+    assert.ok(!text.includes("<@"));
     assert.ok(text.includes("함께한 32매치 중 7번째 치킨"));
     assert.ok(!text.includes("조합 승률"));
     assert.ok(!text.includes("이번 조합 딜량"));

@@ -76,10 +76,8 @@ export function createWinMatchMessage(
     .addTextDisplayComponents(new TextDisplayBuilder().setContent("### BOBO SQUAD"));
 
   for (const member of members) {
-    const profile = context.profiles?.get(member.pubgAccountId);
-    const discordName = profile ? ` · <@${profile.userId}>` : "";
     const text = new TextDisplayBuilder().setContent([
-      `**${escapeMarkdown(member.name)}**${discordName}`,
+      `**${escapeMarkdown(member.name)}**`,
       `\`${member.kills} Kill\` · \`${numberFormatter.format(Math.round(member.damage))} damage\``,
     ].join("\n"));
     message.addTextDisplayComponents(text);
