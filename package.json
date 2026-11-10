@@ -8,6 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "node --import tsx --test tests/*.test.ts",
+    "telemetry:inspect": "tsx scripts/inspect-telemetry.ts",
+    "telemetry:team": "tsx scripts/extract-team-telemetry.ts",
     "db:up": "docker compose --env-file .env.local -f compose.local.yaml up -d --wait",
     "db:stop": "docker compose --env-file .env.local -f compose.local.yaml stop",
     "db:logs": "docker compose --env-file .env.local -f compose.local.yaml logs -f postgres",
