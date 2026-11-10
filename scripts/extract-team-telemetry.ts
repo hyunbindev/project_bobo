@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { gzipSync } from "node:zlib";
 import { downloadTelemetry } from "../lib/telemetry/download";
 import { extractTeamSnapshots } from "../lib/telemetry/team-snapshots";
+import { compactTeamSnapshots } from "../lib/telemetry/ai-input";
 
 async function main() {
   const [source, team, output = "dist/telemetry-exports/team-snapshots"] = process.argv.slice(2);
@@ -14,7 +15,10 @@ async function main() {
   const json = JSON.stringify(result);
   await writeFile(resolve(directory, `team-${team}.json`), json);
   await writeFile(resolve(directory, `team-${team}.json.gz`), gzipSync(json));
-  console.log(JSON.stringify({ directory, teamId: result.teamId, snapshots: result.snapshots.length, jsonBytes: Buffer.byteLength(json) }));
+  const aiJson = JSON.stringify(compactTeamSnapshots(result));
+  await writeFile(resolve(directory, `team-${team}.ai.json`), aiJson);
+  await writeFile(resolve(directory, `team-${team}.ai.json.gz`), gzipSync(aiJson));
+  console.log(JSON.stringify({ directory, teamId: result.teamId, snapshots: result.snapshots.length, jsonBytes: Buffer.byteLength(json), aiJsonBytes: Buffer.byteLength(aiJson) }));
 }
 
 void main().catch((error: unknown) => {

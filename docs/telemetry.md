@@ -39,3 +39,18 @@ observed positions separately from result characters.
 
 Downloads allow only HTTPS telemetry-cdn.pubg.com URLs, with a 60-second timeout
 and a 32 MiB decoded-size limit. They require no PUBG API key.
+
+## AI input export
+
+Team extraction also writes team-ID.ai.json and its gzip copy. This format defines
+players once using short IDs, stores combat events once, references preceding
+events by source event index and shares game states across snapshots. Pairwise
+distances are omitted because they can be computed from the retained positions.
+Coordinates and damage distances are converted to metres. Times become seconds
+relative to matchStartedAt. Numeric measurements are rounded to one decimal place;
+negative unavailable damage distances remain negative. Player status, zones,
+observation times, lifecycle events and match results are retained.
+
+This compact format still retains individual damage events. It does not aggregate
+combat into encounters. Local tokenizer measurements are reference counts and
+may differ from a specific model's API token count.
