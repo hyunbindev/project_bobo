@@ -1,10 +1,12 @@
-import { BadRequestError, NotFoundError } from "@/lib/api/errors";
+import { ApiError, BadRequestError, NotFoundError } from "@/lib/api/errors";
+import { getMainClanSummary } from "@/lib/clans/service";
 import {
   findDiscordNicknameTargets,
   findDiscordNicknameTarget,
   linkDiscordAccount,
   updateDiscordAccountNames,
   updateDiscordNicknameStatus,
+  saveFailedVoiceCollection,
 } from "@/lib/discord-accounts/repository";
 import type { DiscordNicknameTarget, DiscordNicknameUpdate, DiscordRegistrationIdentity, RegisterDiscordAccountInput } from "@/lib/discord-accounts/types";
 import { updateDiscordMemberNickname } from "@/lib/discord/members/update-member-nickname";
@@ -47,6 +49,22 @@ export async function registerDiscordAccount(input: RegisterDiscordAccountInput)
     ...result.account, name: input.name.trim(), birthYear: input.birthYear, pubgName: result.player.name,
   });
   return { ...result, pubgName: result.player.name, discordNicknameUpdate };
+}
+
+export async function collectVoiceDiscordAccount(input: RegisterDiscordAccountInput) {
+  const clanId = process.env.PUBG_CLAN_ID?.trim() || (await getMainClanSummary())?.pubgClanId;
+  if (!clanId) throw new Error("Main PUBG clan is not configured");
+  let player;
+  try {
+    player = await resolvePubgPlayer(input.nickname, input.platform);
+  } catch (error) {
+    if (error instanceof ApiError && error.code === "PUBG_PLAYER_NOT_FOUND") {
+      return saveFailedVoiceCollection(input, "PUBG_PLAYER_NOT_FOUND");
+    }
+    throw error;
+  }
+  if (player.clanId !== clanId) return saveFailedVoiceCollection(input, "PUBG_CLAN_MISMATCH");
+  return linkDiscordAccount({ ...input, name: input.name.trim(), player, isAutoSync: false });
 }
 
 /** 등록과 주기적 동기화에서 동일한 닉네임 적용·재시도 규칙을 사용한다. */

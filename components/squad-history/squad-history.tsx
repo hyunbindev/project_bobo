@@ -32,21 +32,16 @@ export function SquadHistorySection({ history, mode, current }: {
         </div>
         <h2 className="mt-2 text-lg font-bold tracking-tight text-foreground sm:text-xl">
           함께한{" "}
-          <strong className="tabular-nums text-primary">{formatter.format(history.matchCount)}{current.rank === 1 ? "매치" : "번째"}</strong>
-          {current.rank === 1 ? (
-            <>
-              {" 중 "}
-              <strong className="tabular-nums text-primary">{formatter.format(history.winCount)}번째 치킨</strong>
-              {" 매치!"}
-            </>
-          ) : " 매치"}
+          <strong className="tabular-nums text-primary">{formatter.format(history.matchCount)}매치</strong>
+          {" · "}
+          <strong className="tabular-nums text-primary">{formatter.format(history.winCount)}승</strong>
         </h2>
         <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
           <span>함께한 <strong className="text-foreground">{formatter.format(history.matchCount)}판</strong></span>
           <span><strong className="text-primary">{formatter.format(history.winCount)}승</strong></span>
           <span>승률 <strong className="text-foreground">{formatter.format(history.winRate)}%</strong></span>
         </p>
-        <p className="mt-2 text-[10px] leading-4 text-muted-foreground sm:text-[11px]">{mode} · 이 멤버들이 함께한 경기 · 이 경기까지 수집된 기록</p>
+        <p className="mt-2 text-[10px] leading-4 text-muted-foreground sm:text-[11px]">{mode} · 이 멤버들이 함께한 경기 · 전체 수집 기록</p>
       </div>
       <div className="px-5 py-4 sm:px-6">
         <table className="w-full table-fixed text-right tabular-nums">

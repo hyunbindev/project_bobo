@@ -3,7 +3,7 @@ import "server-only";
 import type { VoiceState } from "discord.js";
 
 import { hasDiscordRegistration } from "@/lib/discord-accounts/repository";
-import { collectDiscordAccount } from "@/lib/discord-accounts/service";
+import { collectVoiceDiscordAccount } from "@/lib/discord-accounts/service";
 import { discordLogger } from "@/lib/logger";
 
 const pendingMembers = new Set<string>();
@@ -20,7 +20,7 @@ export async function handleVoiceStateUpdate(oldState: VoiceState, newState: Voi
 
   try {
     const member = newState.member ?? await newState.guild.members.fetch(newState.id);
-    if (member.user.bot || await hasDiscordRegistration(identity)) return;
+    if (member.user.bot || await hasDiscordRegistration(identity, true)) return;
     const match = member.displayName.match(DISPLAY_NAME_PATTERN);
     if (!match) return;
     const [, name, birthYearSuffix, pubgNickname] = match;
@@ -28,7 +28,7 @@ export async function handleVoiceStateUpdate(oldState: VoiceState, newState: Voi
     const birthYear = yearSuffix > 50 ? 1900 + yearSuffix : 2000 + yearSuffix;
     if (birthYear > new Date().getFullYear()) return;
 
-    await collectDiscordAccount({
+    const result = await collectVoiceDiscordAccount({
       ...identity,
       discordUsername: member.user.username,
       discordDisplayName: member.displayName,
@@ -37,7 +37,13 @@ export async function handleVoiceStateUpdate(oldState: VoiceState, newState: Voi
       nickname: pubgNickname,
       // 기존 Discord 직접 등록 명령과 같은 카카오 플랫폼으로 조회한다.
       platform: "kakao",
-    }, { isAutoSync: false });
+    });
+
+    if (!result.player) {
+      discordLogger.info({ event: "discord.voice_member_collection_rejected", ...identity },
+        "Saved Discord profile without a PUBG player connection");
+      return;
+    }
 
     discordLogger.info({ event: "discord.voice_member_collected", ...identity },
       "Collected verified Discord member from voice activity");
