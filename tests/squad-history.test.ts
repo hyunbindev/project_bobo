@@ -262,7 +262,8 @@ test("대상 조합을 포함한 경기로 요약과 목록을 집계하고 이�
     const tripleItems = await findSquadHistoryMatches({ ...target, matchId: uuid(3) }, 10, 0, database);
     assert.deepEqual(tripleItems.map((m) => m.matchId), [3, 0].map(uuid));
     assert.equal(tripleItems.length, triple.matchCount);
-    assert.equal((await findSquadHistorySummary({ ...target, matchId: uuid(0) }, database))?.matchCount, 2);
+    // ABCD requires all four members; the later ABC match does not qualify.
+    assert.equal((await findSquadHistorySummary({ ...target, matchId: uuid(0) }, database))?.matchCount, 1);
     assert.ok(items[0].playedAt instanceof Date);
     assert.equal(await findSquadHistorySummary({ ...target, matchId: uuid(4) }, database), null);
     assert.equal(await findSquadHistorySummary({ ...target, matchId: uuid(999) }, database), null);
