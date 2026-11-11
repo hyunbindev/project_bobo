@@ -7,7 +7,7 @@ import { sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 
-// Include rosters containing every target member and exclude later matches.
+// Include rosters containing every target member across all collected matches.
 // Both current and historical metrics include only these same members.
 function squadHistoryCtes(input: SquadHistoryInput) {
   return sql`
@@ -38,7 +38,6 @@ function squadHistoryCtes(input: SquadHistoryInput) {
       from target t
       join matches m on m.platform = t.platform
         and m.match_type = t.match_type and m.game_mode = t.game_mode
-        and m.played_at <= t.current_played_at
       join match_participants mp on mp.match_id = m.id
       join active_members am on am.player_id = mp.player_id
       where mp.pubg_roster_id is not null

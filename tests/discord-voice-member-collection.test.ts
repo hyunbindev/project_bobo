@@ -7,6 +7,8 @@ import { PgDialect } from "drizzle-orm/pg-core";
 
 test("음성 활동은 미연동 회원만 수집하고 DM·닉네임 변경을 실행하지 않는다", async (context) => {
   process.env.DATABASE_URL ??= "postgresql://unused:unused@127.0.0.1:1/unused";
+  const previousClanId = process.env.PUBG_CLAN_ID;
+  process.env.PUBG_CLAN_ID = "clan.main";
   const previousApiKey = process.env.PUBG_API_KEY;
   process.env.PUBG_API_KEY = "test-api-key";
   const resolver = Module as unknown as { _resolveFilename(request: string, ...args: unknown[]): string };
@@ -40,7 +42,9 @@ test("음성 활동은 미연동 회원만 수집하고 DM·닉네임 변경을 
       let registered = false;
       let fail = false;
       let storedPlayer = true;
+      let clanId: string | null = "clan.main";
       const saved = new Map<string, Record<string, unknown>>();
+      const playerWrites: unknown[] = [];
       const info = subtest.mock.method(discordLogger, "info", () => undefined);
       const warn = subtest.mock.method(discordLogger, "warn", () => undefined);
       const patch = subtest.mock.method(REST.prototype, "patch", async () => { throw new Error("Discord must not be modified"); });
@@ -51,7 +55,7 @@ test("음성 활동은 미연동 회원만 수집하고 DM·닉네임 변경을 
             return { where(condition: SQL) {
               assert.deepEqual(new PgDialect().sqlToQuery(condition).params, ["Nopanty_B_cup", "kakao"]);
               return { limit: async () => storedPlayer ? [{
-                pubgAccountId: "account.test", name: "Nopanty_B_cup", platform: "kakao", pubgClanId: null,
+                pubgAccountId: "account.test", name: "Nopanty_B_cup", platform: "kakao", pubgClanId: clanId,
               }] : [] };
             } };
           }
@@ -63,7 +67,8 @@ test("음성 활동은 미연동 회원만 수집하고 DM·닉네임 변경을 
             assert.match(query.sql, /"player_id" is not null/);
             assert.match(query.sql, /"name" is not null/);
             assert.match(query.sql, /"birth_year" is not null/);
-            assert.equal(query.params.length, 2);
+            assert.equal(query.params.length, 3);
+            assert.equal(query.params[2], "failed");
             assert.equal(query.params[1], state.id);
             return { limit: async () => registered || saved.has(`${query.params[0]}:${query.params[1]}`)
               ? [{ id: "registered-account" }] : [] };
@@ -75,10 +80,10 @@ test("음성 활동은 미연동 회원만 수집하고 DM·닉네임 변경을 
         insert(table: unknown) {
           return { values(input: Record<string, unknown>) {
             return { onConflictDoUpdate(options: { target: unknown[]; set: Record<string, unknown> }) {
-              if (table === players) return { returning: async () => [{ id: "player-a", ...input }] };
+              if (table === players) { playerWrites.push(input); return { returning: async () => [{ id: "player-a", ...input }] }; }
               assert.equal(table, playerDiscordAccounts);
               assert.deepEqual(options.target, [playerDiscordAccounts.discordGuildId, playerDiscordAccounts.discordUserId]);
-              assert.equal(input.playerId, "player-a");
+              assert.equal(input.playerId, clanId === "clan.main" ? "player-a" : null);
               assert.equal(input.name, "현빈");
               assert.equal(input.birthYear, 1998);
               assert.equal(input.isAutoSync, false);
@@ -96,8 +101,9 @@ test("음성 활동은 미연동 회원만 수집하고 DM·닉네임 변경을 
         if (fail) throw Object.assign(new Error("DB unavailable"), { code: "DB_FAILED" });
         return callback(tx);
       });
-      return { state, member, saved, select, insert, info, warn, fetch, send, setNickname, patch, api,
+      return { state, member, saved, playerWrites, select, insert, info, warn, fetch, send, setNickname, patch, api,
         missPlayer: () => { storedPlayer = false; },
+        clan: (value: string | null) => { clanId = value; },
         register: () => { registered = true; }, fail: (value: boolean) => { fail = value; } };
     }
 
@@ -184,8 +190,45 @@ test("음성 활동은 미연동 회원만 수집하고 DM·닉네임 변경을 
       assert.deepEqual(s.fetch.mock.calls[0].arguments, [s.state.id]);
       assert.equal(s.saved.size, 1);
     });
+    await context.test("clan mismatch and no clan persist failed profiles without player writes or retries", async (subtest) => {
+      for (const clanId of ["clan.other", null]) {
+        const s = setup(subtest);
+        s.clan(clanId);
+        const previous = { ...s.state, channelId: null } as VoiceState;
+        await handleVoiceStateUpdate(previous, s.state);
+        const account = [...s.saved.values()][0];
+        assert.equal(account.playerId, null);
+        assert.equal(account.nicknameStatus, "failed");
+        assert.equal(account.nicknameError, "PUBG_CLAN_MISMATCH");
+        assert.equal(account.discordGuildId, s.state.guild.id);
+        assert.equal(account.discordUserId, s.state.id);
+        assert.equal(account.discordDisplayName, s.member.displayName);
+        assert.equal(account.birthYear, 1998);
+        assert.equal(s.playerWrites.length, 0);
+        await handleVoiceStateUpdate(previous, s.state);
+        assert.equal(s.insert.mock.calls.length, 1);
+        assert.equal(s.api.mock.calls.length, 0);
+        subtest.mock.restoreAll();
+      }
+    });
+
+    await context.test("missing PUBG account persists terminal failure and skips subsequent API lookup", async (subtest) => {
+      const s = setup(subtest);
+      s.missPlayer();
+      s.clan(null);
+      s.api.mock.mockImplementation(async () => new Response(JSON.stringify({ data: [] }), { status: 200 }));
+      const previous = { ...s.state, channelId: null } as VoiceState;
+      await handleVoiceStateUpdate(previous, s.state);
+      assert.equal([...s.saved.values()][0].nicknameError, "PUBG_PLAYER_NOT_FOUND");
+      assert.equal([...s.saved.values()][0].playerId, null);
+      assert.equal(s.playerWrites.length, 0);
+      await handleVoiceStateUpdate(previous, s.state);
+      assert.equal(s.api.mock.calls.length, 1);
+    });
   } finally {
     alias.mock.restore();
+    if (previousClanId === undefined) delete process.env.PUBG_CLAN_ID;
+    else process.env.PUBG_CLAN_ID = previousClanId;
     if (previousApiKey === undefined) delete process.env.PUBG_API_KEY;
     else process.env.PUBG_API_KEY = previousApiKey;
   }

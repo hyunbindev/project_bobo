@@ -32,14 +32,14 @@ test("조합 비교는 동일 멤버의 이전 평균과 승률을 표시하고 
   assert.ok(summaryHtml.includes("이전 13경기 평균"));
   assert.ok(summaryHtml.includes("승률"));
   const html = summaryHtml + listHtml;
-  assert.ok(html.replace(/<[^>]*>/g, "").includes("함께한 14매치 중 2번째 치킨 매치!"));
+  assert.ok(html.replace(/<[^>]*>/g, "").includes("함께한 14매치 · 2승"));
   assert.ok(!html.includes("함께한 기록과 이번 경기"));
   assert.ok(!html.includes("현재 경기"));
   assert.ok(html.includes("#3.8"));
   assert.ok(html.includes("A&lt;script&gt;"));
   assert.ok(html.includes("(+400)"));
   assert.ok(html.includes("(+2.8)"));
-  assert.ok(html.includes("2번째 치킨</strong>"));
+  assert.ok(html.includes("2승</strong>"));
   assert.ok(!html.includes("min-h-240"));
   assert.ok(!html.includes("min-h-225"));
   assert.ok(html.includes('href="/matches/match/rosters/roster"'));
@@ -55,7 +55,7 @@ test("첫 경기는 비교 수치를 만들어내지 않는다", () => {
       previousMatchCount: 0, previousAverageKills: null, previousAverageDamage: null, previousAverageRank: null },
     mode: "일반전 · SQUAD", current: { kills: 2, damage: 300, rank: 1 },
   }));
-  assert.ok(html.replace(/<[^>]*>/g, "").includes("함께한 1매치 중 1번째 치킨 매치!"));
+  assert.ok(html.replace(/<[^>]*>/g, "").includes("함께한 1매치 · 1승"));
   assert.ok(!html.includes("NaN"));
   assert.ok(!html.includes("딜 더"));
   assert.ok(!html.includes("이전 경기 평균 대비 변화량"));
@@ -72,7 +72,7 @@ test("감소량은 빨간색, 동일 수치는 중립색이며 비우승 경기�
   assert.ok(html.includes("(-2)"));
   assert.ok(html.includes("(0)"));
   assert.ok(!html.includes("PlayerA의 "));
-  assert.ok(html.replace(/<[^>]*>/g, "").includes("함께한 5번째 매치"));
+  assert.ok(html.replace(/<[^>]*>/g, "").includes("함께한 5매치 · 2승"));
   assert.ok(!html.includes("번째 치킨 매치"));
 });
 
@@ -235,17 +235,17 @@ test("대상 조합을 포함한 경기로 요약과 목록을 집계하고 이�
 
     const summary = await findSquadHistorySummary(target, database);
     assert.ok(summary);
-    assert.equal(summary.matchCount, 5);
-    assert.equal(summary.winCount, 2);
-    assert.equal(summary.averageRank, 12 / 5);
-    assert.equal(summary.averageDamage, 600);
+    assert.equal(summary.matchCount, 6);
+    assert.equal(summary.winCount, 3);
+    assert.equal(summary.averageRank, 13 / 6);
+    assert.equal(summary.averageDamage, 650);
     assert.equal(summary.previousMatchCount, 4);
     assert.equal(summary.previousAverageKills, 4);
     assert.equal(summary.previousAverageDamage, 675);
     assert.equal(summary.previousAverageRank, 11 / 4);
     assert.deepEqual(summary.members.map((m) => m.name), ["Player1", "Player2"]);
     const items = await findSquadHistoryMatches(target, 10, 0, database);
-    assert.deepEqual(items.map((m) => m.matchId), [1, 10, 3, 2, 0].map(uuid));
+    assert.deepEqual(items.map((m) => m.matchId), [9, 1, 10, 3, 2, 0].map(uuid));
     assert.equal(items.length, summary.matchCount);
     assert.equal(items.at(-1)?.damage, 1000);
     assert.equal(items.at(-1)?.kills, 4);
@@ -262,7 +262,7 @@ test("대상 조합을 포함한 경기로 요약과 목록을 집계하고 이�
     const tripleItems = await findSquadHistoryMatches({ ...target, matchId: uuid(3) }, 10, 0, database);
     assert.deepEqual(tripleItems.map((m) => m.matchId), [3, 0].map(uuid));
     assert.equal(tripleItems.length, triple.matchCount);
-    assert.equal((await findSquadHistorySummary({ ...target, matchId: uuid(0) }, database))?.matchCount, 1);
+    assert.equal((await findSquadHistorySummary({ ...target, matchId: uuid(0) }, database))?.matchCount, 2);
     assert.ok(items[0].playedAt instanceof Date);
     assert.equal(await findSquadHistorySummary({ ...target, matchId: uuid(4) }, database), null);
     assert.equal(await findSquadHistorySummary({ ...target, matchId: uuid(999) }, database), null);
@@ -272,9 +272,9 @@ test("대상 조합을 포함한 경기로 요약과 목록을 집계하고 이�
     const firstPage = await findSquadHistoryMatches(target, 10, 0, database);
     const secondPage = await findSquadHistoryMatches(target, 10, 10, database);
     assert.equal(firstPage.length, 10);
-    assert.equal(secondPage.length, 5);
-    assert.equal(new Set([...firstPage, ...secondPage].map((m) => m.matchId)).size, 15);
-    assert.equal((await findSquadHistorySummary(target, database))?.matchCount, 15);
+    assert.equal(secondPage.length, 6);
+    assert.equal(new Set([...firstPage, ...secondPage].map((m) => m.matchId)).size, 16);
+    assert.equal((await findSquadHistorySummary(target, database))?.matchCount, 16);
 
     // Service도 같은 임시 테이블에서 조회해 페이지 보정과 승률을 검증한다.
     const { db } = await import("../lib/db");
@@ -283,9 +283,9 @@ test("대상 조합을 포함한 경기로 요약과 목록을 집계하고 이�
     const lastPage = await getSquadHistory(target, 999);
     assert.ok(lastPage);
     assert.equal(lastPage.page, 2);
-    assert.equal(lastPage.items.length, 5);
+    assert.equal(lastPage.items.length, 6);
     assert.equal(lastPage.totalPages, 2);
-    assert.equal(lastPage.winRate, 2 / 15 * 100);
+    assert.equal(lastPage.winRate, 3 / 16 * 100);
     assert.equal((await getSquadHistory(target, -1))?.page, 1);
     assert.equal((await getSquadHistory(target, Infinity))?.page, 1);
     assert.equal((await getSquadHistory(target, 1.9))?.page, 1);
